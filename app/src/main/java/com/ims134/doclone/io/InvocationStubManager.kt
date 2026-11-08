@@ -1,0 +1,35 @@
+package com.ims134.doclone.io
+
+import java.util.HashMap
+
+// smali io.sk3
+class InvocationStubManager private constructor() {
+
+    // a
+    private val mInjectors = HashMap<Class<*>, IInjector>(13)
+
+    // a(IInjector). Keyed by the injector's concrete class.
+    fun addInjector(injector: IInjector) {
+        mInjectors[injector.javaClass] = injector
+    }
+
+    // b(Class). Re-injects only if the hook was overwritten, and swallows any failure.
+    fun <T : IInjector> checkEnv(cls: Class<T>) {
+        val injector = mInjectors[cls] ?: return
+        if (!injector.isEnvBad()) return
+        try {
+            injector.inject()
+        } catch (_: Throwable) {
+        }
+    }
+
+    companion object {
+        // b, static final, created in <clinit>
+        @JvmField
+        val instance = InvocationStubManager()
+
+        // c, static, not read in this class
+        @JvmField
+        var initialized = false
+    }
+}

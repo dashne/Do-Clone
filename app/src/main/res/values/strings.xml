@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Do Clone</string>
+    <string name="owner_name">Admin</string>
 </resources>
