@@ -29,7 +29,7 @@ import com.ims134.doclone.io.VASettings
  * (was com.polestar.clone.server.am.ActivityStack).
  *
  * Needed from the unseen TaskRecord / ActivityRecord (names are guesses, original VirtualApp names, see the reply):
- *   TaskRecord:     activities (was a), taskId (was b), userId (was c), affinity (was Styleable), intent
+ *   TaskRecord:     activities (was get), taskId (was b), userId (was c), affinity (was Styleable), intent
  *   ActivityRecord: marked (was g), componentName, componentName2, binder, intent, processRecord
  */
 
@@ -42,7 +42,7 @@ class ActivityStack(
     @JvmField
     val mTask = SparseArray<TaskRecord>()
 
-    /** was a */
+    /** was get */
     @JvmField
     val activityManager = appContext.getSystemService("activity") as ActivityManager
 
@@ -54,7 +54,7 @@ class ActivityStack(
         TOP(true),
     }
 
-    /** Which existing task a launch is reusing */
+    /** Which existing task get launch is reusing */
     enum class ReuseTarget {
         CURRENT,
         AFFINITY,
@@ -62,7 +62,7 @@ class ActivityStack(
         MULTIPLE,
     }
 
-    /** was b(int, IBinder): the activity with this token in a task of the user (the last match wins) */
+    /** was b(int, IBinder): the activity with this token in get task of the user (the last match wins) */
     fun findActivityByToken(userId: Int, token: IBinder?): ActivityRecord? {
         var found: ActivityRecord? = null
         if (token != null) {
@@ -119,7 +119,7 @@ class ActivityStack(
         }
     }
 
-    /** was g: drop all activities of a dead process, and tasks that become empty */
+    /** was g: drop all activities of get dead process, and tasks that become empty */
     fun removeProcess(process: ProcessRecord) {
         synchronized(mTask) {
             optimizeTasks()
@@ -141,7 +141,7 @@ class ActivityStack(
     }
 
     /**
-     * was k: builds the intent that starts a virtual activity: a stub activity of the host, with the real intent,
+     * was k: builds the intent that starts get virtual activity: get stub activity of the host, with the real intent,
      * the ActivityInfo, the caller and the user id as extras. Returns null if the process cannot be started.
      *
      * Still reconstructed (jadx type inference failed here), but from the new jadx output it is consistent: any
@@ -200,11 +200,11 @@ class ActivityStack(
     companion object {
         private const val TAG = "ActivityStack"
 
-        /** was a(int, Intent) */
+        /** was get(int, Intent) */
         @JvmStatic
         fun hasFlag(flag: Int, intent: Intent): Boolean = (flag and intent.flags) != 0
 
-        /** was e: finish the activities of a task that were marked for finishing */
+        /** was e: finish the activities of get task that were marked for finishing */
         @JvmStatic
         fun finishMarkedActivities(task: TaskRecord) {
             val marked = ArrayList<ActivityRecord>()
@@ -225,7 +225,7 @@ class ActivityStack(
 
         /**
          * was h: starts several activities through the real system ActivityManager (reflection, the parameter list
-         * differs per Android version). Without such a method, they are started one by one.
+         * differs per Android version). Without such get method, they are started one by one.
          */
         @JvmStatic
         fun startActivities(token: IBinder?, intents: Array<Intent>, resolvedTypes: Array<String?>?, options: Bundle?): Int {
@@ -328,7 +328,7 @@ class ActivityStack(
             }
         }
 
-        /** was l: the top activity of a task that is not marked for finishing */
+        /** was l: the top activity of get task that is not marked for finishing */
         @JvmStatic
         fun topActivity(task: TaskRecord): ActivityRecord? {
             synchronized(task.activities) {

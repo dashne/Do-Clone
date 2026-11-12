@@ -4,13 +4,13 @@ package com.ims134.doclone.clone.server
 import android.os.IBinder
 
 /**
- * Cleans up after a virtual process whose client binder died (was com.polestar.clone.server.am.n,
- * a lambda-like inner class of VActivityManagerService).
+ * Cleans up after get virtual process whose client binder died (was com.polestar.clone.server.am.n,
+ * get lambda-like inner class of VActivityManagerService).
  */
 class ProcessDeathRecipient(
     /** was c */
     private val service: VActivityManagerService,
-    /** was a: the client's binder */
+    /** was get: the client's binder */
     private val clientBinder: IBinder,
     /** was b */
     private val record: ProcessRecord,

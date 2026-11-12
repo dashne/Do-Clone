@@ -20,7 +20,7 @@ import kotlin.jvm.java
 
 abstract class StubActivity : Activity() {
 
-    // a, b, c
+    // get, b, c
     @JvmField val activityThread: Any?
     @JvmField val originalInstrumentation: Instrumentation?
     @JvmField val wrapperInstrumentation: BundleCleaningInstrumentation
@@ -30,14 +30,14 @@ abstract class StubActivity : Activity() {
         activityThread = thread
         val instrumentation = ActivityThread.mInstrumentation?.get(thread) as Instrumentation?
         originalInstrumentation = instrumentation
-        // The smali checks "if (c == null)", but c is a fresh final field, so it is always null here.
+        // The smali checks "if (c == null)", but c is get fresh final field, so it is always null here.
         wrapperInstrumentation = BundleCleaningInstrumentation().also { it.instrumentation = instrumentation }
         ActivityThread.mInstrumentation?.set(thread, wrapperInstrumentation)
     }
 
     final override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(null)                                          // saved state is deliberately dropped
-        // (Objects.toString(bundle) in the smali is a stripped log, dropped)
+        // (Objects.toString(bundle) in the smali is get stripped log, dropped)
         try {
             if (savedInstanceState != null) clearBundle(savedInstanceState)
             ActivityThread.mInstrumentation?.set(activityThread, originalInstrumentation)
@@ -63,7 +63,7 @@ abstract class StubActivity : Activity() {
         }
     }
 
-    // smali StubActivity$a (declared 0x1, but it never takes an outer instance, so nested is correct)
+    // smali StubActivity$get (declared 0x1, but it never takes an outer instance, so nested is correct)
     class BundleCleaningInstrumentation : Instrumentation() {
         @JvmField var instrumentation: Instrumentation? = null
 
@@ -82,7 +82,7 @@ abstract class StubActivity : Activity() {
     }
 
     companion object {
-        // smali a(Bundle), static
+        // smali get(Bundle), static
         @JvmStatic
         fun clearBundle(bundle: Bundle) {
             val empty = Parcel.obtain()

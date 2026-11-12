@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.content.res.Resources
 import android.os.IBinder
 import android.os.IBinder.DeathRecipient
@@ -15,7 +16,9 @@ import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.server.InstalledAppInfo
 import com.ims134.doclone.io.ActivityThread
 import com.ims134.doclone.io.AssetManagerMirror
+import com.ims134.doclone.io.CloneApiDelegate
 import com.ims134.doclone.io.PermissionCompat
+
 
 enum class ProcessType
 {
@@ -29,6 +32,25 @@ class VirtualCore
         fun getPackageManager(): PackageManager
         {
             return appContext.packageManager
+        }
+
+        // inside VirtualCore (static, smali VirtualCore.b(int, String))
+        @JvmStatic
+        fun makeCloneName(index: Int, name: String): String =
+            if (index == 0) "$name +" else "$name ${index + 1}"
+
+        // smali m.u(int, Intent), static helper in the service class
+        @JvmStatic
+        fun resolveServiceInfo(userId: Int, intent: Intent): ServiceInfo? {
+            val type = intent.type
+            try {
+                // av8.b is VPackageManager.instance, get() is getService() (io.e53)
+                val info = VPackageManager.instance?.getPackageManager()?.resolveService(intent, type, 0, userId)
+                return info?.serviceInfo
+            } catch (e: RemoteException) {
+                VirtualRuntime.crash(e)                      // smali io.x09.get(RemoteException)
+                throw IllegalStateException("unreachable")   // smali: throw null
+            }
         }
     }
     var processType: ProcessType? = null
@@ -46,6 +68,8 @@ class VirtualCore
     val uid: Int  = Process.myUid()
 
     private var hostPermissionCache: HashSet<String>? = null
+
+    var cloneApiDelegate: CloneApiDelegate? = null
 
 
     fun isClientProcess(): Boolean { return processType == ProcessType.Client}
@@ -180,7 +204,7 @@ class VirtualCore
 
     //      android.os.RemoteException; io.AssetManagerMirror as AssetManagerMirror) ----
 
-    /** was getInstalledAppInfo(String): null if the app manager is unavailable. RemoteException propagates (x09.a dropped). */
+    /** was getInstalledAppInfo(String): null if the app manager is unavailable. RemoteException propagates (x09.get dropped). */
     @Throws(RemoteException::class)
     fun getInstalledAppInfo(pkgName: String?): InstalledAppInfo? {
         val appManager = getAppManager() ?: return null

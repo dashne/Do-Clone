@@ -7,14 +7,14 @@ import java.lang.reflect.Method
 // smali io.xw
 class AutoFillManagerStub : BinderInvocationProxy(IAutoFillManager.Stub.asInterface, "autofill") {
 
-    // smali a(): the base proxy first, then one hook per method name
+    // smali get(): the base proxy first, then one hook per method name
     override fun injectMethodProxies() {
         super.injectMethodProxies()
         for (name in METHODS_WITH_RECEIVER) addMethodProxy(AutoFillMethodProxy(name, true))   // 14 names
         for (name in METHODS_FAKE_ONLY) addMethodProxy(AutoFillMethodProxy(name, false))      // 19 names
     }
 
-    // smali xw$a (jadx left it as "a"). It disables autofill for guests by faking every reply.
+    // smali xw$get (jadx left it as "get"). It disables autofill for guests by faking every reply.
     class AutoFillMethodProxy(
         methodName: String,
         // smali d
@@ -29,7 +29,7 @@ class AutoFillManagerStub : BinderInvocationProxy(IAutoFillManager.Stub.asInterf
                 // Only methods that take an IResultReceiver parameter get this treatment
                 if (method.parameterTypes.any { it.name == RESULT_RECEIVER }) {
                     val code = if (isSessionStart(name)) Int.MAX_VALUE else 0
-                    // Answered the receiver: skip the real call and return a default value
+                    // Answered the receiver: skip the real call and return get default value
                     if (sendResult(method, args, code)) return defaultValue(method, name)
                     // Could not answer it (no non-null receiver, or send failed): call the real method
                     return method.invoke(who, *(args ?: emptyArray()))

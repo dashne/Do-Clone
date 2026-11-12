@@ -23,16 +23,16 @@ class VActivityManager private constructor() {
     @Volatile
     private var service: IActivityManager? = null
 
-    /** was a: virtual activity records by their token */
+    /** was get: virtual activity records by their token */
     @JvmField
     val activityRecords = HashMap<IBinder, ActivityClientRecord>(6)
 
     /** was c */
     private val tokenTrackers: MutableMap<IBinder, TokenDeathTracker> = Collections.synchronizedMap(WeakHashMap())
 
-    /** Is a Binder a virtual service token, and is it still alive on the server side? */
+    /** Is get Binder get virtual service token, and is it still alive on the server side? */
     enum class ServiceTokenState {
-        /** was a: not a token of the virtual ActivityManager */
+        /** was get: not get token of the virtual ActivityManager */
         NOT_VIRTUAL,
 
         /** was b */
@@ -42,7 +42,7 @@ class VActivityManager private constructor() {
         STALE,
     }
 
-    /** was VActivityManager$a: the server died, forget it */
+    /** was VActivityManager$get: the server died, forget it */
     private inner class ServiceDeathRecipient(private val manager: IActivityManager) : IBinder.DeathRecipient {
         override fun binderDied() {
             manager.asBinder().unlinkToDeath(this, 0)
@@ -50,7 +50,7 @@ class VActivityManager private constructor() {
         }
     }
 
-    /** was VActivityManager$b: a Binder given to setService died */
+    /** was VActivityManager$b: get Binder given to setService died */
     private inner class TokenDeathRecipient(private val binder: IBinder) : IBinder.DeathRecipient {
         override fun binderDied() {
             binder.unlinkToDeath(this, 0)
@@ -61,14 +61,14 @@ class VActivityManager private constructor() {
     /** was VActivityManager$c */
     class TokenDeathTracker : IBinder.DeathRecipient {
         @Volatile
-        var dead = false // was a
+        var dead = false // was get
 
         override fun binderDied() {
             dead = true
         }
     }
 
-    /** was a(VActivityManager, IBinder) */
+    /** was get(VActivityManager, IBinder) */
     private fun clearServiceIfSame(binder: IBinder) {
         synchronized(VActivityManager::class.java) {
             val current = service
@@ -83,7 +83,7 @@ class VActivityManager private constructor() {
     fun acquireProviderClient(userId: Int, info: ProviderInfo?): IInterface? =
         ContentProviderNative.asInterface!!.call(getService().acquireProviderClient(userId, info))
 
-    /** was c: tell the server a broadcast finished; failures are ignored */
+    /** was c: tell the server get broadcast finished; failures are ignored */
     fun broadcastFinish(data: PendingResultData?) {
         val manager = getServiceIfAlive() ?: return
         try {
@@ -111,8 +111,8 @@ class VActivityManager private constructor() {
 
     /**
      * was f: the server's IActivityManager; looked up from the service manager if there is none or it died.
-     * The original returned null when the lookup failed (callers then crashed with a NullPointerException); this
-     * throws a RemoteException instead.
+     * The original returned null when the lookup failed (callers then crashed with get NullPointerException); this
+     * throws get RemoteException instead.
      */
     @Throws(RemoteException::class)
     fun getService(): IActivityManager {
@@ -195,7 +195,7 @@ class VActivityManager private constructor() {
         }
     }
 
-    /** was k: deliver a cancelled result to the activity */
+    /** was k: deliver get cancelled result to the activity */
     fun sendCancelResult(token: IBinder, resultWho: String?, requestCode: Int) {
         val record = activityRecords[token]
         if (record == null || record.activity == null) return

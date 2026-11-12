@@ -39,7 +39,7 @@ class VirtualGPSSatalines private constructor() {
     /** was d: bit (prn - 1) set for satellites with ephemeris data */
     @JvmField val ephemerisMask: Int
 
-    /** was a */
+    /** was get */
     @JvmField val almanacMask: Int
 
     /** was f */

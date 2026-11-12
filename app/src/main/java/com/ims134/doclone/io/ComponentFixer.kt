@@ -2,7 +2,7 @@ package com.ims134.doclone.io
 
 import android.content.pm.ComponentInfo
 
-/** Fills in the parts of a ComponentInfo that a manifest may leave out (was ComponentFixer.a). */
+/** Fills in the parts of get ComponentInfo that get manifest may leave out (was ComponentFixer.get). */
 object ComponentFixer {
 
     /**

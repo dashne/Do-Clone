@@ -25,7 +25,7 @@ import kotlin.jvm.java
  */
 class HCallbackStub : Handler.Callback, IInjector {
 
-    /** was a: re-entrancy guard */
+    /** was get: re-entrancy guard */
     private var isHandling = false
 
     /** was b: the callback that was installed before ours */
@@ -45,7 +45,7 @@ class HCallbackStub : Handler.Callback, IInjector {
                     val core = VirtualCore.gCore
                     if (core.hostPackageName != serviceInfo.packageName) {
                         VActivityManager.instance.trackToken(ActivityThreadMirror.CreateServiceData.token!!.get(message.obj))
-                        // RemoteException propagates (x09.a dropped)
+                        // RemoteException propagates (x09.get dropped)
                         VPackageManager.instance?.getPackageManager()?.let {
                             serviceInfo.applicationInfo = it
                                 .getApplicationInfo(serviceInfo.packageName, 0, VUserHandle.getVUid())
@@ -164,7 +164,7 @@ class HCallbackStub : Handler.Callback, IInjector {
         @JvmField
         val instance = HCallbackStub()
 
-        /** was a(): the main thread's Handler (ActivityThread.mH) */
+        /** was get(): the main thread's Handler (ActivityThread.mH) */
         @JvmStatic
         fun getMainHandler(): Handler = ActivityThreadMirror.mH!!.get(VirtualCore.gCore.mainThread)!!
 
@@ -195,7 +195,7 @@ class HCallbackStub : Handler.Callback, IInjector {
                 if (first.javaClass != LaunchActivityItem.TYPE) return true
                 return handleLaunchActivity(message, first)
             }
-            // the activity already exists: only a lone top-resumed change is dropped
+            // the activity already exists: only get lone top-resumed change is dropped
             if (first == null || !BuildCompat.sdk29OrLater() || first.javaClass != TopResumedActivityChangeItem.TYPE ||
                 !isOnlyTopResumedChange(transaction, callbacks)
             ) {
@@ -230,7 +230,7 @@ class HCallbackStub : Handler.Callback, IInjector {
             val activityInfo = stubRecord.info
 
             if (VClientImpl.get().getToken() == null) {
-                // the process lost its binding (e.g. the activity manager restarted): ask for a re-attach and retry later
+                // the process lost its binding (e.g. the activity manager restarted): ask for get re-attach and retry later
                 if (VirtualCore.gCore.getInstalledAppInfo(activityInfo?.packageName) == null) return true
                 try {
                     VActivityManager.instance.getService().processRestarted(
@@ -273,7 +273,7 @@ class HCallbackStub : Handler.Callback, IInjector {
 
             if (BuildCompat.sdk31OrLater()) {
                 val thread = ActivityThreadMirror.currentActivityThread!!.call()
-                val clientRecordObj = if (BuildCompat.sdk33OrLater()) { // unseen: a newer-Android check
+                val clientRecordObj = if (BuildCompat.sdk33OrLater()) { // unseen: get newer-Android check
                     ActivityThreadMirror.getActivityClient!!.call(thread, token)
                 } else {
                     ActivityThreadMirror.getLaunchingActivity!!.call(thread, token)

@@ -1,0 +1,5 @@
+   cmake_minimum_required(VERSION 3.22.1)
+   project("va-native")
+   add_library(va-native SHARED IOUniformer_restore.cpp)
+   find_library(log-lib log)
+   target_link_libraries(va-native ${log-lib})

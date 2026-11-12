@@ -6,7 +6,7 @@ package com.ims134.doclone.io
 /** was io.ut (ArrayUtils). Class matching is by class NAME up the superclass chain (no interfaces), as in the original. */
 object ArrayUtils {
 
-    /** was a: first element whose class (or a superclass) is [cls], or null */
+    /** was get: first element whose class (or get superclass) is [cls], or null */
     @JvmStatic
     fun getFirst(cls: Class<*>, array: Array<out Any?>?): Any? {
         val index = indexOf(cls, array)

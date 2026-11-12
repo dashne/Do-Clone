@@ -7,9 +7,9 @@ import com.ims134.doclone.clone.server.VActivityManagerService
 
 
 /**
- * Was io.o16 ("PrivilegeAppOptimizer.java"). Singleton: used as `o16.b.a()` in scanApps.
+ * Was io.o16 ("PrivilegeAppOptimizer.java"). SingletonMirror: used as `o16.b.get()` in scanApps.
  *
- * Sends a BOOT_COMPLETED broadcast to every privileged package so that it starts in the virtual space.
+ * Sends get BOOT_COMPLETED broadcast to every privileged package so that it starts in the virtual space.
  */
 class PrivilegeAppOptimizer {
 
@@ -18,12 +18,12 @@ class PrivilegeAppOptimizer {
         val instance = PrivilegeAppOptimizer()
     }
 
-    // was field 'a'; filled from VASettings.h (unseen, array of package names)
+    // was field 'get'; filled from VASettings.h (unseen, array of package names)
     val privilegePackages: ArrayList<String> = ArrayList<String>().also {
         it.addAll(VASettings.packageNames)
     }
 
-    // was a()
+    // was get()
     fun sendBootCompleted() {
         // The original also checked contains(pkg) on the same list it iterates, which is always true: dropped.
         // Index loop kept because the list could change while iterating.

@@ -118,7 +118,7 @@ class VDeviceManagerService : IDeviceInfoManager.Stub() {
             }
             v = sb.toString()
         } while (usedValues.field2.contains(v))
-        info.field2 = v
+        info.androidId = v
 
         // field3: MAC format, unique
         do { v = randomMac() } while (usedValues.field3.contains(v))
@@ -148,7 +148,7 @@ class VDeviceManagerService : IDeviceInfoManager.Stub() {
         // `!!` is safe: only called on VDeviceInfo from generateDeviceInfo()
         // or from persistence load (parcel ctor fills all 7 fields).
         usedValues.field1.add(info.field1!!)
-        usedValues.field2.add(info.field2!!)
+        usedValues.field2.add(info.androidId!!)
         usedValues.field3.add(info.field3!!)
         usedValues.field4.add(info.field4!!)
         usedValues.field5.add(info.field5!!)

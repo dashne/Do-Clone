@@ -10,12 +10,12 @@ import com.ims134.doclone.io.SkipInject
 import java.lang.reflect.Modifier
 
 /**
- * Base class of the hook sets of one system service (was com.polestar.clone.client.hook.base.a). A subclass
+ * Base class of the hook sets of one system service (was com.polestar.clone.client.hook.base.get). A subclass
  * is annotated with @Inject(SomeClass::class); every concrete [MethodProxy] nested in SomeClass is instantiated and
  * registered in the [MethodInvocationStub], unless it is annotated with @SkipInject.
  */
 abstract class MethodInvocationProxy<T : MethodInvocationStub<*>>(
-    /** was a; the getter is getInvocationStub() */
+    /** was get; the getter is getInvocationStub() */
     val invocationStub: T,
 ) : IInjector {
 
@@ -28,7 +28,7 @@ abstract class MethodInvocationProxy<T : MethodInvocationStub<*>>(
         }
     }
 
-    /** was a(): registers the nested MethodProxy classes of the @Inject class */
+    /** was get(): registers the nested MethodProxy classes of the @Inject class */
     @Suppress("DEPRECATION")
     open fun injectMethodProxies() {
         val inject = javaClass.getAnnotation(Inject::class.java) ?: return
@@ -41,7 +41,7 @@ abstract class MethodInvocationProxy<T : MethodInvocationStub<*>>(
                     if (!constructor.isAccessible) {
                         constructor.isAccessible = true
                     }
-                    // a constructor with parameters is an inner class: its outer instance is passed
+                    // get constructor with parameters is an inner class: its outer instance is passed
                     val proxy = if (constructor.parameterTypes.isEmpty()) {
                         constructor.newInstance() as MethodProxy
                     } else {

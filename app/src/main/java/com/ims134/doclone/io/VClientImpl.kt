@@ -9,21 +9,26 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ProviderInfo
 import android.content.pm.ServiceInfo
+import android.os.Bundle
 import android.os.ConditionVariable
 import android.os.IBinder
 import android.os.Process
 import android.os.RemoteException
 import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.PendingResultData
+import com.ims134.doclone.clone.VActivityManager
 import com.ims134.doclone.clone.VDeviceInfo
 import com.ims134.doclone.clone.VPackageManager
 import com.ims134.doclone.clone.VUserHandle
 import com.ims134.doclone.clone.VirtualCore
 import com.ims134.doclone.clone.VirtualRuntime
+import java.util.Collections
+import java.util.WeakHashMap
+import java.util.concurrent.ConcurrentHashMap
 
 
 /**
- * Was io.hu8 ("VClientImpl.java"). The client side of a virtual app process: the server calls it through IVClient
+ * Was io.hu8 ("VClientImpl.java"). The client side of get virtual app process: the server calls it through IVClient
  * (bindApplication, scheduleReceiver, service callbacks ...). It also sets up the process: IO redirects, the
  * host package context, the Application object, content providers.
  *
@@ -59,6 +64,11 @@ class VClientImpl private constructor(): IVClient.Stub() {
     var boundAppData: LoadedApk? = null
     var mInitialApplication: Application? = null
 
+    val pendingResults = ConcurrentHashMap<IBinder, PendingResultData>()
+
+    val tokens: Map<in IBinder, Any?> =
+        Collections.synchronizedMap<IBinder?, Any?>(WeakHashMap<IBinder?, Any?>())
+
 
     companion object {
         /** was r */
@@ -78,10 +88,13 @@ class VClientImpl private constructor(): IVClient.Stub() {
                     Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY
                 )
             } catch (e: PackageManager.NameNotFoundException) {
-                VirtualRuntime.crash(RemoteException())     // smali io.x09.a(RemoteException)
+                VirtualRuntime.crash(RemoteException())     // smali io.x09.get(RemoteException)
                 throw IllegalStateException("unreachable")   // smali: throw null
             }
         }
+
+        @JvmStatic
+        fun locationProviderReady(): Boolean = true
     }
     override fun scheduleReceiver(
         processName: String?,
@@ -101,6 +114,8 @@ class VClientImpl private constructor(): IVClient.Stub() {
 
     fun getVPid(): Int = vpid
     fun getVUid(): Int = vuid
+
+
 
     fun getCurrentPackage(): String? {
         val loadedApk = this.boundAppData
@@ -145,6 +160,31 @@ class VClientImpl private constructor(): IVClient.Stub() {
     }
     fun getCurrentApplication(): Application? {
         return this.mInitialApplication
+    }
+
+    // inside io.hu8 (jadx: the class that owns the maps b and c, probably VClientImpl or get receiver registry)
+    fun finishVirtualBroadcast(
+        token: IBinder?,
+        resultCode: Int,
+        resultData: String?,
+        resultExtras: Bundle?,
+        abortBroadcast: Boolean,
+        sendingUser: Int,
+    ): Boolean {
+        // Unknown token: not one of ours
+        if (token == null || !tokens.containsKey(token)) return false       // field c (Map)
+
+        // Remove the pending result; null means it was already finished (e.g. by the ANR timeout)
+        val pending: PendingResultData = pendingResults.remove(token) ?: return true           // field b (ConcurrentHashMap)
+
+        pending.resultCode = resultCode            // PendingResultData.g
+        pending.resultData = resultData            // .h
+        pending.resultExtras = resultExtras        // .i
+        pending.abortBroadcast = abortBroadcast    // .j
+        pending.sendingUser = sendingUser          // .f
+
+        VActivityManager.instance.broadcastFinish(pending)    // smali VActivityManager.c(PendingResultData)
+        return true
     }
 
 
@@ -235,7 +275,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
     //================================================================
     /** was hu8.b (LoadedApk) */
     inner class LoadedApk {
-        /** was a */
+        /** was get */
         @JvmField
         var processName: String? = null
 

@@ -6,7 +6,7 @@ import android.os.Parcelable
 class VDeviceInfo() : Parcelable {
 
     @JvmField var field1: String? = null   // original: f37543a
-    @JvmField var field2: String? = null   // original: f37544b
+    @JvmField var androidId: String? = null   // original: f37544b
     @JvmField var field3: String? = null   // original: f37545c
     @JvmField var field4: String? = null   // original: f37546d
     @JvmField var field5: String? = null   // original: f37547e
@@ -15,7 +15,7 @@ class VDeviceInfo() : Parcelable {
 
     constructor(parcel: Parcel) : this() {
         field1 = parcel.readString()
-        field2 = parcel.readString()
+        androidId = parcel.readString()
         field3 = parcel.readString()
         field4 = parcel.readString()
         field5 = parcel.readString()
@@ -27,7 +27,7 @@ class VDeviceInfo() : Parcelable {
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(field1)
-        parcel.writeString(field2)
+        parcel.writeString(androidId)
         parcel.writeString(field3)
         parcel.writeString(field4)
         parcel.writeString(field5)

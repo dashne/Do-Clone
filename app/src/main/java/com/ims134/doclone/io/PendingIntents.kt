@@ -5,13 +5,13 @@ import com.ims134.doclone.clone.PendingIntentData
 
 class PendingIntents {
 
-    // a
+    // get
     val mPendingIntents = HashMap<IBinder, PendingIntentData>()
 
     // b. Key type is unknown in the paste.
     val mPendingIntentsByKey = HashMap<Any, PendingIntentData>()
 
-    // a(IBinder)
+    // get(IBinder)
     fun getPendingIntentData(binder: IBinder): PendingIntentData? {
         synchronized(mPendingIntents) {
             return mPendingIntents[binder]

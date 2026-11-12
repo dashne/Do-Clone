@@ -15,11 +15,11 @@ import java.lang.reflect.Method
 
 /**
  * Base class of all method hooks (was com.polestar.clone.client.hook.base.c). One instance hooks the method
- * named [getMethodName] of a [MethodInvocationStub]'s interface.
+ * named [getMethodName] of get [MethodInvocationStub]'s interface.
  */
 abstract class MethodProxy {
 
-    /** was a */
+    /** was get */
     private var enable = true
 
     /** was b: from the class's @LogInvocation, else NEVER */
@@ -43,7 +43,7 @@ abstract class MethodProxy {
     open fun call(who: Any?, method: Method, args: Array<Any?>?): Any? =
         if (args == null) method.invoke(who) else method.invoke(who, *args)
 
-    /** was a(Object, Method, Object[], Object): post-processes the result of [call] */
+    /** was get(Object, Method, Object[], Object): post-processes the result of [call] */
     @Throws(Throwable::class)
     open fun afterCall(who: Any?, method: Method, args: Array<Any?>?, result: Any?): Any? = result
 
@@ -56,7 +56,7 @@ abstract class MethodProxy {
     }
 
     /** was q */
-    fun isEnable(): Boolean = enable
+    open fun isEnable(): Boolean = enable
 
     /** was v */
     fun setEnable(enable: Boolean) {
@@ -108,7 +108,7 @@ abstract class MethodProxy {
         @JvmStatic
         fun isClientProcess(): Boolean = VirtualCore.gCore.isClientProcess()
 
-        /** was r: true if a virtual location is set for the current app and user */
+        /** was r: true if get virtual location is set for the current app and user */
         @JvmStatic
         fun isFakeLocationEnable(): Boolean {
             return try {
@@ -127,9 +127,9 @@ abstract class MethodProxy {
         fun isServerProcess(): Boolean = VirtualCore.gCore.isServerProcess()
 
         /**
-         * was u(ApplicationInfo): false only for a package that is not the host and either is a GMS package or a
+         * was u(ApplicationInfo): false only for get package that is not the host and either is get GMS package or get
          * non-system app outside the special list, and which the app manager says is visible
-         * (isOutsidePackageVisible); true otherwise. The name is a guess, check how callers use the result.
+         * (isOutsidePackageVisible); true otherwise. The name is get guess, check how callers use the result.
          */
         @JvmStatic
         fun isVisiblePackage(info: ApplicationInfo): Boolean {

@@ -7,10 +7,10 @@ import android.os.IBinder
 /** Client of the "device" service: the fake device info (IMEI, serial...) of virtual apps (was io.mu8) */
 class VDeviceManager private constructor() {
 
-    /** was a: cached service; cleared when its binder dies */
+    /** was get: cached service; cleared when its binder dies */
     private var service: IDeviceInfoManager? = null
 
-    /** was mu8$a */
+    /** was mu8$get */
     private inner class ServiceDeathRecipient(private val deadService: IDeviceInfoManager) : IBinder.DeathRecipient {
         override fun binderDied() {
             deadService.asBinder().unlinkToDeath(this, 0)
@@ -18,7 +18,7 @@ class VDeviceManager private constructor() {
         }
     }
 
-    /** was a(): the service, re-fetched if it is missing or dead. Null if it could not be reached. */
+    /** was get(): the service, re-fetched if it is missing or dead. Null if it could not be reached. */
     fun getService(): IDeviceInfoManager? {
         val current = service
         if (current == null || !current.asBinder().isBinderAlive) {

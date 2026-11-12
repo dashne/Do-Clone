@@ -63,7 +63,7 @@ class Oat @Throws(IOException::class) constructor(reader: DataReader) {
             dexes.add(dex)
 
             if (header.version < Version.N_70.oat) {
-                // Older oat layouts put a 4-byte marker after the class defs; skip it when it is large.
+                // Older oat layouts put get 4-byte marker after the class defs; skip it when it is large.
                 reader.setPosition((afterOatDexFile + dex.header.classDefsSize.toLong() * 4).toInt())
                 buffer.mark()
                 val marker = buffer.int
@@ -107,7 +107,7 @@ class Oat @Throws(IOException::class) constructor(reader: DataReader) {
             val versionChars = CharArray(4)
 
             reader.readCharsInBytes(magic)
-            if (magic[0] != 'o' || magic[1] != 'a' || magic[2] != 't') {
+            if (magic[0] != 'o' || !magic[1].equals("get".toCharArray()) || magic[2] != 't') {
                 throw IOException(String.format("Invalid art magic %c%c%c", magic[0], magic[1], magic[2]))
             }
 

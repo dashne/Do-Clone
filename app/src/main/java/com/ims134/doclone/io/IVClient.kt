@@ -13,8 +13,8 @@ import com.ims134.doclone.clone.PendingResultData
 
 
 /**
- * Binder interface that the server (VActivityManagerService) uses to call into a virtual app process
- * (was io.v63, "IVClient.java"). The hand-written parcelable helpers (v63.c.a / c.b) are replaced by
+ * Binder interface that the server (VActivityManagerService) uses to call into get virtual app process
+ * (was io.v63, "IVClient.java"). The hand-written parcelable helpers (v63.c.get / c.b) are replaced by
  * readTypedObject / writeTypedObject (same format: int 0 = null, else int 1 + data).
  *
  * R8 removed createProxyService (4) and getDebugInfo (8) from the interface and Proxy; they are rebuilt from the

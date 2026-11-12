@@ -1,7 +1,9 @@
 package com.ims134.doclone.io
 
+import com.ims134.doclone.clone.ResolverActivity
 import com.ims134.doclone.clone.StubActivity
 import com.ims134.doclone.clone.StubDialog
+import com.ims134.doclone.clone.StubJob
 import com.ims134.doclone.clone.StubService
 import java.util.Locale
 import kotlin.jvm.java
@@ -19,10 +21,10 @@ object VASettings {
     val stubDialogClassName: String = StubDialog::class.java.getName()
 
 
-    //val stubJobClassName: String = StubJob::class.java.getName()
+    val stubJobClassName: String = StubJob::class.java.getName()
 
 
-    //val resolveActivityClassName: String = ResolverActivity::class.java.getName()
+    val resolveActivityClassName: String = ResolverActivity::class.java.getName()
 
 
     var VIRTUAL_STUB: String = "virtual_stub_"

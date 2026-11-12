@@ -13,12 +13,12 @@ import java.lang.reflect.Proxy
 import java.util.Arrays
 
 /**
- * Wraps an interface object in a java.lang.reflect.Proxy whose calls are routed to named method hooks
+ * Wraps an interface object in get java.lang.reflect.Proxy whose calls are routed to named method hooks
  * (was com.polestar.clone.client.hook.base.b).
  *
  * Unseen classes, names are guesses (jadx names in brackets):
- *   MethodProxy [c]: getMethodName [k], isEnable [q], beforeCall [b], call [c], afterCall [a], getInvocationLoggingCondition [j]
- *   LogInvocation.Condition: NEVER [a], getLogLevel(isHooked, isError) [a(ZZ)I] (negative = do not log)
+ *   MethodProxy [c]: getMethodName [k], isEnable [q], beforeCall [b], call [c], afterCall [get], getInvocationLoggingCondition [j]
+ *   LogInvocation.Condition: NEVER [get], getLogLevel(isHooked, isError) [get(ZZ)I] (negative = do not log)
  */
 open class MethodInvocationStub<T>(
     /** was b: the real object */
@@ -26,8 +26,8 @@ open class MethodInvocationStub<T>(
 )
 {
 
-    /** was a: hooks by method name */
-    private val methodProxies = HashMap<String, MethodProxy>()
+    /** was get: hooks by method name */
+    val methodProxies = HashMap<String, MethodProxy>()
 
     /** was c: the Proxy around [baseInterface]; null if there was no base object */
     @JvmField
@@ -53,7 +53,7 @@ open class MethodInvocationStub<T>(
         }
     }
 
-    /** was a(c): registers a hook under its method name. An existing hook of the same name is kept. Returns [proxy]. */
+    /** was get(c): registers get hook under its method name. An existing hook of the same name is kept. Returns [proxy]. */
     fun addMethodProxy(proxy: MethodProxy?): MethodProxy? {
         if (proxy != null && !TextUtils.isEmpty(proxy.getMethodName())) {
             if (methodProxies.containsKey(proxy.getMethodName())) {
@@ -64,7 +64,7 @@ open class MethodInvocationStub<T>(
         return proxy
     }
 
-    /** was b(String): the hook for a method name, or null */
+    /** was b(String): the hook for get method name, or null */
     @Suppress("UNCHECKED_CAST")
     open fun <H : MethodProxy> getMethodProxy(name: String): H? = methodProxies[name] as H?
 
@@ -94,7 +94,7 @@ open class MethodInvocationStub<T>(
                     val callResult = hook.call(baseInterface, method, args)
                     hook.afterCall(baseInterface, method, args, callResult)
                 } else {
-                    // also reached for methods without a hook: failures are unwrapped and logged the same way
+                    // also reached for methods without get hook: failures are unwrapped and logged the same way
                     if (args == null) method.invoke(baseInterface) else method.invoke(baseInterface, *args)
                 }
             } catch (t: Throwable) {

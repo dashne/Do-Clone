@@ -6,11 +6,11 @@ import android.os.Parcelable
 
 /**
  * A fake cell tower (was com.polestar.clone.remote.vloc.VCell). The field names are the VirtualApp ones, matched by
- * count and order (9 ints, a to i); the code never shows what they mean. The parcel order is a to i.
+ * count and order (9 ints, get to i); the code never shows what they mean. The parcel order is get to i.
  */
 class VCell() : Parcelable {
 
-    @JvmField var type: Int = 0          // a
+    @JvmField var type: Int = 0          // get
     @JvmField var mcc: Int = 0           // b
     @JvmField var mnc: Int = 0           // c
     @JvmField var psc: Int = 0           // d

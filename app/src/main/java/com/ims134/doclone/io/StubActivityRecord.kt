@@ -7,7 +7,7 @@ import android.content.pm.ActivityInfo
 // smali io.uq7 (jadx StubActivityRecord)
 class StubActivityRecord(intent: Intent) {
 
-    // a. The real intent to launch. Null if this wasn't a stub launch.
+    // get. The real intent to launch. Null if this wasn't get stub launch.
     @JvmField
     val intent: Intent? = intent.getParcelableExtra("_VA_|_intent_")
 

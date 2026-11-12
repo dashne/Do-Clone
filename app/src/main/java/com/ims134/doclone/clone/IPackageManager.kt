@@ -5,7 +5,9 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
+import android.content.pm.ProviderInfo
 import android.content.pm.ResolveInfo
+import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.IBinder
 import android.os.IInterface
@@ -41,6 +43,26 @@ interface IPackageManager : IInterface
     @Throws(RemoteException::class)
     fun getPackageUid(str: String?, i: Int): Int
 
+    @Throws(RemoteException::class)
+    fun resolveService(intent: Intent?, str: String?, i: Int, i2: Int): ResolveInfo?
+
+    @Throws(RemoteException::class)
+    fun queryIntentServices(
+        intent: Intent?,
+        resolvedType: String?,
+        flags: Int,
+        userId: Int
+    ): List<ResolveInfo?>?
+
+    @Throws(RemoteException::class)
+    fun getServiceInfo(componentName: ComponentName?, i: Int, i2: Int): ServiceInfo?
+
+    @Throws(RemoteException::class)
+    fun resolveCP(i: Int, i2: Int, str: String?, str2: String?, str3: String?): ProviderInfo?
+
+    @Throws(RemoteException::class)
+    fun isClonedAuthority(authority: String?): Boolean
+
 
     abstract class Stub : Binder(), IPackageManager
     {
@@ -75,6 +97,17 @@ interface IPackageManager : IInterface
         abstract override fun resolveIntent(intent: Intent?,str: String?,i: Int,i2: Int): ResolveInfo?
         abstract override fun getNameForUid(i:Int):String?
         abstract override fun getPackageUid(str: String?, i: Int): Int
+        abstract override fun resolveService(intent: Intent?, str: String?, i: Int, i2: Int): ResolveInfo?
+        abstract override fun queryIntentServices(
+            intent: Intent?,
+            resolvedType: String?,
+            flags: Int,
+            userId: Int
+        ): List<ResolveInfo?>?
+
+        abstract override fun getServiceInfo(componentName: ComponentName?, i: Int, i2: Int): ServiceInfo?
+        abstract override fun resolveCP(i: Int, i2: Int, str: String?, str2: String?, str3: String?): ProviderInfo?
+        abstract override fun isClonedAuthority(authority: String?): Boolean
 
 
         override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean
@@ -110,6 +143,15 @@ interface IPackageManager : IInterface
 
                 }
 
+                9->{
+                    val serviceInfo = getServiceInfo(data.readTypedObject(ComponentName.CREATOR),
+                        data.readInt(), data.readInt()
+                    )
+                    out.writeNoException()
+                    out.writeTypedObject(serviceInfo, 1)
+                    return true
+                }
+
                 11-> {
                     val ri = resolveIntent(data.readTypedObject(Intent.CREATOR), data.readString(), data.readInt(), data.readInt())
                     out.writeNoException()
@@ -125,6 +167,34 @@ interface IPackageManager : IInterface
                     ParcelUtils.writeParcelableList(out, l?.toMutableList())
                     return true
                 }
+                14-> {
+                    val ri = resolveService(data.readTypedObject(Intent.CREATOR), data.readString(), data.readInt(), data.readInt())
+                    out.writeNoException()
+                    out.writeTypedObject( ri, 1)
+                    return true
+
+                }
+                15->{
+                    val l = queryIntentServices(data.readTypedObject(Intent.CREATOR) , data.readString(), data.readInt(), data.readInt()
+                    )
+                    out.writeNoException()
+                    ParcelUtils.writeParcelableList(out, l?.toMutableList())
+                    return true
+                }
+
+                20->{
+                    val providerInfoResolveCP = resolveCP(
+                        data.readInt(),
+                        data.readInt(),
+                        data.readString(),
+                        data.readString(),
+                        data.readString()
+                    )
+                    out.writeNoException()
+                    ParcelUtils.writeNullableParcelable(out, providerInfoResolveCP, 1)
+                    return true
+
+                }
 
                 21-> {
                     val r = getApplicationInfo(data.readString(),data.readInt(),data.readInt())
@@ -136,6 +206,13 @@ interface IPackageManager : IInterface
                     val nameForUid = getNameForUid(data.readInt())
                     out.writeNoException()
                     out.writeString(nameForUid)
+                    return true
+
+                }
+                26->{
+                    val isClonedAuthority = isClonedAuthority(data.readString())
+                    out.writeNoException()
+                    out.writeInt(if (isClonedAuthority) 1 else 0)
                     return true
 
                 }
@@ -288,6 +365,117 @@ interface IPackageManager : IInterface
                     this.remote.transact(1, data, reply, 0)
                     reply.readException()
                     return reply.readInt()
+                } finally {
+                    reply.recycle()
+                    data.recycle()
+                }
+            }
+
+            override fun resolveService(
+                intent: Intent?,
+                str: String?,
+                i: Int,
+                i2: Int
+            ): ResolveInfo? {
+                val data = Parcel.obtain()
+                val reply = Parcel.obtain()
+                try {
+                    data.writeInterfaceToken(DESCRIPTOR)
+                    data.writeTypedObject( intent, 0)
+                    data.writeString(str)
+                    data.writeInt(i)
+                    data.writeInt(i2)
+                    this.remote.transact(14, data, reply, 0)
+                    reply.readException()
+                    return reply.readTypedObject(ResolveInfo.CREATOR)
+                } finally {
+                    reply.recycle()
+                    data.recycle()
+                }
+            }
+
+            override fun queryIntentServices(
+                intent: Intent?,
+                resolvedType: String?,
+                flags: Int,
+                userId: Int
+            ): List<ResolveInfo?>? {
+                val data = Parcel.obtain()
+                val reply = Parcel.obtain()
+                try {
+                    data.writeInterfaceToken(DESCRIPTOR)
+                    data.writeTypedObject(intent,0)
+                    data.writeString(resolvedType)
+                    data.writeInt(flags)
+                    data.writeInt(userId)
+                    this.remote.transact(15, data,reply, 0)
+                    reply.readException()
+                    return reply.createTypedArrayList(ResolveInfo.CREATOR)
+                }
+                finally {
+                    data.recycle()
+                    data.recycle()
+                }
+            }
+
+            override fun getServiceInfo(
+                componentName: ComponentName?,
+                i: Int,
+                i2: Int
+            ): ServiceInfo? {
+                val data = Parcel.obtain()
+                val reply = Parcel.obtain()
+                try {
+                    data.writeInterfaceToken(DESCRIPTOR)
+                    data.writeTypedObject(componentName,0)
+                    data.writeInt(i)
+                    data.writeInt(i2)
+                    this.remote.transact(9, data,reply, 0)
+                    reply.readException()
+                    return reply.readTypedObject(ServiceInfo.CREATOR)
+                }
+                finally {
+                    data.recycle()
+                    data.recycle()
+                }
+            }
+
+            override fun resolveCP(
+                i: Int,
+                i2: Int,
+                str: String?,
+                str2: String?,
+                str3: String?
+            ): ProviderInfo? {
+                val data = Parcel.obtain()
+                val reply = Parcel.obtain()
+                try {
+                    data.writeInterfaceToken(DESCRIPTOR)
+                    data.writeInt(i)
+                    data.writeInt(i2)
+                    data.writeString(str)
+                    data.writeString( str2)
+                    data.writeString( str3)
+
+                    this.remote.transact(20, data, reply, 0)
+                    reply.readException()
+                    return reply.readTypedObject(ProviderInfo.CREATOR)
+                } finally {
+                    reply.recycle()
+                    data.recycle()
+                }
+            }
+
+            override fun isClonedAuthority(authority: String?): Boolean {
+                val data = Parcel.obtain()
+                val reply = Parcel.obtain()
+                try {
+                    data.writeInterfaceToken(DESCRIPTOR)
+                    data.writeString(authority)
+
+                    this.remote.transact(26, data, reply, 0)
+                    reply.readException()
+                    return reply.readInt() != 0
                 } finally {
                     reply.recycle()
                     data.recycle()

@@ -2,13 +2,13 @@ package com.ims134.doclone.io
 
 import android.util.Log
 
-/** Marks a hook (or a hooked class) for call logging (was com.polestar.clone.client.hook.base.LogInvocation) */
+/** Marks get hook (or get hooked class) for call logging (was com.polestar.clone.client.hook.base.LogInvocation) */
 @Retention(AnnotationRetention.RUNTIME)
 annotation class LogInvocation(val value: Condition = Condition.ALWAYS) {
 
-    /** When to log a call. [getLogLevel] returns an android.util.Log priority, or -1 for "do not log" */
+    /** When to log get call. [getLogLevel] returns an android.util.Log priority, or -1 for "do not log" */
     enum class Condition {
-        /** was a */
+        /** was get */
         NEVER {
             override fun getLogLevel(isHooked: Boolean, isError: Boolean): Int = -1
         },
@@ -32,7 +32,7 @@ annotation class LogInvocation(val value: Condition = Condition.ALWAYS) {
             }
         };
 
-        /** was a(ZZ): [isHooked] is the method's hook being enabled, [isError] the call threw */
+        /** was get(ZZ): [isHooked] is the method's hook being enabled, [isError] the call threw */
         abstract fun getLogLevel(isHooked: Boolean, isError: Boolean): Int
     }
 }

@@ -249,7 +249,7 @@ interface IVirtualLocationManager : IInterface {
         }
     }
 
-    /** was y63$a: does nothing, returns nothing */
+    /** was y63$get: does nothing, returns nothing */
     class Default : IVirtualLocationManager {
         override fun asBinder(): IBinder? = null
         override fun getMode(userId: Int, packageName: String?): Int = 0

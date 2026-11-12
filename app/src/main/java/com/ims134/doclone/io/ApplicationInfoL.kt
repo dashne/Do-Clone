@@ -1,11 +1,13 @@
 package com.ims134.doclone.io
 
+import android.annotation.TargetApi
 import android.app.Activity
 import android.app.Application
 import android.app.Instrumentation
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -14,12 +16,15 @@ import android.content.pm.ServiceInfo
 import android.content.pm.SharedLibraryInfo
 import android.content.pm.VersionedPackage
 import android.os.Binder
+import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Parcel
+import android.os.Parcelable
 import android.util.ArrayMap
 import com.ims134.doclone.clone.IActivityManager
+import com.ims134.doclone.clone.IServiceConnection
 import com.ims134.doclone.clone.server.PackageParser
 import com.ims134.doclone.reflect.MethodParams
 import com.ims134.doclone.reflect.MethodReflectParams
@@ -36,6 +41,13 @@ import java.io.File
 import java.lang.Class
 import java.lang.ref.WeakReference
 import java.lang.reflect.Method
+import java.util.function.Consumer
+import android.app.Notification
+import android.app.job.JobInfo
+import android.widget.RemoteViews
+import android.app.job.JobParameters
+import android.os.PersistableBundle
+import com.ims134.doclone.reflect.RefInt
 
 
 object ApplicationInfoL {
@@ -253,7 +265,6 @@ object ReceiverResourceN {
     )
     var mWhiteList: RefObject<MutableList<String?>?>? = null
 }
-
 object ContextImpl {
     var TYPE: Class<*>? =
         load(ContextImpl::class.java as Class<*>, "android.app.ContextImpl")
@@ -265,7 +276,6 @@ object ContextImpl {
     var mPackageInfo: RefObject<Any?>? = null
     var mPackageManager: RefObject<PackageManager?>? = null
 }
-
 object NativeLibraryHelper {
     var TYPE: Class<*>? = load(
         NativeLibraryHelper::class.java as Class<*>,
@@ -331,20 +341,18 @@ object IntentMirror {
     var collectExtraIntentKeys: RefMethod<Void?>? = null
 }
 
-
-
 /**
  * Mirror of the hidden com.android.internal.R (was io.ga6, "R_Hide.java"): resource ids that the SDK does not
- * expose. Fields are filled by name when the object is initialized; a missing field stays null.
+ * expose. Fields are filled by name when the object is initialized; get missing field stays null.
  * Each nested object declares TYPE last, so the fields exist before they are bound.
  *
- * NOTE: in the decompiled original, Drawable and Layout were loaded with Id.class as the mirror class (a copy
+ * NOTE: in the decompiled original, Drawable and Layout were loaded with Id.class as the mirror class (get copy
  * and paste slip), so their own fields were never bound. Here each object uses itself.
  */
 object R_Hide {
     var TYPE: Class<*>? = load(R_Hide::class.java as Class<*>, "com.android.internal.R")
 
-    /* JADX INFO: renamed from: io.ga6$a */ /* JADX INFO: compiled from: R_Hide.java */
+    /* JADX INFO: renamed from: io.ga6$get */ /* JADX INFO: compiled from: R_Hide.java */
     object Drawable {
         var TYPE: Class<*>? =
             load(Id::class.java as Class<*>, "com.android.internal.R\$drawable")
@@ -466,7 +474,7 @@ object IActivityManagerMirror {
     var startActivities: RefMethod<Int?>? = null
     var startActivity: RefMethod<Int?>? = null
 
-    /* JADX INFO: renamed from: io.d23$a */ /* JADX INFO: compiled from: IActivityManager.java */
+    /* JADX INFO: renamed from: io.d23$get */ /* JADX INFO: compiled from: IActivityManager.java */
     object a {
         var TYPE: Class<*>? = load(
             a::class.java as Class<*>,
@@ -501,7 +509,6 @@ object BundleICS {
     var TYPE: Class<*>? = load(BundleICS::class.java as Class<*>, "android.os.Bundle")
     var mParcelledData: RefObject<Parcel?>? = null
 }
-
 object ActivityThreadMirror {
     var TYPE: Class<*>? = load(ActivityThread::class.java as Class<*>, "android.app.ActivityThread")
     var currentActivityThread: RefStaticMethod<*>? = null
@@ -564,7 +571,7 @@ object ActivityThreadMirror {
         return refMethod?.call(obj, context, obj2, providerInfo, bool, bool2, bool2)
     }
 
-    /* JADX INFO: renamed from: io.g4$a */ /* JADX INFO: compiled from: ActivityThread.java */
+    /* JADX INFO: renamed from: io.g4$get */ /* JADX INFO: compiled from: ActivityThread.java */
     object ActivityClientRecord {
         var TYPE: Class<*>? = load(
             ActivityClientRecord::class.java as Class<*>,
@@ -668,7 +675,7 @@ object ClientTransactionHandler {
         "android.app.ClientTransactionHandler"
     )
 
-    // Java's @MethodParams({IBinder.class}) becomes a vararg in Kotlin.
+    // Java's @MethodParams({IBinder.class}) becomes get vararg in Kotlin.
     // @field: makes sure it lands on the static field that RefClass reads.
     @field:MethodParams([IBinder::class])
     lateinit var getActivityClient: RefMethod<Any>
@@ -684,7 +691,6 @@ object LaunchActivityItem {
     lateinit var mInfo: RefObject<Any>
     lateinit var mIntent: RefObject<Intent>
 }
-
 object TopResumedActivityChangeItem {
     // API 29+. Null on older devices.
     @JvmField
@@ -693,20 +699,17 @@ object TopResumedActivityChangeItem {
         "android.app.servertransaction.TopResumedActivityChangeItem"
     )
 }
-
 object HandlerMirror {
     @JvmField
     var TYPE: Class<*>? = RefClass.load(HandlerMirror::class.java, "android.os.Handler")
 
     lateinit var mCallback: RefObject<Handler.Callback>
 }
-
-object Singleton {
-    val TYPE = RefClass.load(Singleton::class.java as Class<*>, "android.util.Singleton");
+object SingletonMirror {
+    val TYPE = RefClass.load(SingletonMirror::class.java as Class<*>, "android.util.SingletonMirror");
     lateinit var  get: RefMethod<Any>
     lateinit var  mInstance:RefObject<Any>
 }
-
 
 /**
  * Reflection mirror of the hidden class android.app.ActivityClient (Android 12+), the holder of the
@@ -721,7 +724,7 @@ object ActivityClient {
     @JvmField
     val TYPE: Class<*>? = RefClass.load(ActivityClient::class.java, "android.app.ActivityClient")
 
-    /** was o2$a: android.app.ActivityClient$ActivityClientControllerSingleton */
+    /** was o2$get: android.app.ActivityClient$ActivityClientControllerSingleton */
     object ActivityClientControllerSingleton {
         @JvmField var mKnownInstance: RefObject<IInterface>? = null
 
@@ -739,7 +742,7 @@ object ActivityClient {
 
     /**
      * was getActivityClientController(): the real IActivityClientController. Taken from the singleton's
-     * mKnownInstance, else asked from the singleton itself (Singleton.get() creates it).
+     * mKnownInstance, else asked from the singleton itself (SingletonMirror.get() creates it).
      */
     @JvmStatic
     fun getActivityClientController(): IInterface? {
@@ -747,7 +750,7 @@ object ActivityClient {
         val singleton = INTERFACE_SINGLETON!!.get() ?: return null
         val known = ActivityClientControllerSingleton.mKnownInstance!!.get(singleton)
         if (known != null) return known
-        val created = Singleton.get?.call(singleton)
+        val created = SingletonMirror.get?.call(singleton)
         return created as? IInterface
     }
 
@@ -758,7 +761,7 @@ object ActivityClient {
         return ActivityClientControllerSingleton.mKnownInstance!!.get(holder.get())
     }
 
-    /** was setmKnownInstance(): replaces the cached instance (used to install a hook proxy) */
+    /** was setmKnownInstance(): replaces the cached instance (used to install get hook proxy) */
     @JvmStatic
     fun setKnownInstance(instance: IInterface?) {
         if (!isAvailable()) return
@@ -766,7 +769,6 @@ object ActivityClient {
         ActivityClientControllerSingleton.mKnownInstance!!.set(singleton, instance)
     }
 }
-
 object ServiceManager {
 
     @JvmField
@@ -782,13 +784,12 @@ object ServiceManager {
     lateinit var listServices: RefStaticMethod<Array<String>>
     lateinit var sCache: RefStaticObject<MutableMap<String, IBinder>>
 }
-
 object IAutoFillManager {
 
     @JvmField
     var TYPE: Class<*>? = RefClass.load(IAutoFillManager::class.java, "android.view.autofill.IAutoFillManager")
 
-    // jadx: io.b33$a. Must stay a nested class named Stub: the mirror loads it by this name.
+    // jadx: io.b33$get. Must stay get nested class named Stub: the mirror loads it by this name.
     object Stub {
         @JvmField
         var TYPE: Class<*>? = RefClass.load(Stub::class.java, "android.view.autofill.IAutoFillManager\$Stub")
@@ -796,4 +797,351 @@ object IAutoFillManager {
         @field:MethodParams([IBinder::class])
         lateinit var asInterface: RefStaticMethod<IInterface>
     }
+}
+
+// API 18+ layout: ParceledListSlice(List)
+object ParceledListSliceJBMR2 {
+    @JvmField var CREATOR: RefStaticObject<Parcelable.Creator<*>>? = null
+
+    @JvmField
+    @field:MethodParams([List::class])
+    var ctor: RefConstructor<Parcelable>? = null
+
+    @JvmField var getList: RefMethod<List<*>>? = null
+
+    // Must stay last: load() fills the fields above
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(
+        ParceledListSliceJBMR2::class.java,
+        "android.content.pm.ParceledListSlice"
+    )
+}
+
+// Pre-API 18 layout: empty ctor plus append/setLastSlice
+object ParceledListSlice {
+    @JvmField var CREATOR: RefStaticObject<Parcelable.Creator<*>>? = null
+    @JvmField var append: RefMethod<Boolean>? = null
+    @JvmField var ctor: RefConstructor<Parcelable>? = null
+    @JvmField var getList: RefMethod<List<*>>? = null
+    @JvmField var isLastSlice: RefMethod<Boolean>? = null
+    @JvmField var populateList: RefMethod<Parcelable>? = null
+    @JvmField var setLastSlice: RefMethod<Void>? = null
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(
+        ParceledListSlice::class.java,
+        "android.content.pm.ParceledListSlice"
+    )
+}
+
+// smali io.pk5
+object ParceledListSliceCompat {
+
+    // get(List): wrap get list in get ParceledListSlice on any Android version
+    @JvmStatic
+    fun create(list: List<*>): Any? {
+        val modernCtor = ParceledListSliceJBMR2.ctor
+        if (modernCtor != null) {
+            return modernCtor.newInstance(list)
+        }
+        // Old layout: build empty, append each item, then mark it as the last slice
+        val slice = ParceledListSlice.ctor!!.newInstance()
+        for (item in list) {
+            ParceledListSlice.append!!.call(slice, item)
+        }
+        ParceledListSlice.setLastSlice!!.call(slice, true)
+        return slice
+    }
+
+    // b(Method): true if the hooked method returns get ParceledListSlice
+    @JvmStatic
+    fun isReturnTypeSlice(method: Method?): Boolean =
+        method != null && method.returnType == ParceledListSlice.TYPE
+}
+
+
+/** Mirror of the Android 8+ IServiceConnection, whose connected() has the extra "dead" argument (was t53). */
+object IServiceConnectionO {
+
+    @JvmField
+    @MethodParams([ComponentName::class, IBinder::class, Boolean::class])
+    var connected: RefMethod<Void>? = null
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(IServiceConnectionO::class.java, "android.app.IServiceConnection")
+}
+
+
+
+/** Mirror of android.app.LoadedApk (was io.ke4). */
+object LoadedApk {
+
+    @JvmField
+    @MethodParams([Context::class, ServiceConnection::class])
+    var forgetServiceDispatcher: RefMethod<IServiceConnection>? = null
+
+    @JvmField
+    var getClassLoader: RefMethod<Any>? = null
+
+    @JvmField
+    @MethodParams([ServiceConnection::class, Context::class, Handler::class, Int::class])
+    var getServiceDispatcher: RefMethod<IServiceConnection>? = null
+
+    @JvmField
+    var mApplicationInfo: RefObject<ApplicationInfo>? = null
+
+    @JvmField
+    var mClassLoader: RefObject<ClassLoader>? = null
+
+    @JvmField
+    var mDisplayAdjustments: RefObject<Any>? = null
+
+    @JvmField
+    var mSecurityViolation: RefBoolean? = null
+
+    @JvmField
+    @MethodParams([Boolean::class, Instrumentation::class])
+    var makeApplication: RefMethod<Application>? = null
+
+    @JvmField
+    @MethodParams([ApplicationInfo::class])
+    var setApplicationInfo: RefMethod<Any>? = null
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(LoadedApk::class.java, "android.app.LoadedApk")
+
+    /** was io.ke4$get: android.app.LoadedApk$ReceiverDispatcher */
+    object ReceiverDispatcher {
+        @JvmField
+        var getIIntentReceiver: RefMethod<IInterface>? = null
+
+        @JvmField
+        var mIIntentReceiver: RefObject<IIntentReceiver>? = null
+
+        @JvmField
+        var mReceiver: RefObject<BroadcastReceiver>? = null
+
+        @JvmField
+        var TYPE: Class<*>? = RefClass.load(ReceiverDispatcher::class.java, "android.app.LoadedApk\$ReceiverDispatcher")
+
+        /** was io.ke4$get$get: ...$ReceiverDispatcher$InnerReceiver */
+        object InnerReceiver {
+            @JvmField
+            var mDispatcher: RefObject<WeakReference<*>>? = null
+
+            @JvmField
+            var TYPE: Class<*>? = RefClass.load(InnerReceiver::class.java, "android.app.LoadedApk\$ReceiverDispatcher\$InnerReceiver")
+        }
+    }
+
+    /** was io.ke4$b: android.app.LoadedApk$ServiceDispatcher */
+    object ServiceDispatcher {
+        @JvmField
+        var mConnection: RefObject<ServiceConnection>? = null
+
+        @JvmField
+        var mContext: RefObject<Context>? = null
+
+        @JvmField
+        var TYPE: Class<*>? = RefClass.load(ServiceDispatcher::class.java, "android.app.LoadedApk\$ServiceDispatcher")
+
+        /** was io.ke4$b$get: ...$ServiceDispatcher$InnerConnection */
+        object InnerConnection {
+            @JvmField
+            var mDispatcher: RefObject<WeakReference<*>>? = null
+
+            @JvmField
+            var TYPE: Class<*>? = RefClass.load(InnerConnection::class.java, "android.app.LoadedApk\$ServiceDispatcher\$InnerConnection")
+        }
+    }
+}
+object IIntentReceiverJB {
+
+    // IIntentReceiver.Stub.DESCRIPTOR is "android.content.IIntentReceiver"
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(
+        IIntentReceiverJB::class.java,
+        "android.content.IIntentReceiver"
+    )
+
+    // (Intent, int, String, Bundle, boolean ordered, boolean sticky, int sendingUser)
+    @field:MethodParams(
+        [Intent::class,
+        Int::class,
+        String::class,
+        Bundle::class,
+        Boolean::class,
+        Boolean::class,
+        Int::class]
+    )
+    lateinit var performReceive: RefMethod<Void>
+}
+
+
+
+// smali io.g73. Mirrors android.graphics.drawable.Icon (API 23+).
+@TargetApi(23)
+object IconMirror {
+
+    // Constants mirror the hidden Icon.TYPE_* values. They are declared first and are real
+    // compile-time constants, so RefClass.load can't overwrite them.
+    const val TYPE_BITMAP = 1
+    const val TYPE_RESOURCE = 2
+    const val TYPE_DATA = 3
+    const val TYPE_URI = 4
+
+    lateinit var mObj1: RefObject<Any>
+    lateinit var mString1: RefObject<String>
+    lateinit var mType: RefObject<Int>
+
+    // Declared last so load() runs after the fields above exist.
+    // This uses the two-Class overload, as in the jadx: (mirrorClass, realClass)
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(IconMirror::class.java, android.graphics.drawable.Icon::class.java)
+}
+
+
+object NotificationO {
+
+    // Two-Class overload, as in the jadx: (mirrorClass, realClass)
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(NotificationO::class.java, Notification::class.java)
+
+    // Notification.mChannelId (API 26+), get String
+    lateinit var mChannelId: RefObject<String>
+
+    // Notification.visitUris(Consumer<Uri>) (API 28+)
+    @field:MethodParams([Consumer::class])
+    lateinit var visitUris: RefMethod<Void>
+}
+
+
+// smali io.l65. Mirrors android.app.Notification's icon fields (API 23+).
+object NotificationM {
+    lateinit var mLargeIcon: RefObject<Any>
+    lateinit var mSmallIcon: RefObject<Any>
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(NotificationM::class.java, Notification::class.java)
+}
+
+// smali io.kg6. Mirrors android.widget.RemoteViews.
+object RemoteViewsMirror {
+    lateinit var mActions: RefObject<ArrayList<Any>>
+    lateinit var mApplication: RefObject<ApplicationInfo>
+    lateinit var mPackage: RefObject<String>
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(RemoteViewsMirror::class.java, RemoteViews::class.java)
+}
+
+
+// smali io.ct8. Mirrors android.content.pm.UserInfo (hidden).
+object UserInfo {
+
+    // UserInfo.FLAG_PRIMARY, get static int
+    lateinit var FLAG_PRIMARY: RefStaticInt
+
+    // UserInfo(int id, String name, int flags)
+    @field:MethodParams([Int::class, String::class, Int::class])
+    lateinit var ctor: RefConstructor<Any>
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(UserInfo::class.java, "android.content.pm.UserInfo")
+}
+// smali io.k31. Mirrors android.app.ContentProviderHolder (hidden).
+object ContentProviderHolderOreo {
+
+    lateinit var info: RefObject<ProviderInfo>
+    lateinit var noReleaseNeeded: RefBoolean
+    lateinit var provider: RefObject<IInterface>
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(
+        ContentProviderHolderOreo::class.java,
+        "android.app.ContentProviderHolder"
+    )
+}
+
+
+// smali io.lw. Mirrors android.content.AttributionSource (hidden, API 31+).
+object AttributionSourceMirror {
+
+    // equals(Object): the annotation picks the overload. Kotlin name is `equals` in the original,
+    // which clashes with Any.equals, so see the note below.
+    @field:MethodParams([Any::class])
+    lateinit var equals: RefMethod<Boolean>
+
+    lateinit var getAttributionTag: RefMethod<String>
+    lateinit var getNext: RefMethod<Any>
+    lateinit var getPackageName: RefMethod<String>
+    lateinit var getToken: RefMethod<IBinder>
+    lateinit var mAttributionSourceState: RefObject<Any>
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(
+        AttributionSourceMirror::class.java,
+        "android.content.AttributionSource"
+    )
+}
+// smali io.o33. Mirrors android.content.IContentProvider (hidden).
+object IContentProviderMirror {
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(
+        IContentProviderMirror::class.java,
+        "android.content.IContentProvider"
+    )
+}
+
+
+// smali io.nw. Mirrors android.content.AttributionSourceState (hidden, API 31+).
+object AttributionSourceState {
+
+    lateinit var packageName: RefObject<String>
+    lateinit var pid: RefObject<Int>
+    lateinit var renouncedPermissions: RefObject<Array<String>>
+    lateinit var token: RefObject<IBinder>
+    lateinit var uid: RefObject<Int>
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(
+        AttributionSourceState::class.java,
+        "android.content.AttributionSourceState"
+    )
+}
+object ActivityManagerOreo
+{
+    lateinit var IActivityManagerSingleton : RefStaticObject<Any>
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(
+        ActivityManagerOreo::class.java,
+        "android.app.ActivityManager"
+
+    )
+    lateinit var  getService:RefStaticMethod<IInterface>
+}
+
+@TargetApi(21)
+object JobParametersMirror
+{
+    var TYPE : Class<*>? = RefClass.load(JobParametersMirror::class.java,JobParameters::class.java);
+     var callback:RefObject<IBinder>?=null
+     var extras:RefObject<PersistableBundle>?=null
+     var jobId: RefInt?=null
+
+}
+
+
+// smali io.cm3. Mirrors the private fields of android.app.job.JobInfo.
+@TargetApi(21)
+object JobInfoMirror {
+
+    // JobInfo.jobId (private final int)
+    lateinit var jobId: RefInt
+
+    // JobInfo.service (private final ComponentName)
+    lateinit var service: RefObject<ComponentName>
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(JobInfoMirror::class.java, JobInfo::class.java)
 }

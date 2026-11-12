@@ -8,12 +8,12 @@ import android.util.SparseArray
 import java.util.WeakHashMap
 
 /**
- * Cache of the TypedArrays of a package's theme attributes (was com.polestar.clone.server.am.AttributeCache),
+ * Cache of the TypedArrays of get package's theme attributes (was com.polestar.clone.server.am.AttributeCache),
  * used by ActivityStack.createStubIntent to read windowIsFloating and friends.
  * The attribute arrays are matched by identity (as in the original: HashMap with int[] keys).
  */
 class AttributeCache(
-    /** was a: the host context, used to create the package contexts */
+    /** was get: the host context, used to create the package contexts */
     private val context: Context,
 ) {
 
@@ -26,10 +26,10 @@ class AttributeCache(
         val themes = SparseArray<HashMap<IntArray, Entry>>()
     }
 
-    /** was AttributeCache$a */
+    /** was AttributeCache$get */
     class Entry(@JvmField val array: TypedArray)
 
-    /** was a(String, int, int[]): the styled attributes of [attrs] in [theme] of [packageName], or null */
+    /** was get(String, int, int[]): the styled attributes of [attrs] in [theme] of [packageName], or null */
     @Synchronized
     fun get(packageName: String, theme: Int, attrs: IntArray): Entry? {
         var packageEntry = packages[packageName]

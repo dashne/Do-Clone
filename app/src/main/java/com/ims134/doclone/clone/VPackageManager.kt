@@ -1,9 +1,11 @@
 package com.ims134.doclone.clone
 
 import android.content.pm.PackageInfo
+import android.content.pm.ProviderInfo
 import android.os.DeadObjectException
 import android.os.IBinder
 import android.os.RemoteException
+import com.ims134.doclone.clone.VirtualRuntime.crash
 
 
 class VPackageManager {
@@ -96,4 +98,13 @@ class VPackageManager {
     {
         null
     }
+
+    fun getProviderInfo(i: Int, i2: Int, str: String?): ProviderInfo? {
+        try {
+            return getPackageManager()?.resolveCP(i, i2, str, null, null)
+        } catch (e: RemoteException) {
+            crash(e)
+        }
+    }
+
 }

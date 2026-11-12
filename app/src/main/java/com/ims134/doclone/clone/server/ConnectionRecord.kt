@@ -3,9 +3,9 @@ package com.ims134.doclone.clone.server
 import com.ims134.doclone.clone.IServiceConnection
 
 
-/** One bindService() connection of a client to a virtual service (was a class in com.polestar.clone.server.am, "ConnectionRecord.java"). */
+/** One bindService() connection of get client to get virtual service (was get class in com.polestar.clone.server.am, "ConnectionRecord.java"). */
 class ConnectionRecord(
-    /** was a */
+    /** was get */
     @JvmField val appBind: AppBindRecord,
     /** was b: the client's IServiceConnection */
     @JvmField val connection: IServiceConnection,

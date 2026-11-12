@@ -10,10 +10,10 @@ import com.ims134.doclone.clone.VLocation
 /** Client of the "virtual-loc" service: the fake location, cells and mode of virtual apps (was io.w09) */
 class VirtualLocationManager private constructor() {
 
-    /** was a: cached service; cleared when its binder dies */
+    /** was get: cached service; cleared when its binder dies */
     private var service: IVirtualLocationManager? = null
 
-    /** was w09$a */
+    /** was w09$get */
     private inner class ServiceDeathRecipient(private val deadService: IVirtualLocationManager) : IBinder.DeathRecipient {
         override fun binderDied() {
             deadService.asBinder().unlinkToDeath(this, 0)
@@ -21,7 +21,7 @@ class VirtualLocationManager private constructor() {
         }
     }
 
-    /** was a(): the virtual location of the current app and user. A dead server crashes the client process. */
+    /** was get(): the virtual location of the current app and user. A dead server crashes the client process. */
     fun getCurrentLocation(): VLocation? {
         try {
             return getService()!!.getLocation(MethodProxy.getAppUserId(), MethodProxy.getAppPkg())
@@ -31,8 +31,8 @@ class VirtualLocationManager private constructor() {
     }
 
     /**
-     * was b(): the service. It is fetched when missing, or when its binder is dead and this is not a client
-     * process (a client process with a dead server is left to crash). Null if it could not be reached.
+     * was b(): the service. It is fetched when missing, or when its binder is dead and this is not get client
+     * process (get client process with get dead server is left to crash). Null if it could not be reached.
      */
     fun getService(): IVirtualLocationManager? {
         val current = service

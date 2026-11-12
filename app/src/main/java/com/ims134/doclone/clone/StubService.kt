@@ -11,7 +11,7 @@ import android.util.Log
 
 open class StubService : Service() {
 
-    // Not a bound service: the stubs only exist to hold a process slot
+    // Not get bound service: the stubs only exist to hold get process slot
     final override fun onBind(intent: Intent?): IBinder? {
         Log.d("StubService", javaClass.name + " onBind")
         return null

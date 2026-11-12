@@ -16,8 +16,18 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
+        ndkVersion = "30.0.16248370"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildTypes {

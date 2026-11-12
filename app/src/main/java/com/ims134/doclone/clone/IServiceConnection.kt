@@ -11,12 +11,12 @@ import android.os.RemoteException
  * COMPILE-ONLY stub of the hidden framework interface android.app.IServiceConnection.
  * Keep it out of the APK (compileOnly module): at runtime the framework's own class is used.
  *
- * Matches the real AIDL on API 26+:  oneway void connected(in ComponentName name, IBinder service, boolean dead);
+ *not Matching the real AIDL on API 26+:  oneway void connected(in ComponentName name, IBinder service, boolean dead);
  */
 interface IServiceConnection : IInterface {
 
     @Throws(RemoteException::class)
-    fun connected(name: ComponentName?, service: IBinder?, dead: Boolean)
+    fun connected(name: ComponentName?, service: IBinder?)
 
     abstract class Stub : Binder(), IServiceConnection {
 
@@ -37,7 +37,7 @@ interface IServiceConnection : IInterface {
             if (code != TRANSACTION_connected) {
                 return super.onTransact(code, data, reply, flags)
             }
-            connected(data.readTypedObject(ComponentName.CREATOR), data.readStrongBinder(), data.readInt() != 0)
+            connected(data.readTypedObject(ComponentName.CREATOR), data.readStrongBinder())//, data.readInt() != 0)
             return true // oneway: nothing to reply
         }
 
@@ -47,13 +47,13 @@ interface IServiceConnection : IInterface {
 
             fun getInterfaceDescriptor(): String = DESCRIPTOR
 
-            override fun connected(name: ComponentName?, service: IBinder?, dead: Boolean) {
+            override fun connected(name: ComponentName?, service: IBinder?) {
                 val data = Parcel.obtain()
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
                     data.writeTypedObject(name, 0)
                     data.writeStrongBinder(service)
-                    data.writeInt(if (dead) 1 else 0)
+                    //data.writeInt(if (dead) 1 else 0)
                     remote.transact(TRANSACTION_connected, data, null, IBinder.FLAG_ONEWAY)
                 } finally {
                     data.recycle()
@@ -77,6 +77,6 @@ interface IServiceConnection : IInterface {
 
     class Default : IServiceConnection {
         override fun asBinder(): IBinder? = null
-        override fun connected(name: ComponentName?, service: IBinder?, dead: Boolean) {}
+        override fun connected(name: ComponentName?, service: IBinder?) {}
     }
 }

@@ -1,9 +1,6 @@
 package com.ims134.doclone.io
 
-import java.lang.annotation.ElementType
-import java.lang.annotation.RetentionPolicy
 import kotlin.reflect.KClass
-
 
 interface IInjector {
     @Throws(Throwable::class)
@@ -12,10 +9,12 @@ interface IInjector {
     fun isEnvBad(): Boolean
 }
 
-@Target(AnnotationTarget.FIELD)
+/** Marks Default MethodInvocationProxy; every concrete MethodProxy nested in [value] is registered by it. */
+@Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Inject(val value: KClass<*>)
 
-@Target(AnnotationTarget.FIELD)
+/** Excludes Default nested MethodProxy from the @Inject registration. */
+@Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class SkipInject

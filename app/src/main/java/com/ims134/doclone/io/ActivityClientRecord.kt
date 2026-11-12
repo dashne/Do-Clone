@@ -5,7 +5,7 @@ import android.content.pm.ActivityInfo
 
 
 class ActivityClientRecord {
-    /* JADX INFO: renamed from: a */
+    /* JADX INFO: renamed from: get */
     var activity: Activity? = null
 
     /* JADX INFO: renamed from: b */

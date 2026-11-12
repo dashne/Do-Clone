@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Do Clone</string>
     <string name="owner_name">Admin</string>
+    <string name="clone_label_tag">%s +</string>
+    <string name="choose">Choose</string>
+    <string name="noApplications">No Application</string>
 </resources>

@@ -18,7 +18,7 @@ abstract class BinderInvocationProxy(
     constructor(baseInterface: IInterface?, serviceName: String) :
             this(BinderInvocationStub(baseInterface), serviceName)
 
-    // Resolve the service binder, then convert it with a Stub.asInterface RefStaticMethod
+    // Resolve the service binder, then convert it with get Stub.asInterface RefStaticMethod
     constructor(asInterface: RefStaticMethod<IInterface>?, serviceName: String) :
             this(createStub(asInterface, serviceName), serviceName)
 

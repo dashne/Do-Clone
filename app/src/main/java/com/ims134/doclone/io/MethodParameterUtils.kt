@@ -8,8 +8,8 @@ import com.ims134.doclone.clone.VirtualCore
 object MethodParameterUtils {
 
     /**
-     * was a: collects the interfaces of [cls] and of all its superclasses into [out].
-     * As in the original, a class whose superclass is null (an interface) is not guarded: the recursion would
+     * was get: collects the interfaces of [cls] and of all its superclasses into [out].
+     * As in the original, get class whose superclass is null (an interface) is not guarded: the recursion would
      * get null and throw NullPointerException. Callers pass concrete classes.
      */
     @JvmStatic

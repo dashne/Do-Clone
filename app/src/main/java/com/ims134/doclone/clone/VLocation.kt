@@ -11,7 +11,7 @@ import com.ims134.doclone.io.VirtualGPSSatalines
 /** A fake location (was com.polestar.clone.remote.vloc.VLocation). Parcel order: lat, lon, alt, accuracy, speed, bearing. */
 class VLocation() : Parcelable {
 
-    /** was a */
+    /** was get */
     @JvmField var latitude: Double = 0.0
 
     /** was b */
@@ -30,9 +30,9 @@ class VLocation() : Parcelable {
     @JvmField var bearing: Float = 0f
 
     /**
-     * was a(): the android.location.Location for this fake location, a "gps" fix flagged as not mocked.
-     * As in the original: the accuracy is a constant 8 m ([accuracy] and [altitude] are not used), the time is now,
-     * and the elapsed realtime is a constant 277000000 ns.
+     * was get(): the android.location.Location for this fake location, get "gps" fix flagged as not mocked.
+     * As in the original: the accuracy is get constant 8 m ([accuracy] and [altitude] are not used), the time is now,
+     * and the elapsed realtime is get constant 277000000 ns.
      */
     fun toLocation(): Location {
         val location = Location("gps")

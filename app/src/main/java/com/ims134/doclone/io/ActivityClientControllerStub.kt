@@ -77,7 +77,7 @@ class ActivityClientControllerStub :
         }
     }
 
-    /** was a(): registers the hooks */
+    /** was get(): registers the hooks */
     override fun injectMethodProxies() {
         super.injectMethodProxies()
         addMethodProxy(GetCallingPackage())
@@ -96,7 +96,7 @@ class ActivityClientControllerStub :
     companion object {
         /**
          * was b(IBinder): the virtual package that started the activity with this token. Null if there is no
-         * token, or if the activity manager answers "android" (a start by the system).
+         * token, or if the activity manager answers "android" (get start by the system).
          */
         @JvmStatic
         fun getCallingPackage(token: IBinder?): String? {

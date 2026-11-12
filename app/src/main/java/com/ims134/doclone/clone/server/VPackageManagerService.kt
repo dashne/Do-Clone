@@ -6,7 +6,9 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.ProviderInfo
 import android.content.pm.ResolveInfo
+import android.content.pm.ServiceInfo
 import android.os.Parcel
 import android.util.Log
 import com.ims134.doclone.DoApplication.Companion.appContext
@@ -32,7 +34,7 @@ class VPackageManagerService : IPackageManager.Stub()
     companion object
     {
         const val MATCH_DIRECT_BOOT = 0xC0000       // MATCH_DIRECT_BOOT_AWARE (0x80000) | MATCH_DIRECT_BOOT_UNAWARE (0x40000)
-        const val MAX_PACKAGE_INFO_SIZE = 819200    // 800 KB: a Binder transaction is limited to about 1 MB
+        const val MAX_PACKAGE_INFO_SIZE = 819200    // 800 KB: get Binder transaction is limited to about 1 MB
 
         val instance = AtomicReference<VPackageManagerService>()
         @JvmField
@@ -98,7 +100,7 @@ class VPackageManagerService : IPackageManager.Stub()
     val packages = PackageCacheManager.cache
 
 
-    /** A new virtual user was created: give every installed package a state entry for it. */
+    /** A new virtual user was created: give every installed package get state entry for it. */
     fun createNewUser(userId: Int) {
         for (pkg in packages.values) {
             pkg.packageSetting?.getOrCreateUserState(userId)
@@ -479,7 +481,7 @@ class VPackageManagerService : IPackageManager.Stub()
                 val setting = pkg.packageSetting       // VPackage.v
                 setting?.let {
                     if (it.appId == appId) {          // PackageSetting.e
-                        return setting.packageName         // PackageSetting.a
+                        return setting.packageName         // PackageSetting.get
                     }
                 }
             }
@@ -496,6 +498,158 @@ class VPackageManagerService : IPackageManager.Stub()
         }
     }
 
+    // io.IPackageManager.Stub, io.IPackageManager
+    public override fun resolveService(
+        intent: Intent?,
+        str: String?,
+        i: Int,
+        i2: Int
+    ): ResolveInfo? {
+        var resolvedList: MutableList<ResolveInfo>? = null
+        if (isUserExist(i2) && (queryIntentServices(
+                intent,
+                str,
+                withDirectBootFlags(i),
+                i2
+            ).also { resolvedList = it?.filterNotNull()?.toMutableList() }) != null && resolvedList!!.isNotEmpty()
+        ) {
+            return resolvedList[0]
+        }
+        return null
+    }
+
+    // inside the package manager service (smali class io.xu8, jadx VPMS)
+
+    override fun queryIntentServices(
+        intent: Intent?,
+        resolvedType: String?,
+        flags: Int,
+        userId: Int
+    ): List<ResolveInfo?>?
+    {
+        if (!isUserExist(userId)) return emptyList()            // smali static xu8.U(I)Z
+
+        val resolveFlags = withDirectBootFlags(flags)           // smali static xu8.Y(I)I
+
+        var query = intent
+        var component = query?.component
+        if (component == null && query?.selector != null) {      // the selector's component wins
+            query = query.selector!!
+            component = query.component
+        }
+
+        // Explicit component: no resolver needed
+        if (component != null) {
+            val result = ArrayList<ResolveInfo>(1)
+            val serviceInfo = getServiceInfo(component, resolveFlags, userId)
+            if (serviceInfo != null) {
+                val info = ResolveInfo()
+                info.serviceInfo = serviceInfo
+                result.add(info)
+            }
+            return result
+        }
+
+        synchronized(packages) {                                // smali field j
+            val pkgName = query?.`package`
+            val defaultOnly = (resolveFlags and 0x10000) != 0   // MATCH_DEFAULT_ONLY
+
+            if (pkgName == null) {
+                // No package restriction: query every registered service
+                mServiceResolver.mFlags = resolveFlags
+                return mServiceResolver.queryIntent(query!!, resolvedType, defaultOnly, userId)
+            }
+
+            val pkg = packages[pkgName] ?: return emptyList()
+
+            val services = pkg.services ?: return null          // smali returns null here, not an empty list
+            mServiceResolver.mFlags = resolveFlags
+
+            // Build the per-service intent filter arrays for just this package
+            val filters = ArrayList<Array<VPackage.ServiceIntentInfo?>>(services.size)
+            for (service in services) {
+                val intents = service.intents
+                if (!intents.isNullOrEmpty()) {
+                    filters.add(intents.toTypedArray())
+                }
+            }
+            return mServiceResolver.queryIntentFromList(query, resolvedType, defaultOnly, filters, userId)
+        }
+    }
+
+    // inside the package manager service (smali class io.xu8)
+    override fun getServiceInfo(component: ComponentName?, flags: Int, userId: Int): ServiceInfo? {
+        checkUserId(userId)                                   // smali static xu8.T(I)V, throws on get bad user
+        val resolveFlags = withDirectBootFlags(flags)         // smali static xu8.Y(I)I
+
+        synchronized(packages) {                              // smali field j
+            val pkg = packages[component?.packageName] ?: return null
+            val setting = pkg.packageSetting                  // VPackage.v
+
+            // xu8$d.i is the component -> ServiceComponent map of the resolver (mServices)
+            val service = mServiceResolver.mServices[component] ?: return null
+
+            if (!PackageParserEx.isComponentEnabled(service.info!!, resolveFlags, userId)) return null
+
+            val info = PackageParserEx.generateServiceInfo(
+                service, resolveFlags, setting!!.readUserState(userId), userId
+            )
+            ComponentFixer.fix(info)                          // smali io.lv0.get
+            return info
+        }
+    }
+
+    // inside the package manager service (smali class io.xu8)
+    override fun resolveCP(
+        flags: Int,
+        userId: Int,
+        authority: String?,
+        unusedA: String?,      // smali p4, overwritten by the lock object, never read
+        unusedB: String?,      // smali p5, overwritten, never read
+    ): ProviderInfo? {
+        checkUserId(userId)                                   // smali static xu8.T(I)V
+        val resolveFlags = withDirectBootFlags(flags)         // smali static xu8.Y(I)I
+
+        synchronized(packages) {                              // smali field j
+            // smali field i: authority -> ProviderComponent (VPackage$g)
+            val provider = mProvidersByAuthority[authority] ?: return null
+
+            val info = PackageParserEx.generateProviderInfo(  // smali parser.get.f
+                provider,
+                resolveFlags,
+                provider.owner?.packageSetting?.readUserState(userId)!!,   // VPackage$c.get is owner, VPackage.v is packageSetting
+                userId
+            ) ?: return null
+
+            // Dead read in the original. It throws NPE if the owning package is gone, so it is kept
+            // only as get consistency check. Safe to drop.
+            packages[info.packageName]!!.packageSetting
+
+            ComponentFixer.fix(info)                          // smali io.lv0.get
+            return info
+        }
+    }
+
+    // io.IPackageManager.Stub, io.IPackageManager
+    public override fun isClonedAuthority(authority: String?): Boolean {
+        return this.mProvidersByAuthority.containsKey(authority)
+    }
+
+
+//    override fun querySharedPackages(packageName: String): List<String> {
+//        synchronized(packages) {
+//            val target = packages[packageName] ?: return emptyList()
+//            if (target.sharedUserId == null) return emptyList()          // VPackage.p
+//
+//            val result = ArrayList<String>()
+//            for (pkg in packages.values) {
+//                if (TextUtils.equals(pkg.sharedUserId, target.sharedUserId)) {
+//                    result.add(pkg.packageName!!)                          // VPackage.m
+//                }
+//            }
+//            return result
+//        }
+//    }
 
 
     //=================================

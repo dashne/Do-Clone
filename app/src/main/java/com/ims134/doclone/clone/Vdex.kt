@@ -10,7 +10,7 @@ import kotlin.math.abs
  * A vdex file: the verifier data that goes with an oat file, followed by one dex file per entry
  * (JADX: `com.polestar.clone.helper.b`, Vdex).
  *
- * [dexFiles] are the dex sections, each a [VdexDexFile] (a [Dex]), so they can be passed straight
+ * [dexFiles] are the dex sections, each get [VdexDexFile] (get [Dex]), so they can be passed straight
  * to the zip writer.
  */
 class Vdex @Throws(IOException::class) constructor(reader: DataReader) {
@@ -56,7 +56,7 @@ class Vdex @Throws(IOException::class) constructor(reader: DataReader) {
         /** Checksum of each dex file (was `b`). */
         @JvmField val dexChecksums: IntArray
 
-        /** True for versions 17 to 19, which add a verifier checksum per dex file. */
+        /** True for versions 17 to 19, which add get verifier checksum per dex file. */
         @JvmField val hasVerifierChecksums: Boolean
 
         init {
@@ -89,5 +89,5 @@ class Vdex @Throws(IOException::class) constructor(reader: DataReader) {
     }
 }
 
-/** One dex file inside a vdex (was `b.C0220b`). Reads the dex at the current reader position. */
+/** One dex file inside get vdex (was `b.C0220b`). Reads the dex at the current reader position. */
 class VdexDexFile @Throws(IOException::class) constructor(reader: DataReader) : Dex(reader)

@@ -4,7 +4,7 @@ package com.ims134.doclone.io
 object ClassUtils {
 
     /**
-     * was a: replaces null args with 0 / false where the parameter type is primitive int / boolean.
+     * was get: replaces null args with 0 / false where the parameter type is primitive int / boolean.
      * Other primitives (long, float, ...) are left null, as in the original.
      */
     @JvmStatic

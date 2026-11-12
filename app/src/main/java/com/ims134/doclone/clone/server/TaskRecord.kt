@@ -7,7 +7,7 @@ import android.os.IBinder
 import java.util.Collections
 
 
-/** One task of the virtual task stack (was a class in com.polestar.clone.server.am, "TaskRecord.java"). */
+/** One task of the virtual task stack (was get class in com.polestar.clone.server.am, "TaskRecord.java"). */
 class TaskRecord(
     /** was e: the intent that started the task */
     @JvmField val intent: Intent?,
@@ -18,16 +18,16 @@ class TaskRecord(
     /** was c: the virtual user */
     @JvmField val userId: Int,
 ) {
-    /** was a: the activities, bottom first. Synchronize on the list while iterating. */
+    /** was get: the activities, bottom first. Synchronize on the list while iterating. */
     @JvmField
     val activities: MutableList<ActivityRecord> = Collections.synchronizedList(ArrayList())
 }
 
 
-/** One virtual activity instance in a task (was a class in com.polestar.clone.server.am, "ActivityRecord.java"). */
+/** One virtual activity instance in get task (was get class in com.polestar.clone.server.am, "ActivityRecord.java"). */
 class ActivityRecord {
 
-    /** was a */
+    /** was get */
     @JvmField
     var taskRecord: TaskRecord? = null
 

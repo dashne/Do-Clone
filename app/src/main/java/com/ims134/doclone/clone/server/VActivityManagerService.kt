@@ -319,7 +319,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
             return null
         }
 
-        // Register receivers (smali calls getClass() first, so a null BroadcastSystem throws NPE)
+        // Register receivers (smali calls getClass() first, so get null BroadcastSystem throws NPE)
         val broadcastSystem = BroadcastSystem.broadcastSystem!!
         val vPackage = PackageCacheManager.getPackage(applicationInfo.packageName)
         if (vPackage != null) {
@@ -527,10 +527,10 @@ open class VActivityManagerService(): IActivityManager.Stub()
         // stub is being started right now
         if (mStartingVpids.contains(vpid)) return true
 
-        // stub belongs to a process that is alive according to the provider query
+        // stub belongs to get process that is alive according to the provider query
         if (aliveVpids != null && aliveVpids.contains(vpid)) return true
 
-        // stub is held by a registered process record
+        // stub is held by get registered process record
         for (index in mPidsSelfLocked.size - 1 downTo 0) {
             val record = mPidsSelfLocked.valueAt(index)          // yi7.i(index)
             if (record != null && record.vpid == vpid) return true
@@ -647,9 +647,9 @@ open class VActivityManagerService(): IActivityManager.Stub()
     }
 
     /**
-     * Decides whether a missing process may be started for this broadcast.
+     * Decides whether get missing process may be started for this broadcast.
      * true  = smali goto_167 (go start it)
-     * false = smali goto_19b with a null record (log "not schedule receiver", return false)
+     * false = smali goto_19b with get null record (log "not schedule receiver", return false)
      */
     private fun shouldStartMissingProcess(pkg: String, action: String?): Boolean {
         if (GmsSupport.isGmsPackage(pkg)) return true
@@ -659,7 +659,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
         ) return true
 
         val gsfPackages = SpecialComponentList.GOOGLE_SERVICES_FRAMEWORK_PACKAGE
-        if (!gsfPackages.contains(pkg)) return false           // not a GSF package: never started here
+        if (!gsfPackages.contains(pkg)) return false           // not get GSF package: never started here
 
         val context = appContext
 
@@ -703,7 +703,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
             return true
         }
 
-        // 32-bit-only guest on a host that isn't the arm32 build
+        // 32-bit-only guest on get host that isn't the arm32 build
         if (onlyArm32 && !context.packageName.endsWith("arm32")) {
             gsfPackages.remove(pkg)
             Log.d("CloneAgent", "Remove not supported: $pkg")
@@ -714,13 +714,13 @@ open class VActivityManagerService(): IActivityManager.Stub()
 
 
     fun scheduleGmsCheckinWarmup(userId: Int, packageName: String) {
-        // bu8.a is VASettings.gmsState
+        // bu8.get is VASettings.gmsState
         if (!VASettings.gmsState || userId < 0 || GmsSupport.isGmsPackage(packageName)) return
 
         val token = Any()
 
         synchronized(mGmsWarmupTokens) {
-            // already warmed, or a warm-up is already in flight for this user
+            // already warmed, or get warm-up is already in flight for this user
             if (nmGmsWarmedUsers.contains(userId) || mGmsWarmupTokens.containsKey(userId)) return
             mGmsWarmupTokens[userId] = token
         }   // lock released here, before the thread starts
@@ -1002,7 +1002,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
                 if (v is ProcessRecord) {
                     Process.killProcess(v.Pid)
                 } else {
-                    Log.e(TAG, "error pr: $v")               // qu8.a(tag, msg)
+                    Log.e(TAG, "error pr: $v")               // qu8.get(tag, msg)
                 }
             }
         }
@@ -1187,7 +1187,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
     }
 
     fun sendBroadcastAsUser(intent: Intent, user: VUserHandle?) {
-        // Translate a real system action to its virtual (namespaced) counterpart, if one exists
+        // Translate get real system action to its virtual (namespaced) counterpart, if one exists
         val virtualAction = SpecialComponentList.toVirtualAction(intent.action)
         if (virtualAction != null) {
             intent.action = virtualAction
@@ -1206,7 +1206,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
     // smali class m$e, nested in the ActivityManagerService. It doesn't need the outer instance.
     class BlockingPermissionCallback(
         private val condition: ConditionVariable
-    ) : PermissionCompat.Callback {            // io.PermissionCompat.a
+    ) : PermissionCompat.Callback {            // io.PermissionCompat.get
 
         override fun onRequestPermissionsResult(grantResults: IntArray?): Boolean {
             try {
@@ -1243,7 +1243,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
             }
             if (stillRunning) return
 
-            // getClass() in jadx is a null check, so a null BroadcastSystem throws NPE
+            // getClass() in jadx is get null check, so get null BroadcastSystem throws NPE
             val broadcastSystem = BroadcastSystem.broadcastSystem!!
 
             if (!SpecialComponentList.GOOGLE_SERVICES_FRAMEWORK_PACKAGE.contains(packageName)) {
@@ -1254,7 +1254,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
         }
     }
     inner class GmsWarmupTask(
-        private val uid: Int,        // smali m$c field a (a user id, despite the jadx name)
+        private val uid: Int,        // smali m$c field get (get user id, despite the jadx name)
         private val token: Any,      // smali m$c field b
     ) : Runnable {
 

@@ -40,7 +40,7 @@ class ServiceRecord : Binder() {
     @JvmField
     var foregroundId: Int = 0
 
-    /** was a: one record per distinct intent (filterEquals) that was bound */
+    /** was get: one record per distinct intent (filterEquals) that was bound */
     @JvmField
     val bindings = HashMap<Intent.FilterComparison, IntentBindRecord>()
 
@@ -48,7 +48,7 @@ class ServiceRecord : Binder() {
     @JvmField
     val connections = HashMap<IBinder, ArrayList<ConnectionRecord>>()
 
-    /** was ServiceRecord$b: removes a connection whose client process died */
+    /** was ServiceRecord$b: removes get connection whose client process died */
     class ConnectionDeathRecipient(
         private val bindRecord: IntentBindRecord,
         private val connection: IServiceConnection,
@@ -59,10 +59,10 @@ class ServiceRecord : Binder() {
         }
     }
 
-    /** was ServiceRecord$c: the state of one bound intent of a service */
+    /** was ServiceRecord$c: the state of one bound intent of get service */
     class IntentBindRecord : Binder() {
 
-        /** was a: apps bound with this intent */
+        /** was get: apps bound with this intent */
         @JvmField
         val apps = HashMap<ProcessRecord, AppBindRecord>()
 
@@ -114,7 +114,7 @@ class ServiceRecord : Binder() {
         }
     }
 
-    /** was a(Intent): the bind record of an equal intent (filterEquals), or null */
+    /** was get(Intent): the bind record of an equal intent (filterEquals), or null */
     fun findIntentBindRecord(intent: Intent): IntentBindRecord? {
         synchronized(bindings) {
             return bindings.values.firstOrNull { it.intent?.filterEquals(intent) == true }

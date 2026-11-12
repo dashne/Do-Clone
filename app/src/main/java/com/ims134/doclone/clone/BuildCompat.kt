@@ -23,6 +23,10 @@ object BuildCompat {
     fun sdk33OrLater(): Boolean {
         return Build.VERSION.SDK_INT >= 33
     }
+    fun sdk30OrLater(): Boolean {
+        return Build.VERSION.SDK_INT >= 30
+    }
+
 
     /**
      * True on Android O (API 26) or later, including the O Developer Preview

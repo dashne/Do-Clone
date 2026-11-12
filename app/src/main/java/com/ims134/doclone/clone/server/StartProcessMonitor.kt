@@ -4,7 +4,7 @@ import android.os.Handler
 
 class StartProcessMonitor {
 
-    // k$a. Nested (not inner): the smali calls Object.<init>() directly, with no outer reference.
+    // k$get. Nested (not inner): the smali calls Object.<init>() directly, with no outer reference.
     class ProcessKey
     {
         @JvmField var vuid: Int = 0
@@ -22,10 +22,10 @@ class StartProcessMonitor {
         // values, used as lock objects, and used as Handler message objects.
     }
 
-    @JvmField val keyCache = HashMap<String, ProcessKey>()   // a
+    @JvmField val keyCache = HashMap<String, ProcessKey>()   // get
     lateinit var handler: Handler                             // b
 
-    // smali a(I, String)
+    // smali get(I, String)
     @Synchronized
     fun stopMonitor(vuid: Int, processName: String) {
         handler.removeMessages(100, getKey(vuid, processName))

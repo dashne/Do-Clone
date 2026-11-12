@@ -94,10 +94,10 @@ class VAppManagerService : IAppManager.CloneAppManager() {
         // Keep setWorldReadable() and the constants (TAG, LOCATION_PROVIDER_PKG, UID_LIST_INI, ...).
         //
         // Names follow the readable decompile. This needs these renames elsewhere:
-        //   Oat:        field `a` -> `dexes`
-        //   Elf:        field `c` -> `dataReader`; Section `a` -> `sectionNameOffset`;
-        //               Section `a()` -> `getSectionContentOffset()`
-        //   OatHelper:  `a` -> `oatArches`, `b` -> `vdexOatArches`; public
+        //   Oat:        field `get` -> `dexes`
+        //   Elf:        field `c` -> `dataReader`; Section `get` -> `sectionNameOffset`;
+        //               Section `get()` -> `getSectionContentOffset()`
+        //   OatHelper:  `get` -> `oatArches`, `b` -> `vdexOatArches`; public
         //               `writeDexEntry(zip: ZipOutputStream, index: Int, dex: Dex)`
         //   Vdex:       move VdexDexFile inside Vdex as `Vdex.VdexDexFile`
         //   VAppManagerService: `uidAllocator` -> `uidSystem`; `sInstance` -> `instance`
