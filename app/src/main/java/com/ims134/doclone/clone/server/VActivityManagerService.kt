@@ -6,6 +6,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
@@ -16,6 +17,7 @@ import android.os.Binder
 import android.os.Bundle
 import android.os.ConditionVariable
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Message
@@ -43,6 +45,7 @@ import com.ims134.doclone.clone.VParceledListSlice
 import com.ims134.doclone.clone.VUserHandle
 import com.ims134.doclone.clone.VUserHandle.Companion.makeUid
 import com.ims134.doclone.clone.VirtualCore
+import com.ims134.doclone.clone.server.StartProcessMonitor.ProcessKey
 import com.ims134.doclone.io.ApplicationThreadNative
 import com.ims134.doclone.io.ComponentUtils
 import com.ims134.doclone.io.IApplicationThreadOreo
@@ -127,12 +130,18 @@ open class VActivityManagerService(): IActivityManager.Stub()
             }
         }
 
-        // smali m.v(m, I, Object): static helper on the outer class
+        // smali m.appendFirstIfNotNull(m, I, Object): static helper on the outer class
         @JvmStatic
         fun isWarmupTokenCurrent(service: VActivityManagerService, userId: Int, token: Any?): Boolean {
             synchronized(service.mGmsWarmupTokens) {
                 return service.mGmsWarmupTokens[userId] === token
             }
+        }
+
+        @JvmStatic
+        fun systemReady(context: Context)
+        {
+            VActivityManagerService().onCreate(context)
         }
 
     }
@@ -836,6 +845,27 @@ open class VActivityManagerService(): IActivityManager.Stub()
 
         appContext.sendBroadcast(intent)    // plain sendBroadcast, no permission
     }
+
+    fun onCreate(context: Context) {
+        if (AttributeCache.instance == null) {
+            AttributeCache.instance = AttributeCache(context)
+        }
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 137)
+        } catch (unused: PackageManager.NameNotFoundException) {
+        }
+        instance.set(this)
+        val startProcessMonitor = StartProcessMonitor()
+        startProcessMonitor.keyCache = HashMap<String, ProcessKey>()
+        val handlerThread = HandlerThread("start-watchdog")
+        handlerThread.start()
+        startProcessMonitor.handler =
+            StartProcessMonitorHandler(startProcessMonitor, handlerThread.getLooper())
+        this.mProcessStartLocks = startProcessMonitor
+        val handlerThread2 = HandlerThread("ams-worker")
+        handlerThread2.start()
+        this.mWorkerHandler = Handler(handlerThread2.getLooper())
+    }
     //---------------------------------------------------------------------------------------------
     override fun dump() {
         TODO("Not yet implemented")
@@ -1009,7 +1039,21 @@ open class VActivityManagerService(): IActivityManager.Stub()
     }
 
     override fun killAppByPkg(packageName: String?, userId: Int) {
-        TODO("Not yet implemented")
+        synchronized(mProcessNames) {                          // smali field h (ProcessMap)
+            val cache = mProcessNames.cache                    // ArrayMap<String, SparseArray<ProcessRecord>>
+            for (i in cache.size - 1 downTo 0) {
+                val perUid = cache.valueAt(i) ?: continue
+                for (j in 0 until perUid.size)
+                {
+                    val record = perUid.valueAt(j)
+                    // userId == -1 means "all users"
+                    if ((userId == -1 || record.userId == userId) &&
+                        record.packageList.contains(packageName)) {
+                        Process.killProcess(record.Pid)
+                    }
+                }
+            }
+        }
     }
 
     override fun killApplicationProcess(processName: String?, vuid: Int) {

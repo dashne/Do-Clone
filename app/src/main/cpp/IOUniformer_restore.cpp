@@ -282,13 +282,13 @@ static void whiteList(JNIEnv *env, jclass, jstring path) {
 static const char *kNativeEngineClass = "com/ims134/doclone/clone/NativeEngine";
 
 // The original table has 11 entries, registered against com/polestar/clone/client/NativeEngine. The ones not recovered yet:
-//   nativeHook "(II)V" (hook_io), nativeCheck "(Ljava/lang/Object;)I" (check_signature_sha1), nativeReadOnly "(Ljava/lang/String;)V",
+//   nativeHook "(II)stripPackagePrefix" (hook_io), nativeCheck "(Ljava/lang/Object;)I" (check_signature_sha1), nativeReadOnly "(Ljava/lang/String;)stripPackagePrefix",
 //   nativeHookNative, nativeGetDeclaredMethod, nativeGetMethod, nativeGetDeclaredField.
 static JNINativeMethod kMethods[] = {
-        {"nativeRedirect",              "(Ljava/lang/String;Ljava/lang/String;)V", (void *) redirect},
+        {"nativeRedirect",              "(Ljava/lang/String;Ljava/lang/String;)stripPackagePrefix", (void *) redirect},
         {"nativeGetRedirectedPath",     "(Ljava/lang/String;)Ljava/lang/String;",  (void *) query},
         {"nativeRestoreRedirectedPath", "(Ljava/lang/String;)Ljava/lang/String;",  (void *) restore},
-        {"nativeWhiteList",             "(Ljava/lang/String;)V",                   (void *) whiteList},
+        {"nativeWhiteList",             "(Ljava/lang/String;)stripPackagePrefix",                   (void *) whiteList},
 };
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {

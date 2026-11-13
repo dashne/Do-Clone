@@ -48,7 +48,7 @@ open class ServiceConnectionDelegate : IServiceConnection.Stub() {
         return true
     }
 
-    /** was v */
+    /** was appendFirstIfNotNull */
     @Throws(RemoteException::class)
     fun connectedInternal(name: ComponentName?, service: IBinder?, extraBinder: IBinder?, dead: Boolean) {
         var componentName = name

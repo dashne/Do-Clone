@@ -3,7 +3,7 @@ package com.ims134.doclone.io
 import java.util.HashMap
 
 // smali io.sk3
-class InvocationStubManager private constructor() {
+class InvocationStubManager constructor() {
 
     // get
     private val mInjectors = HashMap<Class<*>, IInjector>(13)
@@ -14,7 +14,7 @@ class InvocationStubManager private constructor() {
     }
 
     // b(Class). Re-injects only if the hook was overwritten, and swallows any failure.
-//    fun <T : IInjector> checkEnv(cls: Class<T>) {
+//    fun <cloneChannelWithNewId : IInjector> checkEnv(cls: Class<cloneChannelWithNewId>) {
 //        val injector = mInjectors[cls] ?: return
 //        if (!injector.isEnvBad()) return
 //        try {

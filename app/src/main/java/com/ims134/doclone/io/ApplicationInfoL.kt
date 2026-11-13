@@ -1145,3 +1145,29 @@ object JobInfoMirror {
     @JvmField
     var TYPE: Class<*>? = RefClass.load(JobInfoMirror::class.java, JobInfo::class.java)
 }
+object ITimeDetectorService {
+    val TYPE = RefClass.load( ITimeDetectorService::class.java, "android.app.timedetector.ITimeDetectorService");
+
+    /* JADX INFO: renamed from: io.l63$a */
+    /* JADX INFO: compiled from: ITimeDetectorService.java */
+    object Stub
+    {
+        val TYPE = RefClass.load( Stub::class.java, "android.app.timedetector.ITimeDetectorService$Stub");
+
+        @MethodParams([IBinder::class])
+        var  asInterface:RefStaticMethod<IInterface>?=null
+    }
+}
+
+object ITimeZoneDetectorService {
+    val TYPE = RefClass.load( ITimeZoneDetectorService::class.java, "android.app.timezonedetector.ITimeZoneDetectorService");
+
+
+    object Stub
+    {
+        val TYPE = RefClass.load( Stub::class.java, "android.app.timezonedetector.ITimeZoneDetectorService$Stub");
+
+        @MethodParams([IBinder::class])
+        var  asInterface:RefStaticMethod<IInterface>?=null
+    }
+}

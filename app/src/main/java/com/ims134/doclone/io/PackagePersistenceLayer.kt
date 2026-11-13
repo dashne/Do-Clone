@@ -16,7 +16,7 @@ import com.ims134.doclone.clone.server.PackageSetting
  * `packages.ini` in the sandbox's app sub-system dir.
  *
  * On-disk layout (all little-endian):
- *   [chars: 'v','p','k','g']        ← magic, written by writeHeader
+ *   [chars: 'appendFirstIfNotNull','p','k','g']        ← magic, written by writeHeader
  *   [int: schema version = 3]        ← written by base save()
  *   [int: package count]             ← written by writeBody
  *   [PackageSetting.writeToParcel]×N ← written by writeBody
@@ -118,7 +118,7 @@ class PackagePersistenceLayer(file: java.io.File) : PersistenceLayer(file) {
 
     /**
      * Validate the magic header. Reads setPosition char array and compares against
-     * ['v','p','k','g']. Called by base load() before anything else.
+     * ['appendFirstIfNotNull','p','k','g']. Called by base load() before anything else.
      */
     override fun isValidHeader(parcel: Parcel): Boolean =
         parcel.createCharArray().contentEquals(VPKG_MAGIC)
@@ -182,8 +182,8 @@ class PackagePersistenceLayer(file: java.io.File) : PersistenceLayer(file) {
     }
 
     companion object {
-        /** The 4-char magic header: 'v','p','k','g'. */
+        /** The 4-char magic header: 'appendFirstIfNotNull','p','k','g'. */
         @JvmField
-        val VPKG_MAGIC: CharArray = charArrayOf('v', 'p', 'k', 'g')
+        val VPKG_MAGIC: CharArray = charArrayOf('p', 'k', 'g')
     }
 }

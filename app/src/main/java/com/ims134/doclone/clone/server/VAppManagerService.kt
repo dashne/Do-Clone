@@ -606,7 +606,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
 
 
     override fun isAppInstalled(pkg: String?): Boolean {
-        return pkg.isNullOrEmpty() && PackageCacheManager.cache.containsKey(pkg)
+        return !pkg.isNullOrEmpty() && PackageCacheManager.cache.containsKey(pkg)
     }
 
     // io.IAppManager.CloneAppManager, io.IAppManager
@@ -693,7 +693,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
                 scanningApp = true
                 if (!File(VEnvironment.getOrCreateAppSubSystemFile(), "packages.ini").exists()) {
                     Log.d("fu8", "not found package list file. Recover!")
-                    recoverPackages() // was W()
+                    recoverPackages() // was toVirtualChannel()
                 } else if (!packagePersistenceLayer.load()) {
                     Log.d("fu8", "Failed to parse package list file. Recover!")
                     recoverPackages()
@@ -928,7 +928,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
         }
 
         if (oldPackage != null) PackageCacheManager.removePackage(pkgName)
-        getDirPermission(apkFile)     // was fu8.v(File): not seen; probably makes the apk read-only (needed for dex loading on API 34+)
+        getDirPermission(apkFile)     // was fu8.appendFirstIfNotNull(File): not seen; probably makes the apk read-only (needed for dex loading on API 34+)
 
         // ---- package setting ----
         val setting = oldSetting ?: PackageSetting().also { it.flags = 4 }

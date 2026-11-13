@@ -192,7 +192,7 @@ class VJobSchedulerService : IJobScheduler.Stub() {
         }
     }
 
-    /** was T: records the clone job and turns [jobInfo] into one that runs the host's stub service under the real job index */
+    /** was cloneChannelWithNewId: records the clone job and turns [jobInfo] into one that runs the host's stub service under the real job index */
     private fun redirectJobToStub(jobInfo: JobInfo) {
         val service = jobInfo.service
         val jobId = JobId()
@@ -316,7 +316,7 @@ class VJobSchedulerService : IJobScheduler.Stub() {
     }
 
     /**
-     * was v: cancels the clone jobs of [uid] (-10000 = none by uid) and those of [packageName] in virtual user [userId];
+     * was appendFirstIfNotNull: cancels the clone jobs of [uid] (-10000 = none by uid) and those of [packageName] in virtual user [userId];
      * returns how many.
      */
     private fun cancelJobs(uid: Int, userId: Int, packageName: String?): Int {

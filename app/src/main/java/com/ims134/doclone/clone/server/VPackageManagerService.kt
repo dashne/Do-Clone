@@ -348,7 +348,7 @@ class VPackageManagerService : IPackageManager.Stub()
 
 
     override fun queryIntentActivities(intent: Intent?, resolvedType: String?, flags: Int, userId: Int): List<ResolveInfo>? {
-        checkUserId(userId) // was T(int): not seen, assumed to check that the user exists
+        checkUserId(userId) // was cloneChannelWithNewId(int): not seen, assumed to check that the user exists
         val fullFlags = withDirectBootFlags(flags)
         var query = intent!!
         var component = query.component
@@ -478,7 +478,7 @@ class VPackageManagerService : IPackageManager.Stub()
         val appId = uid % 100000                       // strip the user part: PER_USER_RANGE
         synchronized(packages) {                       // smali field j, an io.lt (ArrayMap subclass)
             for (pkg in packages.values) {
-                val setting = pkg.packageSetting       // VPackage.v
+                val setting = pkg.packageSetting       // VPackage.appendFirstIfNotNull
                 setting?.let {
                     if (it.appId == appId) {          // PackageSetting.e
                         return setting.packageName         // PackageSetting.get
@@ -491,10 +491,10 @@ class VPackageManagerService : IPackageManager.Stub()
 
     // inside the package manager service (smali class io.xu8, jadx VPMS)
     override fun getPackageUid(packageName: String?, userId: Int): Int {
-        checkUserId(userId)                                    // smali static xu8.T(I)V, validates the user
+        checkUserId(userId)                                    // smali static xu8.cloneChannelWithNewId(I)stripPackagePrefix, validates the user
         synchronized(packages) {                               // smali field j (io.lt, ArrayMap subclass)
             val pkg = packages[packageName] ?: return -1       // VPackage
-            return VUserHandle.makeUid(userId, pkg.packageSetting!!.appId)   // VPackage.v -> PackageSetting.e
+            return VUserHandle.makeUid(userId, pkg.packageSetting!!.appId)   // VPackage.appendFirstIfNotNull -> PackageSetting.e
         }
     }
 
@@ -579,12 +579,12 @@ class VPackageManagerService : IPackageManager.Stub()
 
     // inside the package manager service (smali class io.xu8)
     override fun getServiceInfo(component: ComponentName?, flags: Int, userId: Int): ServiceInfo? {
-        checkUserId(userId)                                   // smali static xu8.T(I)V, throws on get bad user
+        checkUserId(userId)                                   // smali static xu8.cloneChannelWithNewId(I)stripPackagePrefix, throws on get bad user
         val resolveFlags = withDirectBootFlags(flags)         // smali static xu8.Y(I)I
 
         synchronized(packages) {                              // smali field j
             val pkg = packages[component?.packageName] ?: return null
-            val setting = pkg.packageSetting                  // VPackage.v
+            val setting = pkg.packageSetting                  // VPackage.appendFirstIfNotNull
 
             // xu8$d.i is the component -> ServiceComponent map of the resolver (mServices)
             val service = mServiceResolver.mServices[component] ?: return null
@@ -607,7 +607,7 @@ class VPackageManagerService : IPackageManager.Stub()
         unusedA: String?,      // smali p4, overwritten by the lock object, never read
         unusedB: String?,      // smali p5, overwritten, never read
     ): ProviderInfo? {
-        checkUserId(userId)                                   // smali static xu8.T(I)V
+        checkUserId(userId)                                   // smali static xu8.cloneChannelWithNewId(I)stripPackagePrefix
         val resolveFlags = withDirectBootFlags(flags)         // smali static xu8.Y(I)I
 
         synchronized(packages) {                              // smali field j
@@ -617,7 +617,7 @@ class VPackageManagerService : IPackageManager.Stub()
             val info = PackageParserEx.generateProviderInfo(  // smali parser.get.f
                 provider,
                 resolveFlags,
-                provider.owner?.packageSetting?.readUserState(userId)!!,   // VPackage$c.get is owner, VPackage.v is packageSetting
+                provider.owner?.packageSetting?.readUserState(userId)!!,   // VPackage$c.get is owner, VPackage.appendFirstIfNotNull is packageSetting
                 userId
             ) ?: return null
 

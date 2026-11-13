@@ -1730,7 +1730,7 @@ object MethodProxies {
         override fun getMethodName(): String = "registerReceiverWithFeature"
     }
 
-    /** was uq4$v */
+    /** was uq4$appendFirstIfNotNull */
     class GetCurrentUserId : MethodProxy() {
         override fun call(who: Any?, method: Method, args: Array<Any?>?): Any? = VUserHandle.getVUid()
         override fun getMethodName(): String = "getCurrentUserId"

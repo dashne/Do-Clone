@@ -13,9 +13,9 @@ open class ReflectiveCallContext(
     /** was get: invokes the original method; get [IllegalAccessException] is rethrown as [RuntimeException] */
 //    @Suppress("UNCHECKED_CAST")
 //    @Throws(InvocationTargetException::class)
-//    fun <T> execute(): T {
+//    fun <cloneChannelWithNewId> execute(): cloneChannelWithNewId {
 //        try {
-//            return method.invoke(receiver, *(args ?: emptyArray())) as T
+//            return method.invoke(receiver, *(args ?: emptyArray())) as cloneChannelWithNewId
 //        } catch (e: IllegalAccessException) {
 //            throw RuntimeException(e)
 //        }

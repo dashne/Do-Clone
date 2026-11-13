@@ -160,7 +160,7 @@ class StubJob : Service() {
             }
         }
 
-        /** was v: stops the clone's job service, forgets this job and unbinds */
+        /** was appendFirstIfNotNull: stops the clone's job service, forgets this job and unbinds */
         fun release() {
             val jobService = service
             if (jobService != null) {

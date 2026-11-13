@@ -1,5 +1,7 @@
 package com.ims134.doclone.clone
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -17,6 +19,7 @@ import com.ims134.doclone.clone.server.InstalledAppInfo
 import com.ims134.doclone.io.ActivityThread
 import com.ims134.doclone.io.AssetManagerMirror
 import com.ims134.doclone.io.CloneApiDelegate
+import com.ims134.doclone.io.InvocationStubManager
 import com.ims134.doclone.io.PermissionCompat
 
 
@@ -88,7 +91,12 @@ class VirtualCore
         this.hostPkgInfo = packageManager.getPackageInfo( appContext.packageName, flags)
         //---- this call should be after this.mainThread = ActivityThread.currentActivityThread?.call() because it uses it
         detectProcessType()
+        val invocationStubManager = InvocationStubManager.instance
+        invocationStubManager.javaClass
+        check(!InvocationStubManager.initialized) { "InvocationStubManager Has been initialized." }
         //TODO:: implement the rest
+
+        InvocationStubManager.initialized = true
 
 
         //---

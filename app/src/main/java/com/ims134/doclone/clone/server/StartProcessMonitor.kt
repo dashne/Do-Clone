@@ -1,8 +1,13 @@
 package com.ims134.doclone.clone.server
 
 import android.os.Handler
+import android.os.Looper
+import android.os.Message
+import android.util.Log
 
-class StartProcessMonitor {
+
+
+class StartProcessMonitor  {
 
     // k$get. Nested (not inner): the smali calls Object.<init>() directly, with no outer reference.
     class ProcessKey
@@ -22,7 +27,8 @@ class StartProcessMonitor {
         // values, used as lock objects, and used as Handler message objects.
     }
 
-    @JvmField val keyCache = HashMap<String, ProcessKey>()   // get
+    @JvmField
+    var keyCache = HashMap<String, ProcessKey>()   // get
     lateinit var handler: Handler                             // b
 
     // smali get(I, String)
@@ -49,5 +55,25 @@ class StartProcessMonitor {
     fun startMonitor(vuid: Int, processName: String) {
         val msg = handler.obtainMessage(100, getKey(vuid, processName))
         handler.sendMessageDelayed(msg, 7000L)                // 0x1b58
+    }
+}
+
+
+
+internal class StartProcessMonitorHandler (val a: StartProcessMonitor, looper: Looper) : Handler(looper) {
+    override fun handleMessage(message: Message) {
+        if (message.what !== 100) {
+            return
+        }
+        val startProcessMonitor = this.a
+        val processKey: StartProcessMonitor.ProcessKey =
+            message.obj as StartProcessMonitor.ProcessKey
+        synchronized(startProcessMonitor)
+        {
+            Log.e(
+                "StartProcessMonitor",
+                "timeout: " + processKey.processName + " vuid: " + processKey.vuid
+            )
+        }
     }
 }

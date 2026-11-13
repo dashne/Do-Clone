@@ -58,7 +58,7 @@ abstract class MethodProxy {
     /** was q */
     open fun isEnable(): Boolean = enable
 
-    /** was v */
+    /** was appendFirstIfNotNull */
     fun setEnable(enable: Boolean) {
         this.enable = enable
     }
