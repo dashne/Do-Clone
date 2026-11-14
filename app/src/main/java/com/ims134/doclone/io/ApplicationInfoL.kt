@@ -1171,3 +1171,75 @@ object ITimeZoneDetectorService {
         var  asInterface:RefStaticMethod<IInterface>?=null
     }
 }
+// jadx: io.e63 (mirror of com.android.internal.telephony.ISub)
+object ISub {
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(ISub::class.java, "com.android.internal.telephony.ISub")
+
+    // jadx: io.e63$a. Must stay a nested object named Stub (see IAutoFillManager.Stub).
+    object Stub {
+        @JvmField
+        var TYPE: Class<*>? = RefClass.load(Stub::class.java, "com.android.internal.telephony.ISub\$Stub")
+
+        @field:MethodParams([IBinder::class])
+        lateinit var asInterface: RefStaticMethod<IInterface>
+    }
+}
+// jadx: io.y53 (mirror of com.android.internal.telephony.ISms). NOT in the pasted files: written from the pattern of
+// ISub / IDropBoxManagerService and the service name "isms". If your y53 differs, paste it.
+object ISms {
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(ISms::class.java, "com.android.internal.telephony.ISms")
+
+    object Stub {
+        @JvmField
+        var TYPE: Class<*>? = RefClass.load(Stub::class.java, "com.android.internal.telephony.ISms\$Stub")
+
+        @field:MethodParams([IBinder::class])
+        lateinit var asInterface: RefStaticMethod<IInterface>
+    }
+}
+// jadx: io.y33 (mirror of com.android.internal.os.IDropBoxManagerService)
+object IDropBoxManagerService {
+
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(IDropBoxManagerService::class.java, "com.android.internal.os.IDropBoxManagerService")
+
+    // jadx: io.y33$a
+    object Stub {
+        @JvmField
+        var TYPE: Class<*>? = RefClass.load(Stub::class.java, "com.android.internal.os.IDropBoxManagerService\$Stub")
+
+        @field:MethodParams([IBinder::class])
+        lateinit var asInterface: RefStaticMethod<IInterface>
+    }
+}
+
+// jadx: io.nd (mirror of android.app.ActivityTaskManager)
+object AmTaskMgrMirror {
+
+    lateinit var IActivityTaskManagerSingleton: RefStaticObject<Any>
+
+    lateinit var getService: RefStaticMethod<IInterface>
+
+    // declared after the fields on purpose, so load() runs last
+    @JvmField
+    var TYPE: Class<*>? = RefClass.load(AmTaskMgrMirror::class.java, "android.app.ActivityTaskManager")
+}
+object LibcoreMirror {
+    val TYPE = RefClass.load(LibcoreMirror::class.java, "libcore.io.Libcore");
+    lateinit var os:RefStaticObject<Any?> ;
+}
+object ForwardingOs {
+    val TYPE = RefClass.load(ForwardingOs::class.java, "libcore.io.ForwardingOs");
+    lateinit var os:RefObject<Any?>
+}
+
+object ApplicationPackageManagerMirror {
+    val TYPE = RefClass.load( ApplicationPackageManagerMirror::class.java, "android.app.ApplicationPackageManager");
+    lateinit var disableGetPackagesForUidCache: RefStaticMethod<Void>
+    lateinit var getPermissionManager: RefMethod<Void>
+    lateinit var mPermissionManager :RefObject<Any?>
+}

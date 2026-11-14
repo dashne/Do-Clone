@@ -18,13 +18,13 @@ import java.io.FileDescriptor
 import java.lang.reflect.Method
 
 /**
- * Hooks of the system's IActivityManager in the client process (was io.h3). The hooks of [MethodProxies] come from @Inject,
+ * Hooks of the system's IActivityManager in the client process (was io.h3). The hooks of [ActivityManagerMethodProxies] come from @Inject,
  * the ones below are added in [injectMethodProxies].
  *
  * Unseen classes (names kept as in the jadx output): StaticMethodProxy, ih6, gh6, jk6 (name, constant result), g3, VUserManager,
  * BinderInvocationStub, ParceledListSliceCompat. MethodInvocationStub.methodProxies must not be private for [inject].
  */
-@Inject(MethodProxies::class)
+@Inject(ActivityManagerMethodProxies::class)
 open class ActivityManagerStub(iInterface: IInterface?) :
     MethodInvocationProxy<MethodInvocationStub<IInterface>>(MethodInvocationStub(iInterface)) {
 

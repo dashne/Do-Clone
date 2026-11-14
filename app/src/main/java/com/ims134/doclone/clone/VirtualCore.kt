@@ -7,19 +7,42 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.content.res.Resources
+import android.os.Build
 import android.os.IBinder
 import android.os.IBinder.DeathRecipient
 import android.os.Process
 import android.os.RemoteException
 import android.util.Log
 import com.ims134.doclone.DoApplication.Companion.appContext
+import com.ims134.doclone.clone.BuildCompat.sdk29OrLater
+import com.ims134.doclone.clone.BuildCompat.sdk30OrLater
+import com.ims134.doclone.clone.BuildCompat.sdk31OrLater
 import com.ims134.doclone.clone.VirtualRuntime.crash
 import com.ims134.doclone.clone.server.InstalledAppInfo
+import com.ims134.doclone.io.ActivityClient.getActivityClientController
+import com.ims134.doclone.io.ActivityClient.isAvailable
+import com.ims134.doclone.io.ActivityClientControllerStub
+import com.ims134.doclone.io.ActivityManagerNative
+import com.ims134.doclone.io.ActivityManagerStub
 import com.ims134.doclone.io.ActivityThread
+import com.ims134.doclone.io.AmTaskMgrMirror
+import com.ims134.doclone.io.AmTaskMgrStub
 import com.ims134.doclone.io.AssetManagerMirror
 import com.ims134.doclone.io.CloneApiDelegate
+import com.ims134.doclone.io.DropBoxManagerStub
+import com.ims134.doclone.io.GrammaticalInflectionManagerStub
+import com.ims134.doclone.io.HCallbackStub
+import com.ims134.doclone.io.IGrammaticalInflectionManager
+import com.ims134.doclone.io.ISmsStub
+import com.ims134.doclone.io.ISubStub
+import com.ims134.doclone.io.ITimeDetectorService
+import com.ims134.doclone.io.ITimeZoneDetectorService
 import com.ims134.doclone.io.InvocationStubManager
+import com.ims134.doclone.io.LibCoreStub
+import com.ims134.doclone.io.PackageManagerStub
 import com.ims134.doclone.io.PermissionCompat
+import com.ims134.doclone.io.TimeDetectorStub
+import com.ims134.doclone.io.TimeZoneDetectorStub
 
 
 enum class ProcessType
@@ -95,7 +118,53 @@ class VirtualCore
         val invocationStubManager = InvocationStubManager.instance
         invocationStubManager.javaClass
         check(!InvocationStubManager.initialized) { "InvocationStubManager Has been initialized." }
-        //TODO:: implement the rest
+        if(!isMainProcess())
+        {
+            if (isServerProcess())
+            {
+                invocationStubManager.mInjectors[ActivityManagerStub::class.java] =
+                    ActivityManagerStub(ActivityManagerNative.getDefault!!.call(*arrayOfNulls<Any>(0)))
+                if (sdk29OrLater()) {
+                    invocationStubManager.mInjectors[AmTaskMgrStub::class.java] = AmTaskMgrStub(AmTaskMgrMirror.getService.call(arrayOfNulls<Any>(0)))
+                }
+                if (!sdk30OrLater()) {
+                    invocationStubManager.mInjectors[PackageManagerStub::class.java] = PackageManagerStub()
+                }
+            }
+            else if (isClientProcess())
+            {
+                invocationStubManager.mInjectors[LibCoreStub::class.java] = LibCoreStub()
+                invocationStubManager.mInjectors[ActivityManagerStub::class.java] =
+                    ActivityManagerStub(ActivityManagerNative.getDefault!!.call(*arrayOfNulls<Any>(0)))
+                if (sdk29OrLater()) {
+                    invocationStubManager.mInjectors[AmTaskMgrStub::class.java] = AmTaskMgrStub(AmTaskMgrMirror.getService.call(*arrayOfNulls<Any>(0)))
+                }
+                if (sdk31OrLater() && isAvailable() && getActivityClientController() != null) {
+                    invocationStubManager.mInjectors[ActivityClientControllerStub::class.java] =ActivityClientControllerStub()
+                }
+                if (sdk31OrLater() && ITimeDetectorService.Stub.asInterface != null) {
+                    invocationStubManager.mInjectors[TimeDetectorStub::class.java] =
+                        TimeDetectorStub()
+                }
+                if (sdk31OrLater() && ITimeZoneDetectorService.Stub.asInterface != null) {
+                    invocationStubManager.mInjectors[TimeZoneDetectorStub::class.java] =
+                        TimeZoneDetectorStub()
+                }
+                val i = Build.VERSION.SDK_INT
+                if (i >= 35 && IGrammaticalInflectionManager.Stub.asInterface != null) {
+                    invocationStubManager.mInjectors[GrammaticalInflectionManagerStub::class.java] =
+                        GrammaticalInflectionManagerStub()
+                }
+                invocationStubManager.mInjectors[PackageManagerStub::class.java] =
+                    PackageManagerStub()
+                invocationStubManager.addInjector(HCallbackStub.instance)
+                invocationStubManager.mInjectors[ISmsStub::class.java] = ISmsStub()
+                invocationStubManager.mInjectors[ISubStub::class.java] = ISubStub()
+                invocationStubManager.mInjectors[DropBoxManagerStub::class.java] =
+                    DropBoxManagerStub()
+
+            }
+        }
 
         InvocationStubManager.initialized = true
 

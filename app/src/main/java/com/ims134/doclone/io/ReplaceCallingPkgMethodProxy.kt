@@ -3,7 +3,7 @@ package com.ims134.doclone.io
 import java.lang.reflect.Method
 
 
-class ReplaceCallingPkgMethodProxy  (str: String) : StaticMethodProxy(str) {
+open class ReplaceCallingPkgMethodProxy  (str: String) : StaticMethodProxy(str) {
 
     // com.polestar.clone.client.hook.base.MethodProxy
     /* JADX INFO: renamed from: b */

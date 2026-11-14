@@ -6,7 +6,7 @@ import java.util.HashMap
 class InvocationStubManager constructor() {
 
     // get
-    private val mInjectors = HashMap<Class<*>, IInjector>(13)
+    val mInjectors = HashMap<Class<*>, IInjector>(13)
 
     // get(IInjector). Keyed by the injector's concrete class.
     fun addInjector(injector: IInjector) {

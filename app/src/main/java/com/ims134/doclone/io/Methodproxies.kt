@@ -49,14 +49,14 @@ import com.ims134.doclone.clone.VPackageManager
 import kotlin.jvm.java
 
 /**
- * The hooks of the system's IActivityManager (was io.uq4, "MethodProxies.java"). Each nested class hooks the
+ * The hooks of the system's IActivityManager (was io.uq4, "ActivityManagerMethodProxies.java"). Each nested class hooks the
  * method named by getMethodName(). the whole of jadx uq4.
  * Next parts continue below the marker at the end of the object.
  *
  * Names of unseen classes and helpers are kept as in the jadx: BuildCompat.e(), BitmapUtils.createCloneIcon, CloneApiDelegate.get,
- * Constants.SHORTCUT_HANDLE_ACTIVITY, d00.get / d33, m43.performReceive, ExternalActivityResultService.b to g and get(), MethodProxies.get / b are now isClonedProviderUri / toProxyUri.
+ * Constants.SHORTCUT_HANDLE_ACTIVITY, d00.get / d33, m43.performReceive, ExternalActivityResultService.b to g and get(), ActivityManagerMethodProxies.get / b are now isClonedProviderUri / toProxyUri.
  */
-object MethodProxies {
+object ActivityManagerMethodProxies {
 
     /** the original method, called with the (possibly changed) arguments */
     private fun Method.invokeOriginal(who: Any?, args: Array<Any?>?): Any? =
@@ -528,17 +528,17 @@ object MethodProxies {
             val clipData = intent.clipData
             if (clipData != null && clipData.getItemAt(0) != null) {
                 val clipUri = clipData.getItemAt(0).uri
-                if (clipUri != null && MethodProxies.isClonedProviderUri(clipUri)) {
-                    intent.clipData = ClipData(clipData.description, ClipData.Item(MethodProxies.toProxyUri(clipUri)))
+                if (clipUri != null && ActivityManagerMethodProxies.isClonedProviderUri(clipUri)) {
+                    intent.clipData = ClipData(clipData.description, ClipData.Item(ActivityManagerMethodProxies.toProxyUri(clipUri)))
                 }
             }
             val outputUri = intent.getParcelableExtra<Uri>("output")
-            if (outputUri != null && MethodProxies.isClonedProviderUri(outputUri)) {
-                intent.putExtra("output", MethodProxies.toProxyUri(outputUri))
+            if (outputUri != null && ActivityManagerMethodProxies.isClonedProviderUri(outputUri)) {
+                intent.putExtra("output", ActivityManagerMethodProxies.toProxyUri(outputUri))
             }
             val data = intent.data
-            if (data != null && MethodProxies.isClonedProviderUri(data)) {
-                intent.data = MethodProxies.toProxyUri(data)
+            if (data != null && ActivityManagerMethodProxies.isClonedProviderUri(data)) {
+                intent.data = ActivityManagerMethodProxies.toProxyUri(data)
             }
             var tracked = true
             if (token == null || requestCode < 0) {
@@ -950,8 +950,8 @@ object MethodProxies {
             MethodParameterUtils.replaceLastUserIdArg(args)
             for (i in argv.indices) {
                 val arg = argv[i]
-                if (arg is Uri && MethodProxies.isClonedProviderUri(arg)) {
-                    argv[i] = MethodProxies.toProxyUri(arg)
+                if (arg is Uri && ActivityManagerMethodProxies.isClonedProviderUri(arg)) {
+                    argv[i] = ActivityManagerMethodProxies.toProxyUri(arg)
                 }
             }
             return try {
@@ -2015,7 +2015,7 @@ object MethodProxies {
     }
 
     /**
-     * was MethodProxies.isClonedProviderUri(Uri): true for get content:// uri whose authority belongs to get cloned app (and is not
+     * was ActivityManagerMethodProxies.isClonedProviderUri(Uri): true for get content:// uri whose authority belongs to get cloned app (and is not
      * already one of our proxy uris).
      */
     fun isClonedProviderUri(uri: Uri?): Boolean {
@@ -2034,7 +2034,7 @@ object MethodProxies {
         return false
     }
 
-    /** was MethodProxies.toProxyUri(Uri): content://<host>.ProxyCP/<original authority>/<original path> */
+    /** was ActivityManagerMethodProxies.toProxyUri(Uri): content://<host>.ProxyCP/<original authority>/<original path> */
     fun toProxyUri(uri: Uri?): Uri {
         val builder = Uri.Builder()
         if (uri != null) {
