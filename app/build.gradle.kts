@@ -5,6 +5,7 @@ plugins {
 }
 
 android {
+    buildFeatures { prefab = true }
     namespace = "com.ims134.doclone"
     compileSdk {
         version = release(37)
@@ -21,6 +22,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+        externalNativeBuild { cmake { arguments += "-DANDROID_STL=c++_shared" } }
     }
 
     externalNativeBuild {
@@ -48,6 +50,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.shadowhook)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.activity.ktx)

@@ -1,7 +1,5 @@
 package com.ims134.doclone.clone
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -15,6 +13,7 @@ import android.os.Process
 import android.os.RemoteException
 import android.util.Log
 import com.ims134.doclone.DoApplication.Companion.appContext
+import com.ims134.doclone.clone.VirtualRuntime.crash
 import com.ims134.doclone.clone.server.InstalledAppInfo
 import com.ims134.doclone.io.ActivityThread
 import com.ims134.doclone.io.AssetManagerMirror
@@ -73,6 +72,8 @@ class VirtualCore
     private var hostPermissionCache: HashSet<String>? = null
 
     var cloneApiDelegate: CloneApiDelegate? = null
+
+    var systemPid:Int = 0
 
 
     fun isClientProcess(): Boolean { return processType == ProcessType.Client}
@@ -133,7 +134,18 @@ class VirtualCore
             }
             processType = if(processIndex == -1) ProcessType.Child else ProcessType.Client
         }
-        //TODO:: implement the rest of code
+        if(isClientProcess())
+        {
+            val mgr = VActivityManager.instance
+            val cls = mgr.javaClass
+            try {
+                systemPid = mgr.getService().getSystemPid()
+            }
+            catch (e: RemoteException)
+            {
+                crash(e)
+            }
+        }
 
     }
 
@@ -241,6 +253,20 @@ class VirtualCore
             return false
         }
     }
+
+    fun getInstalledApps(): List<InstalledAppInfo>? {
+        try {
+            val appMgr = getAppManager()
+            if (appMgr != null) {
+                return appMgr.getInstalledApps(0)
+            }
+            crash(RemoteException("IAppManager service unavailable for getInstalledApps."))
+        } catch (e2: RemoteException) {
+            this.singleton = null
+            crash(e2)
+        }
+    }
+
 
     //===================================================================
     class VirtualCoreDeathRecipient(private val remote: IBinder): DeathRecipient

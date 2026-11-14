@@ -15,6 +15,7 @@ room3Common = "3.0.3"
 room3Runtime = "3.0.3"
 ksp = "2.3.6"
 collection = "1.7.0"
+shadowhook = "2.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,6 +39,7 @@ androidx-room3-common = { group = "androidx.room3", name = "room3-common", versi
 androidx-room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room3Runtime" }
 androidx-room3-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room3Runtime" }
 androidx-collection = { group = "androidx.collection", name = "collection", version.ref = "collection" }
+shadowhook = { module = "com.bytedance.android:shadowhook", version.ref = "shadowhook" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

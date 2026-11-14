@@ -50,7 +50,7 @@ class PackageSetting() : Parcelable {
         it.packageName = packageName
         it.appPath = appPath
         it.libPath = libPath      // f37522c
-        it.dynamic = gmsEnabled      // f37523d
+        it.gmsEnabled = gmsEnabled      // f37523d
         it.appId = appId          // f37524e
         it.flags = flags          // f37525f
     }

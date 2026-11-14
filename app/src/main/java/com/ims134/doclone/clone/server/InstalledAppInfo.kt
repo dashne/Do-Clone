@@ -9,7 +9,7 @@ class InstalledAppInfo : Parcelable {
     @JvmField var packageName: String? = null
     @JvmField var appPath: String? = null
     @JvmField var libPath: String? = null     // f37522c
-    @JvmField var dynamic: Boolean = false    // f37523d
+    @JvmField var gmsEnabled: Boolean = false    // f37523d
     @JvmField var appId: Int = 0              // f37524e
     @JvmField var flags: Byte = 0             // f37525f
 
@@ -19,7 +19,7 @@ class InstalledAppInfo : Parcelable {
         parcel.writeString(packageName)
         parcel.writeString(appPath)
         parcel.writeString(libPath)
-        parcel.writeByte(if (dynamic) 1 else 0)
+        parcel.writeByte(if (gmsEnabled) 1 else 0)
         parcel.writeInt(appId)
         parcel.writeByte(this.flags)
     }
@@ -31,7 +31,7 @@ class InstalledAppInfo : Parcelable {
                 packageName = parcel.readString()
                 appPath = parcel.readString()
                 libPath = parcel.readString()
-                dynamic = parcel.readByte().toInt() != 0
+                gmsEnabled = parcel.readByte().toInt() != 0
                 appId = parcel.readInt()
                 flags = parcel.readByte()
             }
