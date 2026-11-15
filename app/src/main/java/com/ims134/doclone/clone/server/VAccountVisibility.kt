@@ -6,7 +6,7 @@ import android.os.Parcelable
 /** Per-account package visibility (AccountManager.VISIBILITY_*). Persisted in account-visibility-list.ini. */
 class VAccountVisibility() : Parcelable {
 
-    var userId: Int = 0                                   // a
+    var userId: Int = 0                                   // Stub
     var name: String = ""                                 // b  account name
     var type: String = ""                                 // c  account type
     var visibility: HashMap<String, Int> = HashMap()      // d  package -> visibility

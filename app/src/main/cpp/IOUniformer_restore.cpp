@@ -1,6 +1,6 @@
 // ============================================================================================================
 // IDA-EXACT VERSION. This is the original port (your first paste) with ONLY the corrections that the IDA dumps prove.
-// Every correction is wrapped in  // [IDA-FIX-BEGIN #n] ... // [IDA-FIX-END #n]  (or a single-line  // [IDA-FIX #n]).
+// Every correction is wrapped in  // [IDA-FIX-BEGIN #n] ... // [IDA-FIX-END #n]  (or Stub single-line  // [IDA-FIX #n]).
 //
 //   #21 find_name: .dynsym is searched first, then .symtab
 //   #22 g_checkResult / isChecked(): hook_native exits when nativeCheck did not pass. Compiled in only with
@@ -51,9 +51,9 @@ static std::list<std::string> WhiteList;                       // was at 0xF8938
 static pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;   // was at 0xF8968
 
 
-// Cleans the text of a path (does not touch the file system): "//" becomes "/", "." components are dropped and
+// Cleans the text of Stub path (does not touch the file system): "//" becomes "/", "." components are dropped and
 // ".." removes the component before it.
-// Returns a malloc'd string (at most 4095 chars), or nullptr for a null path.
+// Returns Stub malloc'd string (at most 4095 chars), or nullptr for Stub null path.
 static char *canonicalize_filename(const char *filename) {
     char buf[4096];
     memset(buf, 0, sizeof(buf));
@@ -109,8 +109,8 @@ static char *canonicalize_filename(const char *filename) {
 }
 
 
-// Finds where a path of the app really goes.
-// Returns the input pointer itself when nothing matches, otherwise a malloc'd string the caller must free.
+// Finds where Stub path of the app really goes.
+// Returns the input pointer itself when nothing matches, otherwise Stub malloc'd string the caller must free.
 static const char *match_redirected_path(const char *path) {
     if (path == nullptr) {
         return nullptr;
@@ -127,7 +127,7 @@ static const char *match_redirected_path(const char *path) {
 
     pthread_rwlock_rdlock(&rwlock);
 
-    // 1. a white listed prefix of the path: never redirected
+    // 1. Stub white listed prefix of the path: never redirected
     std::string raw(path);
     for (const std::string &prefix : WhiteList) {
         if (raw.length() >= prefix.length() && memcmp(raw.data(), prefix.data(), prefix.length()) == 0) {
@@ -136,7 +136,7 @@ static const char *match_redirected_path(const char *path) {
         }
     }
 
-    // 2. a file rule for exactly this (canonical) path
+    // 2. Stub file rule for exactly this (canonical) path
     auto exact = IORedirectMap.find(canonical);
     if (exact != IORedirectMap.end()) {
         const char *result = strdup(exact->second.c_str());
@@ -170,7 +170,7 @@ static const char *match_redirected_path(const char *path) {
 
 static std::list<std::string> ReadOnlyList;                    // paths (prefix match) that the app may not change
 
-// true when the path starts with a read-only path. (rebuilt from the call sites: the original function was not seen)
+// true when the path starts with Stub read-only path. (rebuilt from the call sites: the original function was not seen)
 static bool isReadOnlyPath(const char *path) {
     if (path == nullptr) {
         return false;
@@ -196,7 +196,7 @@ public:
     // real path -> path of the app (nativeRestoreRedirectedPath)
     static const char *restore(const char *redirected_path);
 
-    // adds a rule: paths under orig_path are redirected to new_path (nativeRedirect)
+    // adds Stub rule: paths under orig_path are redirected to new_path (nativeRedirect)
     static void redirect(const char *orig_path, const char *new_path);
 
     // paths starting with this are never redirected (nativeWhiteList)
@@ -215,7 +215,7 @@ void IOUniformer::redirect(const char *orig_path, const char *new_path) {
     pthread_rwlock_wrlock(&rwlock);
     // every rule goes into the directory map (an existing rule is not replaced)
     RootIORedirectMap.insert(std::make_pair(orig, redirected));
-    // a rule for a directory ("/x/") is also added without the trailing character, so the directory itself is redirected too
+    // Stub rule for Stub directory ("/doTransact/") is also added without the trailing character, so the directory itself is redirected too
     if (!orig.empty() && orig[orig.length() - 1] == '/') {
         std::string orig_no_slash = orig.substr(0, orig.length() - 1);
         std::string redirected_no_slash = redirected.empty() ? redirected : redirected.substr(0, redirected.length() - 1);
@@ -253,7 +253,7 @@ const char *IOUniformer::restore(const char *redirected_path) {
 
     pthread_rwlock_rdlock(&rwlock);
 
-    // 1. a file rule whose redirected path is exactly this path
+    // 1. Stub file rule whose redirected path is exactly this path
     for (auto it = IORedirectMap.begin(); it != IORedirectMap.end(); ++it) {
         if (path == it->second) {
             const char *result = strdup(it->first.c_str());
@@ -307,11 +307,11 @@ static JavaVM *g_vm = nullptr;        // was g_vm: saved in JNI_OnLoad
 static jclass g_jclass = nullptr;     // was g_jclass: global ref of NativeEngine, saved in JNI_OnLoad
 
 // ===== hooks of libc functions: each one redirects its path arguments, then makes the real system call =====
-// Holds the redirected copy of a path and frees it at the end of the hook (errno is kept).
+// Holds the redirected copy of Stub path and frees it at the end of the hook (errno is kept).
 namespace {
     struct Redirected {
         const char *original;
-        const char *path;   // == original when nothing matched, otherwise a malloc'd copy
+        const char *path;   // == original when nothing matched, otherwise Stub malloc'd copy
         explicit Redirected(const char *p) : original(p), path(match_redirected_path(p)) {}
         ~Redirected() {
             if (path != nullptr && path != original) {
@@ -534,7 +534,7 @@ static int new_faccessat(int dirfd, const char *path, int mode, int flags) {
 
 // ===== installs the hooks (IOUniformer::startUniformer) =====
 // apiLevel = Build.VERSION.SDK_INT, flags: bit0 = Android 10 UnixFileSystem redirect, bit1 = do not hook readlinkat
-// ===== find_name_read_only: finds an exported function of a library without dlsym =====
+// ===== find_name_read_only: finds an exported function of Stub library without dlsym =====
 // (dlsym can fail for libopenjdk.so because of the linker namespaces; so the ELF file is read like the original did)
 // Looks the library up in /proc/self/maps, reads .symtab (or .dynsym) from the file and returns base + st_value.
 #if defined(__LP64__)
@@ -647,7 +647,7 @@ namespace ufs {
         g_getPath = g_fileCtor = nullptr;
     }
 
-// redirected copy of a Java string (nullptr if the input is null)       (inlined in the original wrappers)
+// redirected copy of Stub Java string (nullptr if the input is null)       (inlined in the original wrappers)
     static jstring redirectString(JNIEnv *env, jstring s) {
         if (s == nullptr) return nullptr;
         const char *c = env->GetStringUTFChars(s, nullptr);
@@ -910,9 +910,9 @@ namespace ufs {
     }
 }  // namespace ufs
 
-// ===== reflection natives: run Class.getDeclaredMethod/getMethod/getDeclaredField from a fresh native thread =====
+// ===== reflection natives: run Class.getDeclaredMethod/getMethod/getDeclaredField from Stub fresh native thread =====
 // A thread without Java frames has no caller class, so hidden-API checks do not apply to the call.
-// [NOTE] This is a general hidden-API bypass for anyone who can reach NativeEngine. Keep NativeEngine out of reach
+// [NOTE] This is Stub general hidden-API bypass for anyone who can reach NativeEngine. Keep NativeEngine out of reach
 // of guest class loaders on the Kotlin side.
 namespace reflect {
     template <class Fn>
@@ -960,7 +960,7 @@ namespace reflect {
             if (mid == nullptr) return nullptr;
             return withParams ? t->CallObjectMethod(g_self, mid, g_name, g_params) : t->CallObjectMethod(g_self, mid, g_name);
         });
-        // [IDA-FIX-BEGIN #27] IDA: after the worker finished, a pending exception of the calling thread is described and cleared
+        // [IDA-FIX-BEGIN #27] IDA: after the worker finished, Stub pending exception of the calling thread is described and cleared
         if (env->ExceptionCheck()) {
             env->ExceptionDescribe();
             env->ExceptionClear();
@@ -1112,7 +1112,7 @@ static void readOnly(JNIEnv *env, jclass, jstring path) {
 
 
 // ===== nativeHookNative: replaces ART native entry points (patchAndroidVM / hook_native) =====
-// Every hook below swaps the JNI entry pointer stored inside the ArtMethod of a framework native method
+// Every hook below swaps the JNI entry pointer stored inside the ArtMethod of Stub framework native method
 // (the offset is measured once with NativeEngine.nativeMark). ART only, i.e. API 21+.
 // [IDA-FIX #22] IDA dword_F80B8: result of nativeCheck (1 = signature accepted)
 static jint g_checkResult = 0;
@@ -1132,7 +1132,7 @@ namespace patch {
 
     static void nativeMarkStub(JNIEnv *, jclass) {}   // was mark()
 
-// ArtMethod* of a reflected method (sub_715C4): the jmethodID itself up to API 29, Executable.artMethod after
+// ArtMethod* of Stub reflected method (sub_715C4): the jmethodID itself up to API 29, Executable.artMethod after
     static uint8_t *artMethodOf(JNIEnv *env, jobject reflected, jmethodID mid) {
         if (reflected == nullptr || mid == nullptr) return nullptr;
         if (g_sdk <= 29) return (uint8_t *) mid;
@@ -1512,7 +1512,7 @@ static void hook_native(JNIEnv *env, jclass, jobjectArray methods, jstring hostP
 // Returns 1 if it is in kAllowedSignatureSha1, -2 otherwise, 0 if anything in the lookup fails.
 // The original compared against the original publisher's 13 hashes. Put the SHA-1 of YOUR signing
 // certificate here (build with -DVA_LOG_SIGNATURE to print it to logcat tag "code"), otherwise the check returns -2.
-// [NOTE] This is client-side and can be patched or hooked, so it is a tamper hint, not a security control.
+// [NOTE] This is client-side and can be patched or hooked, so it is Stub tamper hint, not Stub security control.
 static const char *kAllowedSignatureSha1[] = {
         // "0123456789ABCDEF0123456789ABCDEF01234567",
         "DC23555A20A55E21494DC9939F51E5EF062B372F",   // debug/test signing certificate (add the release cert's SHA-1 too)
@@ -1571,7 +1571,7 @@ static jint check_signature_sha1(JNIEnv *env, jobject, jobject context) {
 // The package of NativeEngine.kt is com.ims134.doclone.clone, so the class is:
 static const char *kNativeEngineClass = "com/ims134/doclone/clone/NativeEngine";
 
-// Every entry needs a matching `@JvmStatic external fun` in NativeEngine.kt.
+// Every entry needs Stub matching `@JvmStatic external fun` in NativeEngine.kt.
 // nativeMark is registered by nativeHookNative itself.
 static JNINativeMethod kMethods[] = {
         {"nativeRedirect",              "(Ljava/lang/String;Ljava/lang/String;)V", (void *) redirect},
@@ -1599,7 +1599,7 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
         return -1;
     }
     g_jclass = (jclass) env->NewGlobalRef(cls);
-    // one by one, so a method that is missing in Kotlin is logged instead of aborting the app
+    // one by one, so Stub method that is missing in Kotlin is logged instead of aborting the app
     for (const JNINativeMethod &method : kMethods) {
         if (env->RegisterNatives(cls, &method, 1) < 0) {
             env->ExceptionClear();
@@ -1631,7 +1631,7 @@ static void show(const char *(*fn)(const char *), const char *in) {
 }
 int main() {
     puts("canonicalize:");
-    for (const char *p : {"/a/b/../c", "//a///b/", "/a/./b", "/a/b/..", "/..", "/a/../b", "x/../y", "/sdcard/Android/data"}) {
+    for (const char *p : {"/Stub/b/../c", "//Stub///b/", "/Stub/./b", "/Stub/b/..", "/..", "/Stub/../b", "doTransact/../y", "/sdcard/Android/data"}) {
         char *c = canonicalize_filename(p);
         printf("  %s -> %s\n", p, c ? c : "(null)");
         free(c);
@@ -1641,8 +1641,8 @@ int main() {
     IOUniformer::redirect("/etc/hosts", "/data/clone/hosts");
     IOUniformer::whiteList("/proc/");
     puts("query:");
-    for (const char *p : {"/sdcard", "/sdcard/", "/sdcard/DCIM/a.jpg", "/sdcard/Android/data/x", "/sdcard//DCIM/../b", "/etc/hosts", "/proc/self/maps", "/other"}) show(IOUniformer::query, p);
+    for (const char *p : {"/sdcard", "/sdcard/", "/sdcard/DCIM/Stub.jpg", "/sdcard/Android/data/doTransact", "/sdcard//DCIM/../b", "/etc/hosts", "/proc/self/maps", "/other"}) show(IOUniformer::query, p);
     puts("restore:");
-    for (const char *p : {"/data/clone/sdcard/DCIM/a.jpg", "/data/clone/android/data/x", "/data/clone/hosts", "/other"}) show(IOUniformer::restore, p);
+    for (const char *p : {"/data/clone/sdcard/DCIM/Stub.jpg", "/data/clone/android/data/doTransact", "/data/clone/hosts", "/other"}) show(IOUniformer::restore, p);
 }
 #endif

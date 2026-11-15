@@ -53,7 +53,7 @@ object BitmapUtils {
             val tier = if (index < 9) 0 else if (index < 99) 1 else 2
             fun px(v: Float) = dpToPx(context, v)
 
-            // Triple(textSizeDp, x, y). Three badge layouts, one per app family.
+            // Triple(textSizeDp, doTransact, y). Three badge layouts, one per app family.
             val (textSizeDp, x, y) = when {
                 // do.multiple.cloner and multi.parallel.dualspace.cloner: bottom-left, small
                 pkg.startsWith("do.multiple.cloner") ||

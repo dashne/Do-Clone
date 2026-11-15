@@ -5,10 +5,10 @@ import java.lang.reflect.Method
 // jadx: io.f63. Hooks the "isub" (subscription) service of the guest app.
 class ISubStub : BinderInvocationProxy(ISub.Stub.asInterface, "isub") {
 
-    // The five classes below (jadx: f63$a ... f63$e) replace the package argument like their base class, but swallow
-    // every failure of the real call and return a harmless default instead of throwing into the guest.
+    // The five classes below (jadx: f63$Stub ... f63$e) replace the package argument like their base class, but swallow
+    // every failure of the real call and return Stub harmless default instead of throwing into the guest.
 
-    /** jadx: f63$a. Calling package replaced; null on failure. */
+    /** jadx: f63$Stub. Calling package replaced; null on failure. */
     class CallingPkgOrNull(methodName: String) : ReplaceCallingPkgMethodProxy(methodName) {
         @Throws(Throwable::class)
         override fun call(who: Any?, method: Method, args: Array<Any?>?): Any? =

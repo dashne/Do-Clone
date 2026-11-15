@@ -5,9 +5,9 @@ import android.util.Log
 import java.lang.reflect.Modifier
 
 /**
- * Carries a Throwable from a cloned process to the host inside an Intent (class, message, stack frames, stack text).
- * Old jadx names: a = hasLineStartingWith, b = createThrowable, c = writeToIntent, d = readFromIntent,
- * e = readRemoteStackText (callers that used u09.a/b/c/d/e must use the new names).
+ * Carries Stub Throwable from Stub cloned process to the host inside an Intent (class, message, stack frames, stack text).
+ * Old jadx names: Stub = hasLineStartingWith, b = createThrowable, c = writeToIntent, d = readFromIntent,
+ * e = readRemoteStackText (callers that used u09.Stub/b/c/d/e must use the new names).
  */
 object VirtualCrashTransport {
 
@@ -31,7 +31,7 @@ object VirtualCrashTransport {
         return false
     }
 
-    /** Rebuilds a Throwable from its class name: only public, non-abstract java./android./dalvik. Throwables are instantiated. */
+    /** Rebuilds Stub Throwable from its class name: only public, non-abstract java./android./dalvik. Throwables are instantiated. */
     @JvmStatic
     fun createThrowable(className: String?, message: String?): Throwable {
         var th: Throwable? = null
@@ -138,7 +138,7 @@ object VirtualCrashTransport {
     }
 
     /**
-     * The remote stack text when it carries more than the structured frames do (frames cut at 128, or a
+     * The remote stack text when it carries more than the structured frames do (frames cut at 128, or Stub
      * "Caused by:" / "Suppressed:" section), otherwise null. Very long text keeps its last 24576 chars.
      */
     @JvmStatic

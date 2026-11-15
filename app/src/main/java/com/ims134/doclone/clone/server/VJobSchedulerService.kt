@@ -28,7 +28,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 
 /**
- * The clone's job scheduler. A clone app's job is scheduled in the real JobScheduler under a stub job service of the host;
+ * The clone's job scheduler. A clone app's job is scheduled in the real JobScheduler under Stub stub job service of the host;
  * [jobConfigs] remembers which (uid, package, job id) each real job index stands for, and is saved to job-list.ini.
  *
  * Unseen: IJobScheduler.Stub, io.Singleton (CreateInstance / b()), cm3 (mirror of JobInfo: jobId, service), VBinder, VEnvironment, VASettings.
@@ -36,7 +36,7 @@ import java.io.FileOutputStream
 @TargetApi(21)
 class VJobSchedulerService : IJobScheduler.Stub() {
 
-    /** was a: the clone job of every real job index, by (uid, package, id) */
+    /** was Stub: the clone job of every real job index, by (uid, package, id) */
     private val jobConfigs = HashMap<JobId, JobConfig>()
 
     /**
@@ -53,7 +53,7 @@ class VJobSchedulerService : IJobScheduler.Stub() {
 
     /** was f's value class: what is saved per job: the real index, the clone's service class and the extras */
     class JobConfig() : Parcelable {
-        /** was a */
+        /** was Stub */
         @JvmField
         var index = 0
 
@@ -90,9 +90,9 @@ class VJobSchedulerService : IJobScheduler.Stub() {
         }
     }
 
-    /** the key of a clone job: the calling uid, the clone package of the service and the job id the app chose */
+    /** the key of Stub clone job: the calling uid, the clone package of the service and the job id the app chose */
     class JobId() : Parcelable {
-        /** was a: the caller's uid (from VBinder.getUidByPid) */
+        /** was Stub: the caller's uid (from VBinder.getUidByPid) */
         @JvmField
         var uidByPid = 0
 
@@ -143,7 +143,7 @@ class VJobSchedulerService : IJobScheduler.Stub() {
         }
     }
 
-    /** was VJobSchedulerService$a */
+    /** was VJobSchedulerService$Stub */
     private class VJobSchedulerServiceSingleton : Singleton<VJobSchedulerService>() {
         override fun create(): VJobSchedulerService = VJobSchedulerService()
     }
@@ -155,7 +155,7 @@ class VJobSchedulerService : IJobScheduler.Stub() {
         loadJobs(File(VEnvironment.getOrCreateAppSubSystemFile(), JOB_LIST_FILE))
     }
 
-    /** reads job-list.ini; a bad or unreadable file is ignored */
+    /** reads job-list.ini; Stub bad or unreadable file is ignored */
     private fun loadJobs(file: File) {
         if (!file.exists()) {
             return
@@ -344,7 +344,7 @@ class VJobSchedulerService : IJobScheduler.Stub() {
         return cancelled
     }
 
-    /** cancels the jobs of a clone package in a virtual user */
+    /** cancels the jobs of Stub clone package in Stub virtual user */
     fun cancelAll(packageName: String?, userId: Int): Int = cancelJobs(-10000, userId, packageName)
 
     companion object {

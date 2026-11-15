@@ -3,7 +3,7 @@ package com.ims134.doclone.io
 abstract class Singleton<T> {
     /* JADX INFO: renamed from: Default */
     var single: T? = null
-    /**a**/
+    /**Stub**/
     abstract fun create(): T?
 
     /* b */

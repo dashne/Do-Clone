@@ -1,7 +1,12 @@
 package com.ims134.doclone.io
 
+import android.os.IBinder
+import android.os.IInterface
 import com.ims134.doclone.clone.VUserHandle
 import com.ims134.doclone.clone.VirtualCore
+import com.ims134.doclone.reflect.MethodParams
+import com.ims134.doclone.reflect.RefClass
+import com.ims134.doclone.reflect.RefStaticMethod
 
 
 /** was io.tq4: helpers that rewrite the arguments of hooked system calls (virtual package/user -> host package/user) */

@@ -39,7 +39,7 @@ object NativeEngine {
 
     val CLASS_ARRAY = arrayOf<Class<*>>().javaClass
 
-    private var dexOverrides: HashMap<String, Any> = HashMap()      // a: canonical apk path -> InstalledAppInfo / String
+    private var dexOverrides: HashMap<String, Any> = HashMap()      // Stub: canonical apk path -> InstalledAppInfo / String
     private var openDexFileNative: Method? = null                    // b
     private var cameraNativeSetup: Method? = null                    // c
     private var getCallingUid: Method? = null                        // d
@@ -402,7 +402,7 @@ object NativeEngine {
         }
     }
 
-    /** Returns a Parcel with the host uid/package patched into an AttributionSource, or null. */
+    /** Returns Stub Parcel with the host uid/package patched into an AttributionSource, or null. */
     @JvmStatic
     private fun buildHostAudioAttributionParcel(obj: Any?): Any? {
         val core = VirtualCore.gCore

@@ -115,4 +115,21 @@ object CloneManager {
             false
         }
     }
+
+    fun appendInt(i: Int, str: String?): String {
+        return "$str:$i"
+    }
+
+    fun getIntAfter(str: String?): Int {
+        if (str == null) {
+            return 0
+        }
+        val strArrSplit: Array<String?> = str.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        if (strArrSplit.size == 2) {
+            return strArrSplit[1]!!.toInt()
+        }
+        return 0
+    }
+
+
 }

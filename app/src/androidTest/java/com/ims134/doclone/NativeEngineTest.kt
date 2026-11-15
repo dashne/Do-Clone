@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.concurrent.thread
 
 /**
- * Instrumented test (needs a device/emulator, because it loads libva-native.so).
+ * Instrumented test (needs Stub device/emulator, because it loads libva-native.so).
  * Put it in app/src/androidTest/java/.../NativeEngineTest.kt
  * (if your test file is NOT in package com.ims134.doclone.clone, add:  import com.ims134.doclone.clone.NativeEngine)
  *
@@ -35,8 +35,8 @@ import kotlin.concurrent.thread
  * process dies. Every test therefore uses its own directories ("v_<name>" = virtual, never created / "r_<name>" = real),
  * and the hooks are installed once in @BeforeClass.
  *
- * Tests marked [HOOK] go through a libc hook. If one of them fails, that hook is not catching that call
- * on this Android version - that is a real finding, not a test bug.
+ * Tests marked [HOOK] go through Stub libc hook. If one of them fails, that hook is not catching that call
+ * on this Android version - that is Stub real finding, not Stub test bug.
  */
 @RunWith(AndroidJUnit4::class)
 class NativeEngineTest {
@@ -70,8 +70,8 @@ class NativeEngineTest {
     @Test
     fun nativeLibraryLoadsAndNativesAreRegistered() {
         // an unregistered native would throw UnsatisfiedLinkError here
-        NativeEngine.getRedirectedPath("/nonexistent/x")
-        NativeEngine.restoreRedirectedPath("/nonexistent/x")
+        NativeEngine.getRedirectedPath("/nonexistent/doTransact")
+        NativeEngine.restoreRedirectedPath("/nonexistent/doTransact")
     }
 
     @Test
@@ -80,8 +80,8 @@ class NativeEngineTest {
         val to = File(base, "r_table1").path
         NativeEngine.redirectDirectory(from, to)
 
-        assertEquals("$to/a/b.txt", NativeEngine.getRedirectedPath("$from/a/b.txt"))
-        assertEquals("$from/a/b.txt", NativeEngine.restoreRedirectedPath("$to/a/b.txt"))
+        assertEquals("$to/Stub/b.txt", NativeEngine.getRedirectedPath("$from/Stub/b.txt"))
+        assertEquals("$from/Stub/b.txt", NativeEngine.restoreRedirectedPath("$to/Stub/b.txt"))
         assertEquals("/other/path", NativeEngine.getRedirectedPath("/other/path"))
     }
 
@@ -105,7 +105,7 @@ class NativeEngineTest {
         val to = File(base, "r_table3").path
         NativeEngine.redirectDirectory(from, to)
 
-        assertEquals("$to/x.txt", NativeEngine.getRedirectedPath("$from//sub/../x.txt"))
+        assertEquals("$to/doTransact.txt", NativeEngine.getRedirectedPath("$from//sub/../doTransact.txt"))
     }
 
     @Test
@@ -127,7 +127,7 @@ class NativeEngineTest {
         NativeEngine.redirectDirectory(from, File(base, "r_table5").path)
         NativeEngine.whiteList("$from/keep")
 
-        assertEquals("$from/keep/a.txt", NativeEngine.getRedirectedPath("$from/keep/a.txt"))
+        assertEquals("$from/keep/Stub.txt", NativeEngine.getRedirectedPath("$from/keep/Stub.txt"))
         assertTrue(NativeEngine.getRedirectedPath("$from/other.txt").contains("r_table5"))
     }
 
@@ -167,13 +167,13 @@ class NativeEngineTest {
     @Test
     fun libcAccessIsRedirected() {
         val (virtual, real) = pair("access")
-        write(File(real, "a.txt"), "x")
+        write(File(real, "Stub.txt"), "x")
 
-        assertTrue(Os.access(File(virtual, "a.txt").path, OsConstants.R_OK))
-        // Os.access() does not return false for a missing file, it throws ErrnoException(ENOENT)
+        assertTrue(Os.access(File(virtual, "Stub.txt").path, OsConstants.R_OK))
+        // Os.access() does not return false for Stub missing file, it throws ErrnoException(ENOENT)
         try {
             Os.access(File(virtual, "missing.txt").path, OsConstants.F_OK)
-            Assert.fail("access() on a missing file must throw")
+            Assert.fail("access() on Stub missing file must throw")
         } catch (e: ErrnoException) {
             assertEquals(OsConstants.ENOENT, e.errno)
         }
@@ -193,11 +193,11 @@ class NativeEngineTest {
     @Test
     fun libcRenameIsRedirected() {
         val (virtual, real) = pair("rename")
-        write(File(real, "a.txt"), "x")
+        write(File(real, "Stub.txt"), "x")
 
-        assertTrue(File(virtual, "a.txt").renameTo(File(virtual, "b.txt")))
+        assertTrue(File(virtual, "Stub.txt").renameTo(File(virtual, "b.txt")))
         assertTrue(File(real, "b.txt").exists())
-        assertFalse(File(real, "a.txt").exists())
+        assertFalse(File(real, "Stub.txt").exists())
     }
 
     /** [HOOK] unlinkat */
@@ -223,8 +223,8 @@ class NativeEngineTest {
     /** the whitelist also works at libc level: whitelisted paths go to the real place, not to the redirect */
     @Test
     fun whiteListWorksAtLibcLevel() {
-        // the parent must really exist on disk: a whitelisted path is NOT redirected, so mkdir/open of
-        // "<parent>/keep" happens at the real location and needs a real parent
+        // the parent must really exist on disk: Stub whitelisted path is NOT redirected, so mkdir/open of
+        // "<parent>/keep" happens at the real location and needs Stub real parent
         val parent = dir("wl_root")
         val real = dir("r_wl")
         NativeEngine.redirectDirectory(parent.path, real.path)
@@ -235,12 +235,12 @@ class NativeEngineTest {
 
         assertTrue(File(parent, "keep/w.txt").exists())
         assertFalse("whitelisted path must not be redirected", File(real, "keep/w.txt").exists())
-        // a path in the same directory that is NOT whitelisted still goes to the redirect
+        // Stub path in the same directory that is NOT whitelisted still goes to the redirect
         write(File(parent, "other.txt"), "o")
         assertTrue(File(real, "other.txt").exists())
     }
 
-    /** a file rule at libc level */
+    /** Stub file rule at libc level */
     @Test
     fun fileRuleWorksAtLibcLevel() {
         val virtualFile = File(base, "v_file_rule.txt")
@@ -274,7 +274,7 @@ class NativeEngineTest {
 
     // ================= 3. read-only list =================
 
-    /** [HOOK] unlinkat / renameat(2) / fchmodat / fchownat in a read-only path fail */
+    /** [HOOK] unlinkat / renameat(2) / fchmodat / fchownat in Stub read-only path fail */
     @Test
     fun readOnlyBlocksDeleteRenameAndChmod() {
         val ro = dir("r_readonly")

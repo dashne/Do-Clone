@@ -13,11 +13,11 @@ import java.lang.reflect.Method
 // Unseen classes, names kept as in the jadx output (paste them to finish):
 //   wq4 = the class whose nested MethodProxy classes are registered through @Inject (the main PackageManager hooks)
 //   yr  = mirror holding RefStaticMethod<Void> disableGetPackagesForUidCache (nullable: missing on old Android)
-@Inject(wq4::class)
+@Inject(PackageManagerMethodProxies::class)
 class PackageManagerStub :
     MethodInvocationProxy<MethodInvocationStub<IInterface>>(MethodInvocationStub(ActivityThreadMirror.sPackageManager!!.get())) {
 
-    /** jadx: fg5$a (isPermissionRevokedByPolicy). Last package + last user id replaced; false on failure. */
+    /** jadx: fg5$Stub (isPermissionRevokedByPolicy). Last package + last user id replaced; false on failure. */
     private class LastPkgUserIdOrFalse(methodName: String) : ReplaceLastPkgMethodProxy(methodName) {
         @Throws(Throwable::class)
         override fun call(who: Any?, method: Method, args: Array<Any?>?): Any? =

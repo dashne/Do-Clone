@@ -48,10 +48,10 @@ import kotlin.math.abs
  */
 class VAccountManagerService private constructor() : IAccountManager.Stub() {
 
-    private val accountsByUser = SparseArray<MutableList<VAccount>>()                 // a
+    private val accountsByUser = SparseArray<MutableList<VAccount>>()                 // Stub
     private val authTokenCache = LinkedList<AuthTokenCacheEntry>()                    // b
     private val sessions = LinkedHashMap<String, Session>()                           // c
-    private val authenticators = HashMap<String, AuthenticatorInfo>()                 // d.a
+    private val authenticators = HashMap<String, AuthenticatorInfo>()                 // d.Stub
     private val context: Context = appContext                          // e
     private var lastCheckinTime = 0L                                                  // f
     private val visibilityByUser = SparseArray<MutableList<VAccountVisibility>>()     // g
@@ -83,7 +83,7 @@ class VAccountManagerService private constructor() : IAccountManager.Stub() {
         }
     }
 
-    /** jadx cf6.a(context, applicationInfo): Resources of the virtual app. */
+    /** jadx cf6.Stub(context, applicationInfo): Resources of the virtual app. */
     private fun appResources(context: Context, appInfo: android.content.pm.ApplicationInfo): Resources =
         RegisteredServicesParser.getAppResources(context, appInfo)!!
 
@@ -898,7 +898,7 @@ class VAccountManagerService private constructor() : IAccountManager.Stub() {
         }
     }
 
-    private inner class GetAuthTokenSession( // a
+    private inner class GetAuthTokenSession( // Stub
         response: IAccountManagerResponse?, userId: Int, info: AuthenticatorInfo, expectActivityLaunch: Boolean,
         accountName: String?,
         private val account: Account,

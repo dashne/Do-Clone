@@ -16,7 +16,7 @@ class VNotificationManager {
 
     // b: cached service proxy, reset when the server dies
     @Volatile
-    private var service: INotificationManager? = null
+    var service: INotificationManager? = null
 
     // uu8$get: clears the cache when the server process dies
     private inner class ServiceDeathRecipient(private val binder: IBinder) : IBinder.DeathRecipient {
@@ -37,13 +37,13 @@ class VNotificationManager {
     // b(int, String, String, int): ask the server for the id to use; fall back to the original id
     fun dealNotificationId(id: Int, packageName: String?, tag: String?, userId: Int): Int =
         try {
-            getService().dealNotificationId(id, packageName, tag, userId)
+            getService_().dealNotificationId(id, packageName, tag, userId)
         } catch (e: RemoteException) {
             id
         }
 
     // c(): connect lazily, reconnect if the cached binder is dead
-    fun getService(): INotificationManager {
+    fun getService_(): INotificationManager {
         val cached = service
         if (cached == null || !cached.asBinder().isBinderAlive) {
             synchronized(VNotificationManager::class.java) {

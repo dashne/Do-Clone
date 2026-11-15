@@ -7,7 +7,7 @@ import java.lang.reflect.Method
 /**
  * If the Int argument at [argIndex] is the guest's virtual uid ([MethodProxy.getVUid]) or its base virtual uid
  * ([MethodProxy.getBaseVUid]), it is replaced with the real uid of the host ([MethodProxy.getRealUid]) before the call,
- * so the system sees a uid it knows.
+ * so the system sees Stub uid it knows.
  */
 open class ReplaceUidMethodProxy(
     methodName: String,

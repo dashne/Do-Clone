@@ -1,7 +1,9 @@
 package com.ims134.doclone.clone
 
+import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.ProviderInfo
+import android.content.pm.ResolveInfo
 import android.os.DeadObjectException
 import android.os.IBinder
 import android.os.RemoteException
@@ -102,6 +104,29 @@ class VPackageManager {
     fun getProviderInfo(i: Int, i2: Int, str: String?): ProviderInfo? {
         try {
             return getPackageManager()?.resolveCP(i, i2, str, null, null)
+        } catch (e: RemoteException) {
+            crash(e)
+        }
+    }
+
+    fun queryIntentActivities(
+        intent: Intent?,
+        resolvedType: String?,
+        flags: Int,
+        userId: Int
+    ): MutableList<ResolveInfo?>? =
+        try {
+            callWithRetry { it?.queryIntentActivities(intent,resolvedType, flags,userId)?.toMutableList() }
+        }
+        catch (e: RemoteException)
+        {
+            crash(e)
+            null
+    }
+
+    fun getPackagesForUid(i: Int): Array<String>? {
+        try {
+            return getPackageManager()!!.getPackagesForUid(i)
         } catch (e: RemoteException) {
             crash(e)
         }

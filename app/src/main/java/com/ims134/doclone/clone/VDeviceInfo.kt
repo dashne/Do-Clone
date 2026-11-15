@@ -5,33 +5,33 @@ import android.os.Parcelable
 
 class VDeviceInfo() : Parcelable {
 
-    @JvmField var field1: String? = null   // original: f37543a
+    @JvmField var deviceId: String? = null   // original: f37543a
     @JvmField var androidId: String? = null   // original: f37544b
-    @JvmField var field3: String? = null   // original: f37545c
-    @JvmField var field4: String? = null   // original: f37546d
-    @JvmField var field5: String? = null   // original: f37547e
-    @JvmField var field6: String? = null   // original: f37548f
+    @JvmField var macAddress: String? = null   // original: f37545c
+    @JvmField var bluetoothMac: String? = null   // original: f37546d
+    @JvmField var iccSerialNumber: String? = null   // original: f37547e
+    @JvmField var serial: String? = null   // original: f37548f
     @JvmField var field7: String? = null   // original: f37549g
 
     constructor(parcel: Parcel) : this() {
-        field1 = parcel.readString()
+        deviceId = parcel.readString()
         androidId = parcel.readString()
-        field3 = parcel.readString()
-        field4 = parcel.readString()
-        field5 = parcel.readString()
-        field6 = parcel.readString()
+        macAddress = parcel.readString()
+        bluetoothMac = parcel.readString()
+        iccSerialNumber = parcel.readString()
+        serial = parcel.readString()
         field7 = parcel.readString()
     }
 
     override fun describeContents(): Int = 0
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(field1)
+        parcel.writeString(deviceId)
         parcel.writeString(androidId)
-        parcel.writeString(field3)
-        parcel.writeString(field4)
-        parcel.writeString(field5)
-        parcel.writeString(field6)
+        parcel.writeString(macAddress)
+        parcel.writeString(bluetoothMac)
+        parcel.writeString(iccSerialNumber)
+        parcel.writeString(serial)
         parcel.writeString(field7)
     }
 

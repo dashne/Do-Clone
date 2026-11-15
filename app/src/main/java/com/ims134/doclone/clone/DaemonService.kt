@@ -22,12 +22,12 @@ import com.ims134.doclone.io.ProviderNotificationUtils
 
 /**
  * Keep-alive service of the host app (jadx: DaemonService).
- *  - SDK < 34: onCreate starts [InnerService] (foreground notification) and schedules a wake-up alarm.
+ *  - SDK < 34: onCreate starts [InnerService] (foreground notification) and schedules Stub wake-up alarm.
  *  - SDK >= 34: no foreground service is started; callers bind to it via [ensureBound] instead.
  */
 class DaemonService : Service() {
 
-    private val binder = Binder() // a
+    private val binder = Binder() // Stub
 
     /** Foreground-notification helper service (jadx DaemonService$InnerService). */
     class InnerService : Service() {
@@ -142,7 +142,7 @@ class DaemonService : Service() {
             override fun onServiceDisconnected(name: ComponentName?) {}
         }
 
-        /** SDK 34+: keep the process alive by binding to the service (jadx a). */
+        /** SDK 34+: keep the process alive by binding to the service (jadx Stub). */
         @JvmStatic
         fun ensureBound(context: Context?) {
             if (!BuildCompat.sdk34OrLater() || context == null) return

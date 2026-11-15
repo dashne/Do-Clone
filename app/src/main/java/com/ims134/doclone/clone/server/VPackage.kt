@@ -323,7 +323,8 @@ class VPackage() : Parcelable {
         }
     }
 
-    class ActivityIntentInfo : IntentInfo {
+    class ActivityIntentInfo : IntentInfo
+    {
         @JvmField var activity: ActivityComponent? = null // f37841h
 
         constructor(source: PackageParser.IntentInfo) : super(source)

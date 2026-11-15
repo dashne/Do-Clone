@@ -106,7 +106,7 @@ class VDeviceManagerService : IDeviceInfoManager.Stub() {
         // field1: 15-digit random, unique
         var v: String
         do { v = randomDigits(15) } while (usedValues.field1.contains(v))
-        info.field1 = v
+        info.deviceId = v
 
         // field2: 16-char hex, unique
         do {
@@ -122,22 +122,22 @@ class VDeviceManagerService : IDeviceInfoManager.Stub() {
 
         // field3: MAC format, unique
         do { v = randomMac() } while (usedValues.field3.contains(v))
-        info.field3 = v
+        info.macAddress = v
 
         // field4: MAC format, unique
         do { v = randomMac() } while (usedValues.field4.contains(v))
-        info.field4 = v
+        info.bluetoothMac = v
 
         // field5: 20-digit random, unique
         do { v = randomDigits(20) } while (usedValues.field5.contains(v))
-        info.field5 = v
+        info.iccSerialNumber = v
 
         // field6: shuffled Build.SERIAL (or fallback), NOT tracked
         @Suppress("DEPRECATION")
         val serialSource = Build.SERIAL.orEmpty().ifEmpty { "0123456789ABCDEF" }
         val chars = serialSource.toMutableList()
         Collections.shuffle(chars)
-        info.field6 = chars.joinToString("")
+        info.serial = chars.joinToString("")
 
         registerUsedValues(info)
         return info
@@ -147,11 +147,11 @@ class VDeviceManagerService : IDeviceInfoManager.Stub() {
     fun registerUsedValues(info: VDeviceInfo) {
         // `!!` is safe: only called on VDeviceInfo from generateDeviceInfo()
         // or from persistence load (parcel ctor fills all 7 fields).
-        usedValues.field1.add(info.field1!!)
+        usedValues.field1.add(info.deviceId!!)
         usedValues.field2.add(info.androidId!!)
-        usedValues.field3.add(info.field3!!)
-        usedValues.field4.add(info.field4!!)
-        usedValues.field5.add(info.field5!!)
+        usedValues.field3.add(info.macAddress!!)
+        usedValues.field4.add(info.bluetoothMac!!)
+        usedValues.field5.add(info.iccSerialNumber!!)
     }
 
     companion object {

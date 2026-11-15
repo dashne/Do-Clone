@@ -12,7 +12,7 @@ object IGrammaticalInflectionManager {
     @JvmField
     var TYPE: Class<*>? = RefClass.load(IGrammaticalInflectionManager::class.java, "android.app.IGrammaticalInflectionManager")
 
-    // jadx: io.e43$a
+    // jadx: io.e43$Stub
     object Stub {
         @JvmField
         var TYPE: Class<*>? = RefClass.load(Stub::class.java, "android.app.IGrammaticalInflectionManager\$Stub")

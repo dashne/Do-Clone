@@ -14,6 +14,6 @@ open class ResultStaticMethodProxy(
     @Throws(Throwable::class)
     override fun call(who: Any?, method: Method, args: Array<Any?>?): Any? = result
 
-    // x(): exposes the value (jadx left it as x)
+    // doTransact(): exposes the value (jadx left it as doTransact)
     fun getResult(): Any? = result
 }

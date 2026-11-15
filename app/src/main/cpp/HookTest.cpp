@@ -20,7 +20,7 @@ static int new_open(const char* path, int flags, ...) {
         va_end(ap);
     }
     g_hits++;
-    __android_log_print(ANDROID_LOG_INFO, VA_TAG, "HOOK open(%s, 0x%x)", path ? path : "(null)", flags);
+    __android_log_print(ANDROID_LOG_INFO, VA_TAG, "HOOK open(%s, 0x%doTransact)", path ? path : "(null)", flags);
     return orig_open(path, flags, mode);
 }
 

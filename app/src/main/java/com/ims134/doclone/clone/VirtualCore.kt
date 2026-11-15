@@ -8,41 +8,137 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.content.res.Resources
 import android.os.Build
+import android.os.ConditionVariable
 import android.os.IBinder
 import android.os.IBinder.DeathRecipient
 import android.os.Process
 import android.os.RemoteException
 import android.util.Log
 import com.ims134.doclone.DoApplication.Companion.appContext
+import com.ims134.doclone.clone.BuildCompat.sdk28OrLater
 import com.ims134.doclone.clone.BuildCompat.sdk29OrLater
 import com.ims134.doclone.clone.BuildCompat.sdk30OrLater
 import com.ims134.doclone.clone.BuildCompat.sdk31OrLater
+import com.ims134.doclone.clone.BuildCompat.sdk33OrLater
+import com.ims134.doclone.clone.BuildCompat.sdk34OrLater
+import com.ims134.doclone.clone.GmsSupport.isGmsPackage
 import com.ims134.doclone.clone.VirtualRuntime.crash
 import com.ims134.doclone.clone.server.InstalledAppInfo
+import com.ims134.doclone.io.AccessibilityManagerStub
+import com.ims134.doclone.io.AccountManagerStub
 import com.ims134.doclone.io.ActivityClient.getActivityClientController
 import com.ims134.doclone.io.ActivityClient.isAvailable
 import com.ims134.doclone.io.ActivityClientControllerStub
 import com.ims134.doclone.io.ActivityManagerNative
 import com.ims134.doclone.io.ActivityManagerStub
 import com.ims134.doclone.io.ActivityThread
+import com.ims134.doclone.io.AdvancedProtectionManagerStub
+import com.ims134.doclone.io.AlarmManagerStub
 import com.ims134.doclone.io.AmTaskMgrMirror
 import com.ims134.doclone.io.AmTaskMgrStub
+import com.ims134.doclone.io.AppFunctionManagerStub
+import com.ims134.doclone.io.AppInstrumentation
+import com.ims134.doclone.io.AppIntegrityManagerStub
+import com.ims134.doclone.io.AppOpsManagerStub
+import com.ims134.doclone.io.AppSearchManagerStub
+import com.ims134.doclone.io.AppWidgetManagerStub
 import com.ims134.doclone.io.AssetManagerMirror
+import com.ims134.doclone.io.AudioManagerStub
+import com.ims134.doclone.io.AuthServiceStub
+import com.ims134.doclone.io.AutoFillManagerStub
+import com.ims134.doclone.io.BackupManagerStub
+import com.ims134.doclone.io.BatteryStatsStub
+import com.ims134.doclone.io.BluetoothStub
+import com.ims134.doclone.io.CameraServiceStub
+import com.ims134.doclone.io.ClipboardStub
 import com.ims134.doclone.io.CloneApiDelegate
+import com.ims134.doclone.io.CloneComponentDelegate
+import com.ims134.doclone.io.ComponentDelegate
+import com.ims134.doclone.io.ConnectivityStub
+import com.ims134.doclone.io.ContentServiceStub
+import com.ims134.doclone.io.ContextFixer
+import com.ims134.doclone.io.ContextHubServiceStub
+import com.ims134.doclone.io.CredentialManagerStub
+import com.ims134.doclone.io.CrossProfileAppsStub
+import com.ims134.doclone.io.DeviceIdentifiersServiceStub
+import com.ims134.doclone.io.DevicePolicyManagerStub
+import com.ims134.doclone.io.DisplayStub
+import com.ims134.doclone.io.DomainVerificationManagerStub
 import com.ims134.doclone.io.DropBoxManagerStub
+import com.ims134.doclone.io.FingerprintManagerStub
 import com.ims134.doclone.io.GrammaticalInflectionManagerStub
+import com.ims134.doclone.io.GraphicsStatsStub
 import com.ims134.doclone.io.HCallbackStub
+import com.ims134.doclone.io.HwTelephonyStub
+import com.ims134.doclone.io.IAutoFillManager
+import com.ims134.doclone.io.IDomainVerificationManagerMirror
 import com.ims134.doclone.io.IGrammaticalInflectionManager
+import com.ims134.doclone.io.IHwTelephony
+import com.ims134.doclone.io.IInjector
+import com.ims134.doclone.io.IPerfManagerMirror
+import com.ims134.doclone.io.IPersistentDataBlockServiceMirror
 import com.ims134.doclone.io.ISmsStub
+import com.ims134.doclone.io.ISmtOpsServiceMirror
 import com.ims134.doclone.io.ISubStub
 import com.ims134.doclone.io.ITimeDetectorService
 import com.ims134.doclone.io.ITimeZoneDetectorService
+import com.ims134.doclone.io.ITrustManagerMiroor
+import com.ims134.doclone.io.InputMethodManagerStub
 import com.ims134.doclone.io.InvocationStubManager
+import com.ims134.doclone.io.JobServiceStub
 import com.ims134.doclone.io.LibCoreStub
+import com.ims134.doclone.io.LocaleManagerStub
+import com.ims134.doclone.io.LocationManagerStub
+import com.ims134.doclone.io.LockSettingsStub
+import com.ims134.doclone.io.MediaRouterServiceStub
+import com.ims134.doclone.io.MmsStub
+import com.ims134.doclone.io.MountServiceStub
+import com.ims134.doclone.io.NetworkManagementStub
+import com.ims134.doclone.io.NetworkScoreManagerStub
+import com.ims134.doclone.io.NetworkStatsManagerStub
+import com.ims134.doclone.io.NfcAdapterStub
+import com.ims134.doclone.io.NotificationManagerStub
+import com.ims134.doclone.io.NsdManagerStub
 import com.ims134.doclone.io.PackageManagerStub
 import com.ims134.doclone.io.PermissionCompat
+import com.ims134.doclone.io.PermissionManagerStub
+import com.ims134.doclone.io.PersistentDataBlockServiceStub
+import com.ims134.doclone.io.PhoneSubInfoStub
+import com.ims134.doclone.io.PowerManagerStub
+import com.ims134.doclone.io.QPerformanceStub
+import com.ims134.doclone.io.RestrictionStub
+import com.ims134.doclone.io.RoleManagerStub
+import com.ims134.doclone.io.SSClipboardStub
+import com.ims134.doclone.io.SafetyCenterManagerStub
+import com.ims134.doclone.io.SearchManagerStub
+import com.ims134.doclone.io.ServiceManager
+import com.ims134.doclone.io.SessionManagerStub
+import com.ims134.doclone.io.ShortcutServiceStub
+import com.ims134.doclone.io.SliceManagerStub
+import com.ims134.doclone.io.SmtOpsManagerStub
+import com.ims134.doclone.io.SpecialComponentList
+import com.ims134.doclone.io.StatsManagerStub
+import com.ims134.doclone.io.StatusBarManagerStub
+import com.ims134.doclone.io.StorageStatsStub
+import com.ims134.doclone.io.SupervisionManagerStub
+import com.ims134.doclone.io.SystemUpdateStub
+import com.ims134.doclone.io.TelephonyRegistryStub
+import com.ims134.doclone.io.TelephonyStub
+import com.ims134.doclone.io.TetheringServiceStub
+import com.ims134.doclone.io.TextServiceStub
 import com.ims134.doclone.io.TimeDetectorStub
 import com.ims134.doclone.io.TimeZoneDetectorStub
+import com.ims134.doclone.io.TrustManagerStub
+import com.ims134.doclone.io.UiModeManagerStub
+import com.ims134.doclone.io.UpdateEngineStub
+import com.ims134.doclone.io.UsageStatsManagerStub
+import com.ims134.doclone.io.UserManagerStub
+import com.ims134.doclone.io.UwbManagerStubMirror
+import com.ims134.doclone.io.VibratorManagerStub
+import com.ims134.doclone.io.VibratorStub
+import com.ims134.doclone.io.WifiManagerStub
+import com.ims134.doclone.io.WifiScannerStub
+import com.ims134.doclone.io.WindowManagerStub
 
 
 enum class ProcessType
@@ -69,13 +165,17 @@ class VirtualCore
         fun resolveServiceInfo(userId: Int, intent: Intent): ServiceInfo? {
             val type = intent.type
             try {
-                // av8.b is VPackageManager.instance, get() is getService() (io.e53)
+                // av8.b is VPackageManager.instance, get() is getService_() (io.e53)
                 val info = VPackageManager.instance?.getPackageManager()?.resolveService(intent, type, 0, userId)
                 return info?.serviceInfo
             } catch (e: RemoteException) {
-                VirtualRuntime.crash(e)                      // smali io.x09.get(RemoteException)
-                throw IllegalStateException("unreachable")   // smali: throw null
+                crash(e)                      // smali io.x09.get(RemoteException)
+
             }
+        }
+        @JvmStatic
+        fun isRestrictedPackage(str: String?): Boolean {
+            return str != null && (isGmsPackage(str) || SpecialComponentList.VENDOR_PACKAGES.contains(str))
         }
     }
     var processType: ProcessType? = null
@@ -94,9 +194,14 @@ class VirtualCore
 
     private var hostPermissionCache: HashSet<String>? = null
 
+    var cloneComponentDelegate: CloneComponentDelegate? = null
+
+
     var cloneApiDelegate: CloneApiDelegate? = null
 
     var systemPid:Int = 0
+
+    var initLock: ConditionVariable? = ConditionVariable()
 
 
     fun isClientProcess(): Boolean { return processType == ProcessType.Client}
@@ -118,21 +223,18 @@ class VirtualCore
         val invocationStubManager = InvocationStubManager.instance
         invocationStubManager.javaClass
         check(!InvocationStubManager.initialized) { "InvocationStubManager Has been initialized." }
-        if(!isMainProcess())
-        {
-            if (isServerProcess())
-            {
+        if (!isMainProcess()) {
+            if (isServerProcess()) {
                 invocationStubManager.mInjectors[ActivityManagerStub::class.java] =
                     ActivityManagerStub(ActivityManagerNative.getDefault!!.call(*arrayOfNulls<Any>(0)))
                 if (sdk29OrLater()) {
-                    invocationStubManager.mInjectors[AmTaskMgrStub::class.java] = AmTaskMgrStub(AmTaskMgrMirror.getService.call(arrayOfNulls<Any>(0)))
+                    invocationStubManager.mInjectors[AmTaskMgrStub::class.java] = AmTaskMgrStub(AmTaskMgrMirror.getService.call(*arrayOfNulls<Any>(0)))
                 }
                 if (!sdk30OrLater()) {
-                    invocationStubManager.mInjectors[PackageManagerStub::class.java] = PackageManagerStub()
+                    invocationStubManager.mInjectors[PackageManagerStub::class.java] =
+                        PackageManagerStub()
                 }
-            }
-            else if (isClientProcess())
-            {
+            } else if (isClientProcess()) {
                 invocationStubManager.mInjectors[LibCoreStub::class.java] = LibCoreStub()
                 invocationStubManager.mInjectors[ActivityManagerStub::class.java] =
                     ActivityManagerStub(ActivityManagerNative.getDefault!!.call(*arrayOfNulls<Any>(0)))
@@ -140,7 +242,8 @@ class VirtualCore
                     invocationStubManager.mInjectors[AmTaskMgrStub::class.java] = AmTaskMgrStub(AmTaskMgrMirror.getService.call(*arrayOfNulls<Any>(0)))
                 }
                 if (sdk31OrLater() && isAvailable() && getActivityClientController() != null) {
-                    invocationStubManager.mInjectors[ActivityClientControllerStub::class.java] =ActivityClientControllerStub()
+                    invocationStubManager.mInjectors[ActivityClientControllerStub::class.java] =
+                        ActivityClientControllerStub()
                 }
                 if (sdk31OrLater() && ITimeDetectorService.Stub.asInterface != null) {
                     invocationStubManager.mInjectors[TimeDetectorStub::class.java] =
@@ -162,15 +265,312 @@ class VirtualCore
                 invocationStubManager.mInjectors[ISubStub::class.java] = ISubStub()
                 invocationStubManager.mInjectors[DropBoxManagerStub::class.java] =
                     DropBoxManagerStub()
+                invocationStubManager.mInjectors[NotificationManagerStub::class.java] =
+                    NotificationManagerStub()
 
+                invocationStubManager.mInjectors[LocationManagerStub::class.java] =
+                    LocationManagerStub()
+                invocationStubManager.mInjectors[WindowManagerStub::class.java] = WindowManagerStub()
+                invocationStubManager.mInjectors[ClipboardStub::class.java] = ClipboardStub()
+                invocationStubManager.mInjectors[MountServiceStub::class.java] = MountServiceStub()
+                invocationStubManager.mInjectors[BackupManagerStub::class.java] = BackupManagerStub()
+                invocationStubManager.mInjectors.put(TelephonyStub::class.java, TelephonyStub())
+                if (IHwTelephony.Stub.TYPE != null && HwTelephonyStub.fetchBinder() != null) {
+                    invocationStubManager.mInjectors[HwTelephonyStub::class.java] = HwTelephonyStub()
+                }
+                invocationStubManager.mInjectors[AccessibilityManagerStub::class.java] =
+                    AccessibilityManagerStub()
+                invocationStubManager.mInjectors[TelephonyRegistryStub::class.java] =
+                    TelephonyRegistryStub()
+                invocationStubManager.mInjectors[PhoneSubInfoStub::class.java] = PhoneSubInfoStub()
+                invocationStubManager.mInjectors[PowerManagerStub::class.java] = PowerManagerStub()
+                invocationStubManager.mInjectors[AppWidgetManagerStub::class.java] =
+                    AppWidgetManagerStub()
+                invocationStubManager.mInjectors[AccountManagerStub::class.java] =
+                    AccountManagerStub()
+                invocationStubManager.mInjectors[AudioManagerStub::class.java] = AudioManagerStub()
+                invocationStubManager.mInjectors[SearchManagerStub::class.java] = SearchManagerStub()
+                invocationStubManager.mInjectors[ContentServiceStub::class.java] =
+                    ContentServiceStub()
+                invocationStubManager.mInjectors[ConnectivityStub::class.java] = ConnectivityStub()
+                val requestIdGenerator = NetworkStatsManagerStub.requestIdGenerator
+
+                var cls :Class<*>? = null
+                try {
+                    cls = Class.forName("android.net.INetworkStatsService\$Stub")
+                } catch (unused: Throwable) {
+                    cls = null
+                }
+                if (cls != null && ServiceManager.getService.call("netstats") != null) {
+                    invocationStubManager.mInjectors[NetworkStatsManagerStub::class.java] =
+                        NetworkStatsManagerStub()
+                }
+                invocationStubManager.mInjectors[StatusBarManagerStub::class.java] =
+                    StatusBarManagerStub()
+                invocationStubManager.mInjectors[VibratorStub::class.java] = VibratorStub()
+                invocationStubManager.mInjectors[WifiManagerStub::class.java] = WifiManagerStub()
+                if (i >= 29) {
+                    val cls11 =try {
+                        Class.forName(if (Build.VERSION.SDK_INT >= 30) "android.hardware.biometrics.IAuthService\$Stub" else "android.hardware.biometrics.IBiometricService\$Stub")
+                    } catch (unused2: Throwable) {
+                        null
+                    }
+                    if (cls11 != null) {
+                        if (ServiceManager.getService.call(if (Build.VERSION.SDK_INT >= 30) "auth" else "biometric") != null) {
+                            invocationStubManager.mInjectors[AuthServiceStub::class.java] =
+                                AuthServiceStub()
+                        }
+                    }
+                }
+                val cls2 =try {
+                    Class.forName("android.nfc.INfcAdapter\$Stub")
+                } catch (unused3: Throwable) {
+                    null
+                }
+                if (cls2 != null && ServiceManager.getService.call("nfc") != null) {
+                    invocationStubManager.mInjectors[NfcAdapterStub::class.java] = NfcAdapterStub()
+                }
+                invocationStubManager.mInjectors[BluetoothStub::class.java] = BluetoothStub()
+                if (CameraServiceStub.getCameraServiceStubClass() != null && ServiceManager.getService.call("media.camera") != null) {
+                    invocationStubManager.mInjectors[CameraServiceStub::class.java] =
+                        CameraServiceStub()
+                }
+                invocationStubManager.mInjectors[ContextHubServiceStub::class.java] =
+                    ContextHubServiceStub()
+                invocationStubManager.mInjectors[UserManagerStub::class.java] = UserManagerStub()
+                invocationStubManager.mInjectors[DisplayStub::class.java] = DisplayStub()
+                if (IPersistentDataBlockServiceMirror.Stub.TYPE != null) {
+                    invocationStubManager.mInjectors[PersistentDataBlockServiceStub::class.java] =
+                        PersistentDataBlockServiceStub()
+                }
+                invocationStubManager.mInjectors[InputMethodManagerStub::class.java] =
+                    InputMethodManagerStub()
+                invocationStubManager.mInjectors[MmsStub::class.java] = MmsStub()
+                invocationStubManager.mInjectors[SessionManagerStub::class.java] =
+                    SessionManagerStub()
+                invocationStubManager.mInjectors[JobServiceStub::class.java] = JobServiceStub()
+                invocationStubManager.mInjectors[RestrictionStub::class.java] = RestrictionStub()
+                if (ITrustManagerMiroor.TYPE != null) {
+                    invocationStubManager.mInjectors[TrustManagerStub::class.java] =
+                        TrustManagerStub()
+                }
+                invocationStubManager.mInjectors[AlarmManagerStub::class.java] = AlarmManagerStub()
+                invocationStubManager.mInjectors[AppOpsManagerStub::class.java] = AppOpsManagerStub()
+                invocationStubManager.mInjectors[MediaRouterServiceStub::class.java] =
+                    MediaRouterServiceStub()
+                if (ISmtOpsServiceMirror.TYPE != null) {
+                    invocationStubManager.mInjectors[SmtOpsManagerStub::class.java] =
+                        SmtOpsManagerStub()
+                }
+                invocationStubManager.mInjectors[GraphicsStatsStub::class.java] = GraphicsStatsStub()
+                invocationStubManager.mInjectors[UsageStatsManagerStub::class.java] =
+                    UsageStatsManagerStub()
+                invocationStubManager.mInjectors[FingerprintManagerStub::class.java] =
+                    FingerprintManagerStub()
+                invocationStubManager.mInjectors[NetworkManagementStub::class.java] =
+                    NetworkManagementStub()
+                invocationStubManager.mInjectors[NetworkScoreManagerStub::class.java] =
+                    NetworkScoreManagerStub()
+                invocationStubManager.mInjectors[WifiScannerStub::class.java] = WifiScannerStub()
+                invocationStubManager.mInjectors[ShortcutServiceStub::class.java] =
+                    ShortcutServiceStub()
+                invocationStubManager.mInjectors[DevicePolicyManagerStub::class.java] =
+                    DevicePolicyManagerStub()
+                invocationStubManager.mInjectors[UpdateEngineStub::class.java] = UpdateEngineStub()
+                val put = invocationStubManager.mInjectors.put(
+                    BatteryStatsStub::class.java,
+                    BatteryStatsStub()
+                )
+                if (sdk28OrLater()) {
+                    if (i >= 28) {
+                        val cls10 = try {
+                             Class.forName("android.content.pm.ICrossProfileApps\$Stub")
+                        } catch (unused4: Throwable) {
+                            null
+                        }
+                        if (cls10 != null && ServiceManager.getService.call("crossprofileapps") != null) {
+                            invocationStubManager.mInjectors[CrossProfileAppsStub::class.java] =
+                                CrossProfileAppsStub()
+                        }
+                    }
+                    invocationStubManager.mInjectors[SystemUpdateStub::class.java] =
+                        SystemUpdateStub()
+                    invocationStubManager.mInjectors[LockSettingsStub::class.java] =
+                        LockSettingsStub()
+                    invocationStubManager.mInjectors[SliceManagerStub::class.java] =
+                        SliceManagerStub()
+                    invocationStubManager.mInjectors[RoleManagerStub::class.java] = RoleManagerStub()
+                }
+                if (sdk29OrLater()) {
+                    invocationStubManager.mInjectors[DeviceIdentifiersServiceStub::class.java] =
+                        DeviceIdentifiersServiceStub()
+                    var z = try {
+                        Class.forName("android.util.BoostFramework")
+                        true
+                    } catch (unused5: java.lang.Exception) {
+                        false
+                    }
+                    if (!z) {
+                        try {
+                            Class.forName("com.qualcomm.qti.Performance")
+                            z = true
+                        } catch (unused6: java.lang.Exception) {
+                        }
+                    }
+                    if (z && ServiceManager.getService.call("vendor.perfservice") != null && IPerfManagerMirror.Stub.asInterface != null) {
+                        invocationStubManager.mInjectors[QPerformanceStub::class.java] =
+                            QPerformanceStub()
+                    }
+                    if ("samsung".equals(Build.BRAND,ignoreCase = true) ||
+                        "samsung".equals(Build.MANUFACTURER, ignoreCase = true)
+                    ) {
+                        invocationStubManager.mInjectors[SSClipboardStub::class.java] =
+                            SSClipboardStub()
+                    }
+                    invocationStubManager.mInjectors[TextServiceStub::class.java] = TextServiceStub()
+                }
+                if (sdk30OrLater()) {
+                    invocationStubManager.mInjectors[PermissionManagerStub::class.java] =
+                        PermissionManagerStub()
+                    invocationStubManager.mInjectors[TetheringServiceStub::class.java] =
+                        TetheringServiceStub()
+                    invocationStubManager.mInjectors[AppIntegrityManagerStub::class.java] =
+                        AppIntegrityManagerStub()
+                    invocationStubManager.mInjectors[StatsManagerStub::class.java] =
+                        StatsManagerStub()
+                }
+                if (sdk31OrLater()) {
+                    invocationStubManager.mInjectors[VibratorManagerStub::class.java] =
+                        VibratorManagerStub()
+                    if (i >= 31) {
+                        val handler = UwbManagerStubMirror.mainHandler
+                        val cls9 = try {
+                            Class.forName("android.uwb.IUwbAdapter\$Stub")
+                        } catch (unused7: Throwable) {
+                            null
+                        }
+                        if (cls9 != null && ServiceManager.getService.call("uwb") != null) {
+                            invocationStubManager.mInjectors[UwbManagerStubMirror::class.java] =
+                                UwbManagerStubMirror()
+                        }
+                    } else {
+                        val handler2 = UwbManagerStubMirror.mainHandler
+                    }
+                    if (IDomainVerificationManagerMirror.Stub.TYPE != null && IDomainVerificationManagerMirror.Stub.asInterface != null) {
+                        invocationStubManager.mInjectors[DomainVerificationManagerStub::class.java] =
+                            DomainVerificationManagerStub()
+                    }
+                }
+                if (sdk33OrLater()) {
+                    invocationStubManager.mInjectors[LocaleManagerStub::class.java] =
+                        LocaleManagerStub()
+                    invocationStubManager.mInjectors[SafetyCenterManagerStub::class.java] =
+                        SafetyCenterManagerStub()
+                    if (i >= 33) {
+                        val cls8 = try {
+                             Class.forName("android.net.nsd.INsdManager\$Stub")
+                        } catch (unused8: Throwable) {
+                            null
+                        }
+                        if (cls8 != null && ServiceManager.getService.call("servicediscovery") != null) {
+                            invocationStubManager.mInjectors[NsdManagerStub::class.java] =
+                                NsdManagerStub()
+                        }
+                    }
+                }
+                if (sdk34OrLater()) {
+                    invocationStubManager.mInjectors[CredentialManagerStub::class.java] =
+                        CredentialManagerStub()
+                }
+                if (i >= 36) {
+                    val handler3 = AdvancedProtectionManagerStub.mainHandler
+                    val cls7 =try {
+
+                            Class.forName("android.security.advancedprotection.IAdvancedProtectionService\$Stub")
+                    } catch (unused9: Throwable) {
+                        null
+                    }
+                    if (cls7 != null && ServiceManager.getService.call("advanced_protection") != null) {
+                        invocationStubManager.mInjectors[AdvancedProtectionManagerStub::class.java] =
+                            AdvancedProtectionManagerStub()
+                    }
+                } else {
+                    val handler4 = AdvancedProtectionManagerStub.mainHandler
+                }
+                if (i >= 36) {
+                    val cls3 = try {
+                        Class.forName("android.app.IUiModeManager\$Stub")
+                    } catch (unused10: Throwable) {
+                         null
+                    }
+                    if (cls3 != null && ServiceManager.getService.call("uimode") != null) {
+                        invocationStubManager.mInjectors[UiModeManagerStub::class.java] =
+                            UiModeManagerStub()
+                    }
+                }
+                if (i >= 35) {
+                    val cls4 = try {
+                         Class.forName("android.app.appfunctions.IAppFunctionManager\$Stub")
+                    } catch (unused11: Throwable) {
+                        null
+                    }
+                    if (cls4 != null && ServiceManager.getService.call("app_function") != null) {
+                        invocationStubManager.mInjectors[AppFunctionManagerStub::class.java] =
+                            AppFunctionManagerStub()
+                    }
+                }
+                if (i >= 31) {
+                    val cls5 = try {
+                         Class.forName("android.app.appsearch.aidl.IAppSearchManager\$Stub")
+                    } catch (unused12: Throwable) {
+                        null
+                    }
+                    if (cls5 != null && ServiceManager.getService.call("app_search") != null) {
+                        invocationStubManager.mInjectors[AppSearchManagerStub::class.java] =
+                            AppSearchManagerStub()
+                    }
+                }
+                if (i >= 36) {
+                    val cls6 = try {
+                        Class.forName("android.app.supervision.ISupervisionManager\$Stub")
+                    } catch (unused13: Throwable) {
+                        null
+                    }
+                    if (cls6 != null && ServiceManager.getService.call("supervision") != null) {
+                        invocationStubManager.mInjectors[SupervisionManagerStub::class.java] =
+                            SupervisionManagerStub()
+                    }
+                }
+                if (i >= 26) {
+                    if (sdk29OrLater() && IAutoFillManager.Stub.asInterface != null && ServiceManager.getService.call(
+                            "autofill"
+                        ) != null
+                    ) {
+                        invocationStubManager.mInjectors[AutoFillManagerStub::class.java] =
+                            AutoFillManagerStub()
+                    }
+                    invocationStubManager.mInjectors[StorageStatsStub::class.java] =
+                        StorageStatsStub()
+                }
             }
         }
-
         InvocationStubManager.initialized = true
+        val it: MutableIterator<*> = invocationStubManager.mInjectors.values.iterator()
+        while (it.hasNext()) {
+            (it.next() as IInjector).inject()
+        }
+        invocationStubManager.addInjector(AppInstrumentation.getInstance())
+        ContextFixer.fixContext(appContext)
+        this.isStarted = true
+        if (this.processType == ProcessType.Main) {
+            DaemonService.ensureBound(appContext)
+        }
+        val conditionVariable: ConditionVariable? = this.initLock
+        if (conditionVariable != null) {
+            conditionVariable.open()
+            this.initLock = null
+        }
 
-
-        //---
-        isStarted = true
 
     }
 
@@ -184,7 +584,7 @@ class VirtualCore
 
         if(currentProcessName.equals(mainProcessName))
             processType = ProcessType.Main
-        else if(currentProcessName!!.endsWith(":x"))
+        else if(currentProcessName!!.endsWith(":doTransact"))
             processType = ProcessType.Server
         else
         {
@@ -336,6 +736,19 @@ class VirtualCore
         }
     }
 
+    fun getListener(): ComponentDelegate {
+        val c = this.cloneComponentDelegate
+        return if (c == null) ComponentDelegate.a else cloneComponentDelegate!!
+    }
+
+    fun isAppInstalledAsUser(i: Int, packageName: String?): Boolean {
+        try {
+            return getAppManager()!!.isAppInstalledAsUser(i, packageName)
+        } catch (e2: RemoteException) {
+            crash(e2)
+        }
+    }
+
 
     //===================================================================
     class VirtualCoreDeathRecipient(private val remote: IBinder): DeathRecipient
@@ -379,4 +792,3 @@ class VirtualCore
         }
     }
 }
-

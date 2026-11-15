@@ -72,7 +72,7 @@ class ServiceManagerNative
                 } catch (unused2: RemoteException) {
                 }
             }
-            Log.d("q47", "getService(${service}) return null.")
+            Log.d("q47", "getService_(${service}) return null.")
             return null
         }
     }

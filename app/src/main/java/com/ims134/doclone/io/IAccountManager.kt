@@ -632,7 +632,7 @@ interface IAccountManager : IInterface {
 
     // --------------------------------------------------------------------------------- Default
 
-    /** No-op implementation (jadx a23$a). */
+    /** No-op implementation (jadx a23$Stub). */
     open class Default : IAccountManager {
         override fun accountAuthenticated(userId: Int, account: Account?) = false
         override fun addAccount(

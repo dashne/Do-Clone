@@ -1,20 +1,18 @@
 package com.ims134.doclone.io
 
+import android.os.IInterface
 import com.ims134.doclone.clone.MethodProxy
 import com.ims134.doclone.clone.VirtualCore
 import java.lang.reflect.Method
 
-
-
-// jadx: io.od. The activity manager hooks, applied to IActivityTaskManager (service "activity_task", Android 10+).
-// [CHECK] jadx shows NO constructor (so it called the no-arg h3() constructor). In the repo ActivityManagerStub only has
-// the (IInterface?) constructor, so the IActivityTaskManager is passed here: inject() registers the proxy as the
-// "activity_task" binder, which only makes sense for that interface. If the original h3() default used another base,
-// change it.
+// jadx: io.od. The activity manager hooks, applied to IActivityTaskManager
+// (service "activity_task", Android 10+). The IActivityTaskManager instance is now
+// supplied by the caller and forwarded to ActivityManagerStub, which wraps it in an
+// InvocationStub. inject() then installs that proxy as the "activity_task" binder.
 @Inject(ActivityManagerMethodProxies::class)
-class AmTaskMgrStub : ActivityManagerStub(AmTaskMgrMirror.getService.call()) {
+class AmTaskMgrStub(service: IInterface?) : ActivityManagerStub(service) {
 
-    /** jadx: od$a. enterPictureInPictureMode: false when it throws an Exception */
+    /** jadx: od$Stub. enterPictureInPictureMode: false when it throws an Exception */
     private class EnterPictureInPictureMode(methodName: String) : StaticMethodProxy(methodName) {
         override fun call(who: Any?, method: Method, args: Array<Any?>?): Any? =
             try {
@@ -49,7 +47,10 @@ class AmTaskMgrStub : ActivityManagerStub(AmTaskMgrMirror.getService.call()) {
 
     @Throws(Throwable::class)
     override fun inject() {
-        SingletonMirror.mInstance.set(AmTaskMgrMirror.IActivityTaskManagerSingleton.get(), invocationStub.proxyInterface)
+        SingletonMirror.mInstance.set(
+            AmTaskMgrMirror.IActivityTaskManagerSingleton.get(),
+            invocationStub.proxyInterface,
+        )
         val binderStub = BinderInvocationStub(invocationStub.baseInterface)
         binderStub.methodProxies.putAll(invocationStub.methodProxies)
         ServiceManager.sCache.get()!!["activity_task"] = binderStub

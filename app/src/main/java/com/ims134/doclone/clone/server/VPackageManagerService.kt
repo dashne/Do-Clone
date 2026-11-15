@@ -6,19 +6,23 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.PermissionGroupInfo
 import android.content.pm.ProviderInfo
 import android.content.pm.ResolveInfo
 import android.content.pm.ServiceInfo
 import android.os.Parcel
+import android.text.TextUtils
 import android.util.Log
 import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.IPackageManager
+import com.ims134.doclone.clone.VParceledListSlice
 import com.ims134.doclone.clone.VUserHandle
 import com.ims134.doclone.clone.server.PackageParserEx.generateActivityInfo
 import com.ims134.doclone.clone.server.VPackage.PermissionComponent
 import com.ims134.doclone.clone.server.VPackage.PermissionGroupComponent
 import com.ims134.doclone.clone.server.VPackage.ProviderComponent
 import com.ims134.doclone.io.ComponentFixer
+import com.ims134.doclone.io.IPackageInstaller
 import com.ims134.doclone.io.IntentResolver
 import com.ims134.doclone.io.PackageCacheManager
 import com.ims134.doclone.io.PermissionCompat
@@ -122,6 +126,20 @@ class VPackageManagerService : IPackageManager.Stub()
         }
     }
 
+    override fun getComponentEnabledSetting(
+        componentName: ComponentName?,
+        i: Int
+    ): Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun getInstalledPackages(
+        i: Int,
+        i2: Int
+    ): VParceledListSlice<PackageInfo>? {
+        TODO("Not yet implemented")
+    }
+
     override fun getPackageInfo(packageName: String?, flags: Int, userId: Int): PackageInfo?
     {
         if (!isUserExist(userId)) return null
@@ -129,6 +147,10 @@ class VPackageManagerService : IPackageManager.Stub()
             val vPackage = packages[packageName] ?: return null
             return vPackage.packageSetting?.let { generatePackageInfo(vPackage, it, flags, userId) }
         }
+    }
+
+    override fun getPackageInstaller(): IPackageInstaller? {
+        TODO("Not yet implemented")
     }
 
 
@@ -313,6 +335,22 @@ class VPackageManagerService : IPackageManager.Stub()
         }
     }
 
+    override fun activitySupportsIntent(
+        componentName: ComponentName?,
+        intent: Intent?,
+        str: String?
+    ): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkPermission(
+        str: String?,
+        str2: String?,
+        pid: Int
+    ): Int {
+        TODO("Not yet implemented")
+    }
+
     override fun getActivityInfo(
         componentName: ComponentName?,
         flags: Int,
@@ -344,6 +382,16 @@ class VPackageManagerService : IPackageManager.Stub()
                 throw th
             }
         }
+    }
+
+    override fun getAppInstalled(
+        pkg: String?,
+        uid: String?,
+        str: String?,
+        flag: Int,
+        vuid: Int
+    ): VParceledListSlice<PackageInfo>? {
+        TODO("Not yet implemented")
     }
 
 
@@ -381,6 +429,24 @@ class VPackageManagerService : IPackageManager.Stub()
             val vPackage = packages[packageName] ?: return emptyList()
             return mActivityResolver.queryIntentForPackage(query, resolvedType, fullFlags, vPackage.activities, userId)
         }
+    }
+
+    override fun queryIntentContentProviders(
+        intent: Intent?,
+        str: String?,
+        i: Int,
+        i2: Int
+    ): List<ResolveInfo>? {
+        TODO("Not yet implemented")
+    }
+
+    override fun queryIntentReceivers(
+        intent: Intent?,
+        str: String?,
+        i: Int,
+        i2: Int
+    ): List<ResolveInfo>? {
+        TODO("Not yet implemented")
     }
 
 
@@ -498,6 +564,35 @@ class VPackageManagerService : IPackageManager.Stub()
         }
     }
 
+    override fun getPackagesForUid(i: Int): Array<String>? {
+        TODO("Not yet implemented")
+    }
+
+    override fun getPermissionGroupInfo(
+        str: String?,
+        i: Int,
+        j: Long,
+        str2: String?
+    ): PermissionGroupInfo? {
+        TODO("Not yet implemented")
+    }
+
+    override fun getProviderInfo(
+        componentName: ComponentName?,
+        i: Int,
+        i2: Int
+    ): ProviderInfo? {
+        TODO("Not yet implemented")
+    }
+
+    override fun getReceiverInfo(
+        componentName: ComponentName?,
+        i: Int,
+        i2: Int
+    ): ActivityInfo? {
+        TODO("Not yet implemented")
+    }
+
     // io.IPackageManager.Stub, io.IPackageManager
     public override fun resolveService(
         intent: Intent?,
@@ -518,6 +613,15 @@ class VPackageManagerService : IPackageManager.Stub()
         return null
     }
 
+    override fun setComponentEnabledSetting(
+        componentName: ComponentName?,
+        i: Int,
+        i2: Int,
+        i3: Int
+    ) {
+        TODO("Not yet implemented")
+    }
+
     // inside the package manager service (smali class io.xu8, jadx VPMS)
 
     override fun queryIntentServices(
@@ -525,7 +629,7 @@ class VPackageManagerService : IPackageManager.Stub()
         resolvedType: String?,
         flags: Int,
         userId: Int
-    ): List<ResolveInfo?>?
+    ): List<ResolveInfo>?
     {
         if (!isUserExist(userId)) return emptyList()            // smali static xu8.U(I)Z
 
@@ -635,21 +739,34 @@ class VPackageManagerService : IPackageManager.Stub()
         return this.mProvidersByAuthority.containsKey(authority)
     }
 
+    override fun queryContentProviders(
+        str: String?,
+        i: Int,
+        i2: Int
+    ): VParceledListSlice<ProviderInfo>? {
+        TODO("Not yet implemented")
+    }
 
-//    override fun querySharedPackages(packageName: String): List<String> {
-//        synchronized(packages) {
-//            val target = packages[packageName] ?: return emptyList()
-//            if (target.sharedUserId == null) return emptyList()          // VPackage.p
-//
-//            val result = ArrayList<String>()
-//            for (pkg in packages.values) {
-//                if (TextUtils.equals(pkg.sharedUserId, target.sharedUserId)) {
-//                    result.add(pkg.packageName!!)                          // VPackage.m
-//                }
-//            }
-//            return result
-//        }
-//    }
+    override fun getSharedLibraries(str: String?): List<String>? {
+        TODO("Not yet implemented")
+    }
+
+
+    override fun querySharedPackages(packageName: String?): List<String>
+    {
+        synchronized(packages) {
+            val target = packages[packageName] ?: return emptyList()
+            if (target.sharedUserId == null) return emptyList()          // VPackage.p
+
+            val result = ArrayList<String>()
+            for (pkg in packages.values) {
+                if (TextUtils.equals(pkg.sharedUserId, target.sharedUserId)) {
+                    result.add(pkg.packageName!!)                          // VPackage.m
+                }
+            }
+            return result
+        }
+    }
 
 
     //=================================

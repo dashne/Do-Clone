@@ -15,7 +15,7 @@ class VContentService private constructor() : IContentService.Stub() {
 
     private val root = ObserverNode(ROOT_NAME)
 
-    /** One pending onChange delivery (jadx a). */
+    /** One pending onChange delivery (jadx Stub). */
     private class ObserverCall(
         val node: ObserverNode,
         val observer: IContentObserver,
@@ -24,7 +24,7 @@ class VContentService private constructor() : IContentService.Stub() {
 
     /** Tree node: one URI segment (authority, then path segments) (jadx b). */
     private class ObserverNode(val name: String) {
-        val children = ArrayList<ObserverNode>()                                   // a
+        val children = ArrayList<ObserverNode>()                                   // Stub
         val observerDeathRecipients = ArrayList<ObserverDeathRecipient>()          // c
 
         inner class ObserverDeathRecipient(
@@ -52,7 +52,7 @@ class VContentService private constructor() : IContentService.Stub() {
         }
 
         /**
-         * jadx a(). The decompiled loop lost the recursion, so this is rebuilt from AOSP
+         * jadx Stub(). The decompiled loop lost the recursion, so this is rebuilt from AOSP
          * addObserverLocked: walk/create one child per segment, register at the leaf.
          */
         fun addObserverLocked(

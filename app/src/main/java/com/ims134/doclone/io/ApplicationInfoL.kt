@@ -18,8 +18,6 @@ import android.content.pm.VersionedPackage
 import android.os.Binder
 import android.os.Bundle
 import android.os.Handler
-import android.os.IBinder
-import android.os.IInterface
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.ArrayMap
@@ -46,8 +44,24 @@ import android.app.Notification
 import android.app.job.JobInfo
 import android.widget.RemoteViews
 import android.app.job.JobParameters
+import android.content.ClipboardManager
+import android.content.ContentResolver
+import android.location.Location
+import android.location.LocationListener
+import android.net.wifi.SupplicantState
+import android.net.wifi.WifiInfo
+import android.os.IBinder
+import android.os.IInterface
 import android.os.PersistableBundle
+import android.os.health.SystemHealthManager
+import android.telephony.CellInfoCdma
+import android.telephony.CellInfoGsm
+import android.telephony.NeighboringCellInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
 import com.ims134.doclone.reflect.RefInt
+import com.ims134.doclone.reflect.RefLong
+import java.net.InetAddress
 
 
 object ApplicationInfoL {
@@ -307,7 +321,7 @@ object ContentProviderNative {
     )
 
     @MethodParams([IBinder::class])
-    var asInterface: RefStaticMethod<IInterface?>? = null
+    var asInterface: RefStaticMethod<IInterface>? = null
 }
 object IApplicationThreadOreo {
     var TYPE: Class<*>? = load(
@@ -1148,7 +1162,7 @@ object JobInfoMirror {
 object ITimeDetectorService {
     val TYPE = RefClass.load( ITimeDetectorService::class.java, "android.app.timedetector.ITimeDetectorService");
 
-    /* JADX INFO: renamed from: io.l63$a */
+    /* JADX INFO: renamed from: io.l63$Stub */
     /* JADX INFO: compiled from: ITimeDetectorService.java */
     object Stub
     {
@@ -1177,7 +1191,7 @@ object ISub {
     @JvmField
     var TYPE: Class<*>? = RefClass.load(ISub::class.java, "com.android.internal.telephony.ISub")
 
-    // jadx: io.e63$a. Must stay a nested object named Stub (see IAutoFillManager.Stub).
+    // jadx: io.e63$Stub. Must stay Stub nested object named Stub (see IAutoFillManager.Stub).
     object Stub {
         @JvmField
         var TYPE: Class<*>? = RefClass.load(Stub::class.java, "com.android.internal.telephony.ISub\$Stub")
@@ -1207,7 +1221,7 @@ object IDropBoxManagerService {
     @JvmField
     var TYPE: Class<*>? = RefClass.load(IDropBoxManagerService::class.java, "com.android.internal.os.IDropBoxManagerService")
 
-    // jadx: io.y33$a
+    // jadx: io.y33$Stub
     object Stub {
         @JvmField
         var TYPE: Class<*>? = RefClass.load(Stub::class.java, "com.android.internal.os.IDropBoxManagerService\$Stub")
@@ -1242,4 +1256,1306 @@ object ApplicationPackageManagerMirror {
     lateinit var disableGetPackagesForUidCache: RefStaticMethod<Void>
     lateinit var getPermissionManager: RefMethod<Void>
     lateinit var mPermissionManager :RefObject<Any?>
+}
+
+object PackageInfoP {
+    val TYPE = RefClass.load(PackageInfoP::class.java, "android.content.pm.PackageInfo");
+    var signingInfo:RefObject<Any?>? = null
+}
+
+object Os {
+    val TYPE = RefClass.load(Os::class.java, "libcore.io.Os");
+}
+
+
+class LocationManagerMirror private constructor() {
+
+    companion object {
+        @JvmField var mGnssNmeaListeners: RefObject<HashMap<*, *>>? = null
+        @JvmField var mGnssStatusListeners: RefObject<HashMap<*, *>>? = null
+        @JvmField var mGpsNmeaListeners: RefObject<HashMap<*, *>>? = null
+        @JvmField var mGpsStatusListeners: RefObject<HashMap<*, *>>? = null
+        @JvmField var mListeners: RefObject<HashMap<*, *>>? = null
+        @JvmField var mNmeaListeners: RefObject<HashMap<*, *>>? = null
+        @JvmField var mService: RefObject<Any?>? = null
+
+        // TYPE initialized last so RefClass.load() can populate the fields above
+        @JvmField
+        var TYPE = RefClass.load(
+            LocationManagerMirror::class.java,
+            "android.location.LocationManager",
+        )
+    }
+
+    /** Target: android.location.LocationManager$GnssStatusListenerTransport */
+    class GnssStatusListenerTransport private constructor() {
+        companion object {
+            @JvmField var mGpsListener: RefObject<Any?>? = null
+            @JvmField var mGpsNmeaListener: RefObject<Any?>? = null
+
+            @JvmField @MethodParams([Int::class])
+            var onFirstFix: RefMethod<Void>? = null
+
+            @JvmField var onGnssStarted: RefMethod<Void>? = null
+
+            @JvmField @MethodParams([Long::class, String::class])
+            var onNmeaReceived: RefMethod<Void>? = null
+
+            @JvmField
+            @MethodParams(
+                [Int::class, IntArray::class, FloatArray::class,
+                FloatArray::class, FloatArray::class, FloatArray::class,]
+            )
+            var onSvStatusChanged: RefMethod<Void>? = null
+
+            @JvmField var `this$0`: RefObject<Any?>? = null
+
+            @JvmField
+            var TYPE = RefClass.load(
+                GnssStatusListenerTransport::class.java,
+                "android.location.LocationManager\$GnssStatusListenerTransport",
+            )
+        }
+    }
+
+    /** Target: android.location.LocationManager$GpsStatusListenerTransport — 8-arg onSvStatusChanged (API 24–25). */
+    class GpsStatusListenerTransport private constructor() {
+        companion object {
+            @JvmField var mListener: RefObject<Any?>? = null
+            @JvmField var mNmeaListener: RefObject<Any?>? = null
+
+            @JvmField @MethodParams([Int::class])
+            var onFirstFix: RefMethod<Void>? = null
+
+            @JvmField var onGpsStarted: RefMethod<Void>? = null
+
+            @JvmField @MethodParams([Long::class, String::class])
+            var onNmeaReceived: RefMethod<Void>? = null
+
+            @JvmField
+            @MethodParams(
+                [Int::class, IntArray::class, FloatArray::class,
+                FloatArray::class, FloatArray::class,
+                Int::class, Int::class, Int::class,]
+            )
+            var onSvStatusChanged: RefMethod<Void>? = null
+
+            @JvmField var `this$0`: RefObject<Any?>? = null
+
+            @JvmField
+            var TYPE = RefClass.load(
+                GpsStatusListenerTransport::class.java,
+                "android.location.LocationManager\$GpsStatusListenerTransport",
+            )
+        }
+    }
+
+    /** Same target class as [GpsStatusListenerTransport]; 9-arg onSvStatusChanged with Stub trailing extra int. */
+    class GpsStatusListenerTransportExtraInt private constructor() {
+        companion object {
+            @JvmField
+            @MethodParams(
+                [Int::class, IntArray::class, FloatArray::class,
+                FloatArray::class, FloatArray::class,
+                Int::class, Int::class, Int::class, Int::class,]
+            )
+            var onSvStatusChanged: RefMethod<Void>? = null
+
+            @JvmField
+            var TYPE = RefClass.load(
+                GpsStatusListenerTransportExtraInt::class.java,
+                "android.location.LocationManager\$GpsStatusListenerTransport",
+            )
+        }
+    }
+
+    /** Same target class; 9-arg onSvStatusChanged with trailing int[] (API 26+ `svStatus`). */
+    class GpsStatusListenerTransportIntArray private constructor() {
+        companion object {
+            @JvmField
+            @MethodParams(
+                [Int::class, IntArray::class, FloatArray::class,
+                FloatArray::class, FloatArray::class,
+                Int::class, Int::class, Int::class, IntArray::class,]
+            )
+            var onSvStatusChanged: RefMethod<Void>? = null
+
+            @JvmField
+            var TYPE = RefClass.load(
+                GpsStatusListenerTransportIntArray::class.java,
+                "android.location.LocationManager\$GpsStatusListenerTransport",
+            )
+        }
+    }
+
+    /** Same target class; 9-arg onSvStatusChanged with trailing long[] (Android R+ `gnssSvFlags`). */
+    class GpsStatusListenerTransportLongArray private constructor() {
+        companion object {
+            @JvmField
+            @MethodParams([
+                Int::class, IntArray::class, FloatArray::class,
+                FloatArray::class, FloatArray::class,
+                Int::class, Int::class, Int::class, LongArray::class,]
+            )
+            var onSvStatusChanged: RefMethod<Void>? = null
+
+            @JvmField
+            var TYPE = RefClass.load(
+                GpsStatusListenerTransportLongArray::class.java,
+                "android.location.LocationManager\$GpsStatusListenerTransport",
+            )
+        }
+    }
+
+    /** Target: android.location.LocationManager$ListenerTransport */
+    class ListenerTransport private constructor() {
+        companion object {
+            @JvmField var mListener: RefObject<LocationListener>? = null
+
+            @JvmField @MethodParams([Location::class])
+            var onLocationChanged: RefMethod<Void>? = null
+
+            @JvmField @MethodParams([String::class])
+            var onProviderDisabled: RefMethod<Void>? = null
+
+            @JvmField @MethodParams([String::class])
+            var onProviderEnabled: RefMethod<Void>? = null
+
+            @JvmField @MethodParams([String::class, Int::class, Bundle::class])
+            var onStatusChanged: RefMethod<Void>? = null
+
+            @JvmField var `this$0`: RefObject<Any?>? = null
+
+            @JvmField
+            var TYPE = RefClass.load(
+                ListenerTransport::class.java,
+                "android.location.LocationManager\$ListenerTransport",
+            )
+        }
+    }
+}
+object LocationRequestL {
+    var TYPE =
+        RefClass.load(LocationRequestL::class.java as Class<*>, "android.location.LocationRequest")
+    var createFromDeprecatedProvider: RefStaticMethod<Any?>? = null
+    var getProvider: RefMethod<String?>? = null
+    var mHideFromAppOps: RefBoolean? = null
+    var mProvider: RefObject<String?>? = null
+    var mQuality: RefObject<Any?>? = null
+    var mWorkSource: RefObject<Any?>? = null
+}
+object ILocationManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(ILocationManagerMirror::class.java as Class<*>, "android.location.ILocationManager")
+
+    /* JADX INFO: renamed from: io.t43$Stub */ /* JADX INFO: compiled from: ILocationManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.location.ILocationManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface>? = null
+    }
+}
+object WindowManagerGlobal {
+    var TYPE: Class<*>? = RefClass.load(
+        WindowManagerGlobal::class.java as Class<*>,
+        "android.view.WindowManagerGlobal"
+    )
+    var sWindowManagerService: RefStaticObject<IInterface?>? = null
+}
+object PhoneWindowMirror {
+    var TYPE: Class<*>?
+    var sWindowManager: RefStaticObject<IInterface?>? = null
+
+    /* JADX DEBUG: Don't trust debug lines info. Lines numbers was adjusted: min line is 1 */
+    init {
+        val clsLoad = RefClass.load(
+            PhoneWindowMirror::class.java as Class<*>,
+            "com.android.internal.policy.impl.PhoneWindow\$WindowManagerHolder"
+        )
+        TYPE = clsLoad
+        if (clsLoad == null) {
+            TYPE = RefClass.load(
+                PhoneWindowMirror::class.java as Class<*>,
+                "com.android.internal.policy.PhoneWindow\$WindowManagerHolder"
+            )
+        }
+    }
+}
+object IWindowManager {
+    var TYPE: Class<*>? =
+        RefClass.load(IWindowManager::class.java as Class<*>, "android.view.IWindowManager")
+
+    /* JADX INFO: renamed from: io.d73$Stub */ /* JADX INFO: compiled from: IWindowManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.view.IWindowManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ClipboardManagerOreo {
+    var TYPE: Class<*>? =
+        RefClass.load(ClipboardManagerOreo::class.java, ClipboardManager::class.java as Class<*>)
+    var mService: RefObject<IInterface?>? = null
+    var sService: RefStaticObject<IInterface?>? = null
+}
+object ClipboardManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(ClipboardManagerMirror::class.java, ClipboardManager::class.java as Class<*>)
+    var getService: RefStaticMethod<IInterface?>? = null
+    var sService: RefStaticObject<IInterface?>? = null
+}
+object IStorageManagerMirror {
+    var TYPE =
+        RefClass.load(IStorageManagerMirror::class.java as Class<*>, "android.os.storage.IStorageManager")
+
+    /* JADX INFO: renamed from: io.c63$Stub */ /* JADX INFO: compiled from: IStorageManager.java */
+    object Stub {
+        var TYPE =
+            RefClass.load(Stub::class.java as Class<*>, "android.os.storage.IStorageManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IMountService {
+    var TYPE: Class<*>? =
+        RefClass.load(IMountService::class.java as Class<*>, "android.os.storage.IMountService")
+
+    /* JADX INFO: renamed from: io.w43$Stub */ /* JADX INFO: compiled from: IMountService.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.os.storage.IMountService\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IBackupManager {
+    var TYPE: Class<*>? =
+        RefClass.load(IBackupManager::class.java as Class<*>, "android.app.backup.IBackupManager")
+
+    /* JADX INFO: renamed from: io.c33$Stub */ /* JADX INFO: compiled from: IBackupManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.app.backup.IBackupManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+@TargetApi(17)
+object CellSignalStrengthCdma {
+    var TYPE: Class<*>? = RefClass.load(
+        CellSignalStrengthCdma::class.java,
+        android.telephony.CellSignalStrengthCdma::class.java as Class<*>
+    )
+    var ctor: RefConstructor<android.telephony.CellSignalStrengthCdma?>? = null
+    var mCdmaDbm: RefInt? = null
+    var mCdmaEcio: RefInt? = null
+    var mEvdoDbm: RefInt? = null
+    var mEvdoEcio: RefInt? = null
+    var mEvdoSnr: RefInt? = null
+}
+
+@TargetApi(17)
+object CellIdentityCdma {
+    var TYPE: Class<*>? = RefClass.load(
+        CellIdentityCdma::class.java,
+        android.telephony.CellIdentityCdma::class.java as Class<*>
+    )
+    var ctor: RefConstructor<android.telephony.CellIdentityCdma?>? = null
+    var mBasestationId: RefInt? = null
+    var mNetworkId: RefInt? = null
+    var mSystemId: RefInt? = null
+}
+@TargetApi(17)
+object CellIdentityGsm {
+    var TYPE: Class<*>? = RefClass.load(
+        CellIdentityGsm::class.java,
+        android.telephony.CellIdentityGsm::class.java as Class<*>
+    )
+    var ctor: RefConstructor<android.telephony.CellIdentityGsm?>? = null
+    var mCid: RefInt? = null
+    var mLac: RefInt? = null
+    var mMcc: RefInt? = null
+    var mMnc: RefInt? = null
+}
+@TargetApi(17)
+object CellSignalStrengthGsm {
+    var TYPE: Class<*>? = RefClass.load(
+        CellSignalStrengthGsm::class.java,
+        android.telephony.CellSignalStrengthGsm::class.java as Class<*>
+    )
+    var ctor: RefConstructor<android.telephony.CellSignalStrengthGsm?>? = null
+    var mBitErrorRate: RefInt? = null
+    var mSignalStrength: RefInt? = null
+}
+@TargetApi(17)
+object CellInfoCdmaMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(CellInfoCdmaMirror::class.java, CellInfoCdma::class.java as Class<*>)
+    var ctor: RefConstructor<CellInfoCdma?>? = null
+    var mCellIdentityCdma: RefObject<CellIdentityCdma?>? = null
+    var mCellSignalStrengthCdma: RefObject<CellSignalStrengthCdma?>? = null
+}
+@TargetApi(17)
+object CellInfoGsm {
+    var TYPE: Class<*>? =
+        RefClass.load(android.telephony.CellInfoGsm::class.java, android.telephony.CellInfoGsm::class.java as Class<*>)
+    var ctor: RefConstructor<CellInfoGsm?>? = null
+    var mCellIdentityGsm: RefObject<CellIdentityGsm?>? = null
+    var mCellSignalStrengthGsm: RefObject<CellSignalStrengthGsm?>? = null
+}
+object NeighboringCellInfoMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(NeighboringCellInfoMirror::class.java, NeighboringCellInfo::class.java as Class<*>)
+    var mCid: RefInt? = null
+    var mLac: RefInt? = null
+    var mRssi: RefInt? = null
+}
+object ITelephony {
+    var TYPE: Class<*>? = RefClass.load(
+        ITelephony::class.java as Class<*>,
+        "com.android.internal.telephony.ITelephony"
+    )
+
+    /* JADX INFO: renamed from: io.h63$Stub */ /* JADX INFO: compiled from: ITelephony.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.telephony.ITelephony\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IAccessibilityManager {
+    var TYPE: Class<*>? = RefClass.load(
+        IAccessibilityManager::class.java as Class<*>,
+        "android.view.accessibility.IAccessibilityManager"
+    )
+
+    /* JADX INFO: renamed from: io.z13$Stub */ /* JADX INFO: compiled from: IAccessibilityManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.view.accessibility.IAccessibilityManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+object IPhoneSubInfo {
+    var TYPE: Class<*>? = RefClass.load(
+        IPhoneSubInfo::class.java as Class<*>,
+        "com.android.internal.telephony.IPhoneSubInfo"
+    )
+
+    /* JADX INFO: renamed from: io.j53$Stub */ /* JADX INFO: compiled from: IPhoneSubInfo.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.telephony.IPhoneSubInfo\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ITelephonyRegistry {
+    var TYPE: Class<*>? = RefClass.load(
+        ITelephonyRegistry::class.java as Class<*>,
+        "com.android.internal.telephony.ITelephonyRegistry"
+    )
+
+    /* JADX INFO: renamed from: io.i63$Stub */ /* JADX INFO: compiled from: ITelephonyRegistry.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.telephony.ITelephonyRegistry\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+
+
+/**
+ * Was `k53`. Mirror of `android.os.IPowerManager`.
+ *
+ * The `asInterface` field is populated as Stub **side effect** of `RefClass.load(...)`,
+ * so it must be **declared before** `TYPE` — otherwise the `= null` initializer for
+ * `asInterface` would run after `load(...)` and wipe out the reflective assignment.
+ * (This is the same ordering constraint we handled in `LocationManagerMirror` and
+ * `PackageInstallerMirror`.)
+ */
+class IPowerManager constructor() {
+
+    class Stub private constructor() {
+        companion object {
+            // Fields first (all null), then TYPE last so load() runs after them.
+            @JvmField
+            @MethodParams([IBinder::class])
+            var asInterface: RefStaticMethod<IInterface>? = null
+
+            @JvmField
+            var TYPE = RefClass.load(
+                Stub::class.java,
+                "android.os.IPowerManager\$Stub",
+            )
+        }
+    }
+
+    companion object {
+        @JvmField
+        var TYPE = RefClass.load(
+            IPowerManager::class.java,
+            "android.os.IPowerManager",
+        )
+    }
+}
+class IAppWidgetService private constructor() {
+
+    class Stub private constructor() {
+        companion object {
+            // Fields first (all null), then TYPE last so load() runs after them.
+            @JvmField
+            @MethodParams([IBinder::class])
+            var asInterface: RefStaticMethod<IInterface>? = null
+
+            @JvmField
+            var TYPE = RefClass.load(
+                Stub::class.java,
+                "com.android.internal.appwidget.IAppWidgetService\$Stub",
+            )
+        }
+    }
+
+    companion object {
+        @JvmField
+        var TYPE = RefClass.load(
+            IAppWidgetService::class.java,
+            "com.android.internal.appwidget.IAppWidgetService",
+        )
+    }
+}
+object IAccountManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IAccountManagerMirror::class.java as Class<*>,
+        "android.accounts.IAccountManager"
+    )
+
+    /* JADX INFO: renamed from: io.b23$Stub */ /* JADX INFO: compiled from: IAccountManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.accounts.IAccountManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+
+object IHwTelephony {
+    var TYPE: Class<*>? = RefClass.load(
+        IHwTelephony::class.java as Class<*>,
+        "com.android.internal.telephony.IHwTelephony"
+    )
+
+    /* JADX INFO: renamed from: io.g43$Stub */ /* JADX INFO: compiled from: IHwTelephony.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.telephony.IHwTelephony\$Stub"
+        )
+    }
+}
+object IAudioService {
+    var TYPE: Class<*>? =
+        RefClass.load(IAudioService::class.java as Class<*>, "android.media.IAudioService")
+
+    /* JADX INFO: renamed from: io.a33$Stub */ /* JADX INFO: compiled from: IAudioService.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.media.IAudioService\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ISearchManager {
+    var TYPE: Class<*>? =
+        RefClass.load(ISearchManager::class.java as Class<*>, "android.app.ISearchManager")
+
+    /* JADX INFO: renamed from: io.r53$Stub */ /* JADX INFO: compiled from: ISearchManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.app.ISearchManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IContentServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IContentServiceMirror::class.java as Class<*>,
+        "android.content.IContentService"
+    )
+
+    /* JADX INFO: renamed from: io.q33$Stub */ /* JADX INFO: compiled from: IContentService.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.content.IContentService\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ContentResolverMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(ContentResolverMirror::class.java, ContentResolver::class.java as Class<*>)
+    var sContentService: RefStaticObject<IInterface?>? = null
+}
+object IConnectivityManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IConnectivityManagerMirror::class.java as Class<*>,
+        IConnectivityManager.Stub.DESCRIPTOR
+    )
+
+    /* JADX INFO: renamed from: io.n33$Stub */ /* JADX INFO: compiled from: IConnectivityManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.net.IConnectivityManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IStatusBarService {
+    var TYPE: Class<*>? = RefClass.load(
+        IStatusBarService::class.java as Class<*>,
+        "com.android.internal.statusbar.IStatusBarService"
+    )
+
+    /* JADX INFO: renamed from: io.b63$Stub */ /* JADX INFO: compiled from: IStatusBarService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.statusbar.IStatusBarService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IVibratorServiceMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IVibratorServiceMirror::class.java as Class<*>, "android.os.IVibratorServiceMirror")
+
+    /* JADX INFO: renamed from: io.x63$Stub */ /* JADX INFO: compiled from: IVibratorServiceMirror.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.os.IVibratorServiceMirror\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IWifiManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IWifiManagerMirror::class.java as Class<*>, "android.net.wifi.IWifiManager")
+
+    /* JADX INFO: renamed from: io.b73$Stub */ /* JADX INFO: compiled from: IWifiManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.net.wifi.IWifiManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object WifiInfoMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(WifiInfoMirror::class.java, WifiInfo::class.java as Class<*>)
+    var ctor: RefConstructor<WifiInfo?>? = null
+    var mBSSID: RefObject<String?>? = null
+    var mFrequency: RefInt? = null
+    var mIpAddress: RefObject<InetAddress?>? = null
+    var mLinkSpeed: RefInt? = null
+    var mMacAddress: RefObject<String?>? = null
+    var mNetworkId: RefInt? = null
+    var mRssi: RefInt? = null
+    var mSSID: RefObject<String?>? = null
+    var mSupplicantState: RefObject<SupplicantState?>? = null
+    var mWifiSsid: RefObject<Any?>? = null
+}
+@TargetApi(19)
+object WifiSsidMirror {
+    val TYPE: Class<*>? =
+        RefClass.load(WifiSsidMirror::class.java as Class<*>, "android.net.wifi.WifiSsid")
+    var createFromAsciiEncoded: RefStaticMethod<Any?>? = null
+}
+object IBluetoothManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IBluetoothManagerMirror::class.java as Class<*>,
+        "android.bluetooth.IBluetoothManager"
+    )
+
+    /* JADX INFO: renamed from: io.i33$Stub */ /* JADX INFO: compiled from: IBluetoothManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.bluetooth.IBluetoothManager\$Stub")
+    }
+}
+object IBluetoothMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IBluetoothMirror::class.java as Class<*>, "android.bluetooth.IBluetooth")
+
+    /* JADX INFO: renamed from: io.h33$Stub */ /* JADX INFO: compiled from: IBluetooth.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.bluetooth.IBluetooth\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IContextHubServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IContextHubServiceMirror::class.java as Class<*>,
+        "android.hardware.location.IContextHubService"
+    )
+
+    /* JADX INFO: renamed from: io.r33$Stub */ /* JADX INFO: compiled from: IContextHubService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.hardware.location.IContextHubService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IUserManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IUserManagerMirror::class.java as Class<*>, "android.os.IUserManager")
+
+    /* JADX INFO: renamed from: io.t63$Stub */ /* JADX INFO: compiled from: IUserManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.os.IUserManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object UserManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(UserManagerMirror::class.java as Class<*>, "android.os.UserManager")
+    var mService: RefObject<IInterface?>? = null
+}
+object DisplayManagerGlobalMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        DisplayManagerGlobalMirror::class.java as Class<*>,
+        "android.hardware.display.DisplayManagerGlobal"
+    )
+    var getInstance: RefStaticMethod<Any?>? = null
+    var mDm: RefObject<IInterface?>? = null
+}
+object IPersistentDataBlockServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IPersistentDataBlockServiceMirror::class.java as Class<*>,
+        "android.service.persistentdata.IPersistentDataBlockService"
+    )
+
+    /* JADX INFO: renamed from: io.i53$Stub */ /* JADX INFO: compiled from: IPersistentDataBlockService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.service.persistentdata.IPersistentDataBlockService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object InputMethodManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        InputMethodManagerMirror::class.java,
+        InputMethodManager::class.java as Class<*>
+    )
+    var mService: RefObject<IInterface?>? = null
+}
+object IInputMethodManagerGlobalInvokerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IInputMethodManagerGlobalInvokerMirror::class.java as Class<*>,
+        "android.view.inputmethod.IInputMethodManagerGlobalInvoker"
+    )
+    var sServiceCache: RefStaticObject<IInterface?>? = null
+}
+object IMmsMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IMmsMirror::class.java as Class<*>, "com.android.internal.telephony.IMms")
+
+    /* JADX INFO: renamed from: io.v43$Stub */ /* JADX INFO: compiled from: IMms.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "com.android.internal.telephony.IMms\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ISessionManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ISessionManagerMirror::class.java as Class<*>,
+        "android.media.session.ISessionManager"
+    )
+
+    /* JADX INFO: renamed from: io.v53$Stub */ /* JADX INFO: compiled from: ISessionManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.media.session.ISessionManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IJobSchedulerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IJobSchedulerMirror::class.java as Class<*>, "android.app.job.IJobScheduler")
+
+    /* JADX INFO: renamed from: io.o43$Stub */ /* JADX INFO: compiled from: IJobScheduler.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.app.job.IJobScheduler\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IRestrictionsManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IRestrictionsManagerMirror::class.java as Class<*>,
+        "android.content.IRestrictionsManager"
+    )
+
+    /* JADX INFO: renamed from: io.o53$Stub */ /* JADX INFO: compiled from: IRestrictionsManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.content.IRestrictionsManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ITrustManagerMiroor {
+    var TYPE: Class<*>? = RefClass.load(
+        ITrustManagerMiroor::class.java as Class<*>,
+        "android.app.trust.ITrustManager"
+    )
+
+    /* JADX INFO: renamed from: io.n63$Stub */ /* JADX INFO: compiled from: ITrustManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.app.trust.ITrustManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IAlarmManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IAlarmManagerMirror::class.java as Class<*>, "android.app.IAlarmManager")
+
+    /* JADX INFO: renamed from: io.l23$Stub */ /* JADX INFO: compiled from: IAlarmManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.app.IAlarmManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IAppOpsServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IAppOpsServiceMirror::class.java as Class<*>,
+        "com.android.internal.app.IAppOpsService"
+    )
+
+    /* JADX INFO: renamed from: io.p23$Stub */ /* JADX INFO: compiled from: IAppOpsService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.app.IAppOpsService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object AppOpsManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(AppOpsManagerMirror::class.java as Class<*>, "android.app.AppOpsManager")
+    var mService: RefObject<IInterface?>? = null
+    var sService: RefStaticObject<IInterface?>? = null
+}
+object IMediaRouterServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IMediaRouterServiceMirror::class.java as Class<*>,
+        "android.media.IMediaRouterService"
+    )
+
+    /* JADX INFO: renamed from: io.u43$Stub */ /* JADX INFO: compiled from: IMediaRouterService.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.media.IMediaRouterService\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ISmtOpsServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ISmtOpsServiceMirror::class.java as Class<*>,
+        "com.android.internal.app.ISmtOpsService"
+    )
+
+    /* JADX INFO: renamed from: io.a63$Stub */ /* JADX INFO: compiled from: ISmtOpsService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.app.ISmtOpsService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+object IGraphicsStatsMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IGraphicsStatsMirror::class.java as Class<*>, "android.view.IGraphicsStats")
+
+    /* JADX INFO: renamed from: io.f43$Stub */ /* JADX INFO: compiled from: IGraphicsStats.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.view.IGraphicsStats\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IUsageStatsManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IUsageStatsManagerMirror::class.java as Class<*>,
+        "android.app.usage.IUsageStatsManager"
+    )
+
+    /* JADX INFO: renamed from: io.r63$Stub */ /* JADX INFO: compiled from: IUsageStatsManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.app.usage.IUsageStatsManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IFingerprintServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IFingerprintServiceMirror::class.java as Class<*>,
+        "android.hardware.fingerprint.IFingerprintService"
+    )
+
+    /* JADX INFO: renamed from: io.z33$Stub */ /* JADX INFO: compiled from: IFingerprintService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.hardware.fingerprint.IFingerprintService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object INetworkManagementServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        INetworkManagementServiceMirror::class.java as Class<*>,
+        "android.os.INetworkManagementService"
+    )
+
+    /* JADX INFO: renamed from: io.x43$Stub */ /* JADX INFO: compiled from: INetworkManagementService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.os.INetworkManagementService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IWifiScannerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IWifiScannerMirror::class.java as Class<*>, IWifiScanner.Stub.DESCRIPTOR)
+
+    /* JADX INFO: renamed from: io.c73$Stub */ /* JADX INFO: compiled from: IWifiScanner.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.net.wifi.IWifiScanner\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+class IShortcutServiceMirror {
+    /* JADX INFO: renamed from: io.w53$Stub */ /* JADX INFO: compiled from: IShortcutService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            IShortcutServiceMirror::class.java as Class<*>,
+            "android.content.pm.IShortcutService\$Stub"
+        )
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object AndroidFutureMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        AndroidFutureMirror::class.java as Class<*>,
+        "com.android.internal.infra.AndroidFuture"
+    )
+    var ctor: RefConstructor<AndroidFutureMirror?>? = null
+
+    /* JADX DEBUG: Don't trust debug lines info. Lines numbers was adjusted: min line is 1 */
+    fun create(): Any? {
+        val refConstructor = ctor
+        if (refConstructor != null) {
+            return refConstructor.newInstance()
+        }
+        return null
+    }
+}
+object IDevicePolicyManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IDevicePolicyManagerMirror::class.java as Class<*>,
+        "android.app.admin.IDevicePolicyManager"
+    )
+
+    /* JADX INFO: renamed from: io.v33$Stub */ /* JADX INFO: compiled from: IDevicePolicyManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.app.admin.IDevicePolicyManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IBatteryStatsMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IBatteryStatsMirror::class.java as Class<*>,
+        "com.android.internal.app.IBatteryStats"
+    )
+
+    /* JADX INFO: renamed from: io.e33$Stub */ /* JADX INFO: compiled from: IBatteryStats.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.app.IBatteryStats\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+@TargetApi(24)
+object SystemHealthManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        SystemHealthManagerMirror::class.java,
+        SystemHealthManager::class.java as Class<*>
+    )
+    var mBatteryStats: RefObject<*>? = null
+}
+object ISliceManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ISliceManagerMirror::class.java as Class<*>,
+        "android.app.slice.ISliceManager"
+    )
+
+    /* JADX INFO: renamed from: io.x53$Stub */ /* JADX INFO: compiled from: ISliceManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.app.slice.ISliceManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+object IRoleManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IRoleManagerMirror::class.java as Class<*>, "android.app.role.IRoleManager")
+
+    /* JADX INFO: renamed from: io.p53$Stub */ /* JADX INFO: compiled from: IRoleManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.app.role.IRoleManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IDeviceIdentifiersPolicyServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IDeviceIdentifiersPolicyServiceMirror::class.java as Class<*>,
+        "android.os.IDeviceIdentifiersPolicyService"
+    )
+
+    /* JADX INFO: renamed from: io.t33$a */ /* JADX INFO: compiled from: IDeviceIdentifiersPolicyService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.os.IDeviceIdentifiersPolicyService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IPerfManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(IPerfManagerMirror::class.java as Class<*>, "com.qualcomm.qti.IPerfManager")
+
+    /* JADX INFO: renamed from: io.g53$a */ /* JADX INFO: compiled from: IPerfManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "com.qualcomm.qti.IPerfManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IClipboardServiceMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IClipboardServiceMirror::class.java as Class<*>,
+        "android.sec.clipboard.IClipboardService"
+    )
+
+    /* JADX INFO: renamed from: io.m33$a */ /* JADX INFO: compiled from: IClipboardService.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.sec.clipboard.IClipboardService\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+object ITextServicesManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ITextServicesManagerMirror::class.java as Class<*>,
+        "com.android.internal.textservice.ITextServicesManager"
+    )
+
+    /* JADX INFO: renamed from: io.k63$a */ /* JADX INFO: compiled from: ITextServicesManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "com.android.internal.textservice.ITextServicesManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IPermissionManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IPermissionManagerMirror::class.java as Class<*>,
+        "android.permission.IPermissionManager"
+    )
+
+    /* JADX INFO: renamed from: io.h53$a */ /* JADX INFO: compiled from: IPermissionManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.permission.IPermissionManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+object PermissionManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        PermissionManagerMirror::class.java as Class<*>,
+        "android.permission.PermissionManager"
+    )
+    var mPermissionManager: RefObject<IInterface?>? = null
+}
+object ITetheringConnectorMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ITetheringConnectorMirror::class.java as Class<*>,
+        "android.net.ITetheringConnector"
+    )
+
+    /* JADX INFO: renamed from: io.j63$a */ /* JADX INFO: compiled from: ITetheringConnector.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.net.ITetheringConnector\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IVibratorManagerService {
+    var TYPE: Class<*>? = RefClass.load(
+        IVibratorManagerService::class.java as Class<*>,
+        "android.os.IVibratorManagerService"
+    )
+
+    /* JADX INFO: renamed from: io.w63$a */ /* JADX INFO: compiled from: IVibratorManagerService.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.os.IVibratorManagerService\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object IDomainVerificationManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IDomainVerificationManagerMirror::class.java as Class<*>,
+        "android.content.pm.verify.domain.IDomainVerificationManager"
+    )
+
+    /* JADX INFO: renamed from: io.x33$a */ /* JADX INFO: compiled from: IDomainVerificationManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.content.pm.verify.domain.IDomainVerificationManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ILocaleManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(ILocaleManagerMirror::class.java as Class<*>, "android.app.ILocaleManager")
+
+    /* JADX INFO: renamed from: io.r43$a */ /* JADX INFO: compiled from: ILocaleManager.java */
+    object Stub {
+        var TYPE: Class<*>? =
+            RefClass.load(Stub::class.java as Class<*>, "android.app.ILocaleManager\$Stub")
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<IInterface?>? = null
+    }
+}
+object ISafetyCenterManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ISafetyCenterManagerMirror::class.java as Class<*>,
+        "android.safetycenter.ISafetyCenterManager"
+    )
+
+    /* JADX INFO: renamed from: io.q53$a */ /* JADX INFO: compiled from: ISafetyCenterManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.safetycenter.ISafetyCenterManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+object ICredentialManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ICredentialManagerMirror::class.java as Class<*>,
+        "android.credentials.ICredentialManager"
+    )
+
+    /* JADX INFO: renamed from: io.s33$a */ /* JADX INFO: compiled from: ICredentialManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.credentials.ICredentialManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+object StorageStatsMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(StorageStatsMirror::class.java as Class<*>, "android.app.usage.StorageStats")
+    var cacheBytes: RefLong? = null
+    var codeBytes: RefLong? = null
+    var ctor: RefConstructor<*>? = null
+    var dataBytes: RefLong? = null
+}
+object IStorageStatsManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IStorageStatsManagerMirror::class.java as Class<*>,
+        "android.app.usage.IStorageStatsManager"
+    )
+
+    /* JADX INFO: renamed from: io.d63$a */ /* JADX INFO: compiled from: IStorageStatsManager.java */
+    object Stub {
+        var TYPE: Class<*>? = RefClass.load(
+            Stub::class.java as Class<*>,
+            "android.app.usage.IStorageStatsManager\$Stub"
+        )
+
+        @MethodParams([IBinder::class])
+        var asInterface: RefStaticMethod<*>? = null
+    }
+}
+object ActivityMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(ActivityMirror::class.java as Class<*>, "android.app.Activity")
+    var mActivityInfo: RefObject<ActivityInfo?>? = null
+    var mEmbeddedID: RefObject<String?>? = null
+    var mFinished: RefBoolean? = null
+    var mParent: RefObject<Activity?>? = null
+    var mResultCode: RefInt? = null
+    var mResultData: RefObject<Intent?>? = null
+    var mToken: RefObject<IBinder?>? = null
+}
+object ContextImplKitkatMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(ContextImplKitkatMirror::class.java as Class<*>, "android.app.ContextImpl")
+    var mDisplayAdjustments: RefObject<*>? = null
+    var mExternalCacheDirs: RefObject<Array<File?>?>? = null
+    var mExternalFilesDirs: RefObject<Array<File?>?>? = null
+    var mOpPackageName: RefObject<String?>? = null
+}
+object ContentResolverJBMR2Mirror {
+    var TYPE =
+        RefClass.load(ContentResolverJBMR2Mirror::class.java, ContentResolver::class.java as Class<*>)
+    var mPackageName: RefObject<String?>? = null
+}
+object NotificationManagerMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        NotificationManagerMirror::class.java as Class<*>,
+        "android.app.NotificationManager"
+    )
+    var getService: RefStaticMethod<IInterface?>? = null
+    var sService: RefStaticObject<IInterface?>? = null
+}
+object ToastMirror {
+    var TYPE: Class<*>? = RefClass.load(ToastMirror::class.java, Toast::class.java as Class<*>)
+    var sService: RefStaticObject<IInterface?>? = null
 }

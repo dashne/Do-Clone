@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.res.Resources
 
-/** Builds a Resources object for an app installed in the virtual space (jadx: io.cf6). */
+/** Builds Stub Resources object for an app installed in the virtual space (jadx: io.cf6). */
 object RegisteredServicesParser {
 
     /**

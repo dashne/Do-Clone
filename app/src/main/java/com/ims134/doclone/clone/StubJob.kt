@@ -22,7 +22,7 @@ import com.ims134.doclone.io.JobParametersMirror
 
 
 /**
- * The host's stub job service every clone job runs under (see [VJobSchedulerService]). When the system starts a job here, the
+ * The host's stub job service every clone job runs under (see [VJobSchedulerService]). When the system starts Stub job here, the
  * clone service of that job is bound and the job's callback is relayed to the system's.
  *
  * Unseen: IJobService (AIDL: startJob / stopJob), JobParametersMirror (callback, jobId), InvocationStubManager, io.SparseArray.
@@ -33,13 +33,13 @@ class StubJob : Service() {
     /** was b */
     private lateinit var jobScheduler: JobScheduler
 
-    /** was a: the running clone jobs by job id */
+    /** was Stub: the running clone jobs by job id */
     private val jobCallbacks = SparseArray<JobCallback>()
 
     /** was c */
     private val proxy: IJobService = Proxy()
 
-    /** was StubJob$a: what the system calls to start / stop a job */
+    /** was StubJob$Stub: what the system calls to start / stop Stub job */
     inner class Proxy : IJobService.Stub() {
         @Throws(RemoteException::class)
         override fun startJob(jobParameters: JobParameters?)
@@ -103,7 +103,7 @@ class StubJob : Service() {
      * every call goes to [callback], the system's.
      */
     inner class JobCallback(
-        /** was a */
+        /** was Stub */
         private val jobId: Int,
         /** was b: the system's callback */
         private val callback: IJobCallback,
@@ -180,7 +180,7 @@ class StubJob : Service() {
     companion object {
         private const val TAG = "StubJob"
 
-        /** was a(StubJob, callback, id): tells the system's callback the job started and ended; a dead callback is ignored */
+        /** was Stub(StubJob, callback, id): tells the system's callback the job started and ended; Stub dead callback is ignored */
         @JvmStatic
         fun finishJobImmediately(callback: IJobCallback, jobId: Int) {
             try {

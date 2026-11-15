@@ -297,7 +297,7 @@ object ActivityManagerMethodProxies {
      */
     open class StartActivity : MethodProxy() {
 
-        /** was x: sends an apk install request (file: scheme) to the host app. True if it took it. */
+        /** was doTransact: sends an apk install request (file: scheme) to the host app. True if it took it. */
         private fun requestInstall(intent: Intent): Boolean {
             try {
                 val listener = VirtualCore.gCore.getAppManager()?.getAppRequestListener() ?: return false
@@ -679,7 +679,7 @@ object ActivityManagerMethodProxies {
             }
         }
 
-        /** was x: get shortcut install: the shortcut intent starts the virtual app through our stub, with get clone label and icon */
+        /** was doTransact: get shortcut install: the shortcut intent starts the virtual app through our stub, with get clone label and icon */
         private fun fixShortcutInstall(intent: Intent): Intent {
             val shortcutIntent = intent.getParcelableExtra<Intent>("android.intent.extra.shortcut.INTENT")
             val resolved = shortcutIntent?.resolveActivity(VirtualCore.getPackageManager())
@@ -1518,7 +1518,7 @@ object ActivityManagerMethodProxies {
      */
     open class GetContentProvider : MethodProxy() {
 
-        /** was x: index of the authority (name) argument */
+        /** was doTransact: index of the authority (name) argument */
         protected open fun authorityIndex(): Int = if (BuildCompat.sdk29OrLater()) 2 else 1
 
         /** was y: calls the original, any failure is swallowed (null) */
@@ -1792,12 +1792,12 @@ object ActivityManagerMethodProxies {
     }
 
     /**
-     * was uq4$x: getIntentSender. The intents of the pending intent are pointed at our stub receiver / activity /
+     * was uq4$doTransact: getIntentSender. The intents of the pending intent are pointed at our stub receiver / activity /
      * service, carrying the real intent (and user) so the virtual app is started when it fires.
      */
     open class GetIntentSender : MethodProxy() {
 
-        /** was x(Object...): index of the Intent[] argument */
+        /** was doTransact(Object...): index of the Intent[] argument */
         protected open fun intentsIndex(args: Array<Any?>?): Int = 5
 
         /** was y(Object...): index of the resolvedTypes (String[]) argument */

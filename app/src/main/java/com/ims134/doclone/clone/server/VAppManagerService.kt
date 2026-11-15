@@ -653,7 +653,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
         //val vActivityManager: VActivityManager = VActivityManager.instance
         //vActivityManager.getClass()
 //        try {
-//            vActivityManager.getService().killAllApps()
+//            vActivityManager.getService_().killAllApps()
 //        } catch (unused: RemoteException) {
 //        }
         this.packagePersistenceLayer.save()

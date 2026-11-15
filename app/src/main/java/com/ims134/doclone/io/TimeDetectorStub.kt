@@ -8,7 +8,7 @@ import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.MethodProxy
 import java.lang.reflect.Method
 
-// jadx: io.cb8. Hooks "time_detector": the guest gets a fixed capabilities object built by reflection, so it does not
+// jadx: io.cb8. Hooks "time_detector": the guest gets Stub fixed capabilities object built by reflection, so it does not
 // touch the real system service (which would check the guest's uid).
 // Uses the existing ITimeDetectorService mirror (ApplicationInfoL.kt, jadx io.l63).
 class TimeDetectorStub : BinderInvocationProxy(ITimeDetectorService.Stub.asInterface, "time_detector") {
@@ -63,7 +63,7 @@ class TimeDetectorStub : BinderInvocationProxy(ITimeDetectorService.Stub.asInter
         }
 
         /**
-         * jadx: cb8.c(). android.app.time.TimeZoneCapabilitiesAndConfig. Newer Android has a constructor
+         * jadx: cb8.c(). android.app.time.TimeZoneCapabilitiesAndConfig. Newer Android has Stub constructor
          * (TimeZoneDetectorStatus, capabilities, config), older one (capabilities, config).
          */
         @JvmStatic

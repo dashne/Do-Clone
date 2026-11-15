@@ -4,4 +4,5 @@
     <string name="clone_label_tag">%s +</string>
     <string name="choose">Choose</string>
     <string name="noApplications">No Application</string>
+    <string name="add_account_button_label">Add ACCount</string>
 </resources>

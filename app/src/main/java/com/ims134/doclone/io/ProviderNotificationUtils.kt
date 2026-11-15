@@ -49,7 +49,7 @@ object ProviderNotificationUtils {
         notificationChannel.setDescription("Compatibility of old versions")
     }
 
-    /* JADX DEBUG: Don't trust debug lines info. Lines numbers was adjusted: min line is 1 */ /* JADX DEBUG: Marked for inline */ /* JADX DEBUG: Method not inlined, still used in: [com.polestar.clone.client.stub.DaemonService.InnerService.onStartCommand(android.content.Intent, int, int):int, com.polestar.clone.server.BinderProvider.onCreate():boolean] */ /* JADX INFO: renamed from: x */
+    /* JADX DEBUG: Don't trust debug lines info. Lines numbers was adjusted: min line is 1 */ /* JADX DEBUG: Marked for inline */ /* JADX DEBUG: Method not inlined, still used in: [com.polestar.clone.client.stub.DaemonService.InnerService.onStartCommand(android.content.Intent, int, int):int, com.polestar.clone.server.BinderProvider.onCreate():boolean] */ /* JADX INFO: renamed from: doTransact */
     fun createNotificationChannel(
         notificationManager: NotificationManager,
         notificationChannel: NotificationChannel

@@ -6,7 +6,7 @@ import android.os.Parcelable
 
 /** One virtual account of one virtual user. Persisted by VAccountManagerService (account-list.ini). */
 class VAccount private constructor(
-    val userId: Int,                                   // a
+    val userId: Int,                                   // Stub
     var name: String,                                  // b
     var previousName: String?,                         // c
     val type: String,                                  // d
