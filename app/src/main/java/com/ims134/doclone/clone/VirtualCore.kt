@@ -574,48 +574,32 @@ class VirtualCore
 
     }
 
-    fun detectProcessType()
-    {
+    fun detectProcessType() {
         val appInfo = appContext.applicationInfo
         hostPackageName = appInfo.packageName
         mainProcessName = appInfo.processName
         currentProcessName = ActivityThread.getProcessName?.call(mainThread)
 
-
-        if(currentProcessName.equals(mainProcessName))
-            processType = ProcessType.Main
-        else if(currentProcessName!!.endsWith(":doTransact"))
-            processType = ProcessType.Server
-        else
-        {
-            var processIndex =-1
-            if(currentProcessName.isNullOrEmpty() || !currentProcessName!!.startsWith("${hostPackageName}:p"))
-                processIndex = -1
-            else
-            {
-                try {
-                    processIndex = currentProcessName!!.substring(currentProcessName!!.length).toInt()
-                }
-                catch (e: Exception)
-                {
-                    processIndex = -1
-                }
+        val current = currentProcessName
+        processType = when {
+            current == mainProcessName -> ProcessType.Main
+            current != null && current.endsWith(":x") -> ProcessType.Server
+            else -> {
+                val prefix = "${hostPackageName}:p"
+                val index = if (current != null && current.startsWith(prefix)) {
+                    current.substring(prefix.length).toIntOrNull() ?: -1
+                } else -1
+                if (index != -1) ProcessType.Client else ProcessType.Child
             }
-            processType = if(processIndex == -1) ProcessType.Child else ProcessType.Client
         }
-        if(isClientProcess())
-        {
-            val mgr = VActivityManager.instance
-            val cls = mgr.javaClass
+
+        if (isClientProcess()) {
             try {
-                systemPid = mgr.getService().getSystemPid()
-            }
-            catch (e: RemoteException)
-            {
+                systemPid = VActivityManager.instance.getService().getSystemPid()
+            } catch (e: RemoteException) {
                 crash(e)
             }
         }
-
     }
 
     fun getAppManager(): IAppManager?
