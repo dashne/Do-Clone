@@ -13,11 +13,17 @@ import android.content.pm.ServiceInfo
 import android.os.Parcel
 import android.text.TextUtils
 import android.util.Log
+import androidx.core.content.edit
 import com.ims134.doclone.DoApplication.Companion.appContext
+import com.ims134.doclone.clone.ComponentStatusMgr
+import com.ims134.doclone.clone.ComponentStatusMgr.Companion.get
+import com.ims134.doclone.clone.ComponentStatusMgr.UserStatus.Companion.componentKey
 import com.ims134.doclone.clone.IPackageManager
 import com.ims134.doclone.clone.VParceledListSlice
 import com.ims134.doclone.clone.VUserHandle
+import com.ims134.doclone.clone.VirtualCore
 import com.ims134.doclone.clone.server.PackageParserEx.generateActivityInfo
+import com.ims134.doclone.clone.server.PackageParserEx.generatePackageInfo
 import com.ims134.doclone.clone.server.VPackage.PermissionComponent
 import com.ims134.doclone.clone.server.VPackage.PermissionGroupComponent
 import com.ims134.doclone.clone.server.VPackage.ProviderComponent
@@ -39,6 +45,9 @@ class VPackageManagerService : IPackageManager.Stub()
     {
         const val MATCH_DIRECT_BOOT = 0xC0000       // MATCH_DIRECT_BOOT_AWARE (0x80000) | MATCH_DIRECT_BOOT_UNAWARE (0x40000)
         const val MAX_PACKAGE_INFO_SIZE = 819200    // 800 KB: get Binder transaction is limited to about 1 MB
+        @JvmField
+        val providerInitOrderComparator: Comparator<ProviderInfo> =
+            compareByDescending { it.initOrder }
 
         val instance = AtomicReference<VPackageManagerService>()
         @JvmField
@@ -85,6 +94,48 @@ class VPackageManagerService : IPackageManager.Stub()
         fun withDirectBootFlags(flags: Int): Int =
             if ((flags and MATCH_DIRECT_BOOT) != 0) flags else flags or MATCH_DIRECT_BOOT
 
+        @JvmStatic
+        fun getPackageInfo(
+            vPackage: VPackage,
+            pkgSettings: PackageSetting,
+            i: Int,
+            userId: Int
+        ): PackageInfo? {
+            val iWithDirectBootFlags = withDirectBootFlags(i)
+            var info = generatePackageInfo(
+                vPackage,
+                iWithDirectBootFlags,
+                pkgSettings.firstInstallTime,
+                pkgSettings.lastUpdateTime,
+                pkgSettings.readUserState(userId),
+                userId
+            )
+            if (info == null) {
+                return info
+            }
+            val parcelObtain = Parcel.obtain()
+            try {
+                info.writeToParcel(parcelObtain, 0)
+                if (parcelObtain.dataSize() > 819200) {
+                    Integer.toHexString(iWithDirectBootFlags)
+                    val flags = iWithDirectBootFlags and (-16)
+                    info = generatePackageInfo(
+                        vPackage,
+                        flags,
+                        pkgSettings.firstInstallTime,
+                        pkgSettings.lastUpdateTime,
+                        pkgSettings.readUserState(userId),
+                        userId
+                    )
+                    Integer.toHexString(flags)
+                }
+                return info
+            } finally {
+                parcelObtain.recycle()
+            }
+        }
+
+
     }
 
     val mDangerousPermissions: HashMap<String?, Array<String?>?>? = null
@@ -102,6 +153,8 @@ class VPackageManagerService : IPackageManager.Stub()
     val mProvidersByAuthority: HashMap<String?, ProviderComponent?> =
         HashMap<String?, ProviderComponent?>()
     val packages = PackageCacheManager.cache
+
+
 
 
     /** A new virtual user was created: give every installed package get state entry for it. */
@@ -130,14 +183,40 @@ class VPackageManagerService : IPackageManager.Stub()
         componentName: ComponentName?,
         i: Int
     ): Int {
-        TODO("Not yet implemented")
+        val i2: Int
+        if (componentName == null) {
+            return 0
+        }
+        checkUserId(i)
+        synchronized(this.packages) {
+            val userStatus = get(i)
+            i2 = userStatus.prefs.getInt(componentKey(componentName), 0)
+        }
+        return i2
+
     }
 
     override fun getInstalledPackages(
         i: Int,
         i2: Int
     ): VParceledListSlice<PackageInfo>? {
-        TODO("Not yet implemented")
+        val arrayList = ArrayList<PackageInfo>(this.packages.size)
+        if (isUserExist(i2)) {
+            synchronized(this.packages) {
+                try {
+                    for (vPackage in this.packages.values) {
+                        val packageInfoX = getPackageInfo(vPackage, vPackage.packageSetting!!, i, i2)
+                        if (packageInfoX != null) {
+                            arrayList.add(packageInfoX)
+                        }
+                    }
+                } catch (th: Throwable) {
+                    throw th
+                }
+            }
+        }
+        return VParceledListSlice<PackageInfo>(arrayList)
+
     }
 
     override fun getPackageInfo(packageName: String?, flags: Int, userId: Int): PackageInfo?
@@ -150,7 +229,7 @@ class VPackageManagerService : IPackageManager.Stub()
     }
 
     override fun getPackageInstaller(): IPackageInstaller? {
-        TODO("Not yet implemented")
+        return VPackageInstallerService.get()
     }
 
 
@@ -338,17 +417,38 @@ class VPackageManagerService : IPackageManager.Stub()
     override fun activitySupportsIntent(
         componentName: ComponentName?,
         intent: Intent?,
-        str: String?
+        resolvedType: String?
     ): Boolean {
-        TODO("Not yet implemented")
+        if (componentName == null || intent == null) return false
+
+        synchronized(packages) {
+            val activity = mActivityResolver.mActivities[componentName] ?: return false
+
+            return activity.intents?.any { info ->
+                (info as VPackage.ActivityIntentInfo).filter?.match(
+                    intent.action,
+                    resolvedType,
+                    intent.scheme,
+                    intent.data,
+                    intent.categories,
+                    "PMS"
+                )!! >= 0
+            } ?: false
+        }
     }
 
     override fun checkPermission(
-        str: String?,
-        str2: String?,
+        permName: String?,
+        pkgName: String?,
         pid: Int
     ): Int {
-        TODO("Not yet implemented")
+        if (permName == "android.permission.INTERACT_ACROSS_USERS" ||
+                permName == "android.permission.INTERACT_ACROSS_USERS_FULL"
+        ) {
+            return PackageManager.PERMISSION_DENIED // -1
+        }
+        val core = VirtualCore.gCore
+        return core.unhookPackageManager.checkPermission(permName!!, core.hostPackageName!!)
     }
 
     override fun getActivityInfo(
@@ -385,13 +485,37 @@ class VPackageManagerService : IPackageManager.Stub()
     }
 
     override fun getAppInstalled(
-        pkg: String?,
+        sentinel: String?,
         uid: String?,
         str: String?,
-        flag: Int,
-        vuid: Int
-    ): VParceledListSlice<PackageInfo>? {
-        TODO("Not yet implemented")
+        flags: Int,
+        userId: Int
+    ): VParceledListSlice<ApplicationInfo>? {
+        checkUserId(userId)
+
+        val result = ArrayList<ApplicationInfo>(packages.size)
+        if (sentinel == "androidxx") {
+            return VParceledListSlice(result)
+        }
+
+        val flagsWithDirectBoot = withDirectBootFlags(flags)
+
+        synchronized(packages) {
+            for (pkg in packages.values) {
+                PackageParserEx.generateApplicationInfo(
+                    pkg,
+                    flagsWithDirectBoot,
+                    pkg.packageSetting?.readUserState(userId)!!,
+                    userId
+                )?.let {
+                    result.add(
+                        it
+                    )
+                }
+            }
+        }
+
+        return VParceledListSlice(result)
     }
 
 
@@ -433,20 +557,104 @@ class VPackageManagerService : IPackageManager.Stub()
 
     override fun queryIntentContentProviders(
         intent: Intent?,
-        str: String?,
-        i: Int,
-        i2: Int
+        resolvedType: String?,
+        flags: Int,
+        userId: Int
     ): List<ResolveInfo>? {
-        TODO("Not yet implemented")
+        if (!isUserExist(userId)) return emptyList()
+
+        val flagsWithDirectBoot = withDirectBootFlags(flags)
+
+        var query = intent
+        var component = query!!.component
+        val selector = query!!.selector
+        if (component == null && selector != null) {
+            query = selector
+            component = query.component
+        }
+
+        // Explicit component: resolve directly, no filter matching
+        if (component != null) {
+            val result = ArrayList<ResolveInfo>(1)
+            getProviderInfo(component, flagsWithDirectBoot, userId)?.let { info ->
+                result.add(ResolveInfo().apply { providerInfo = info })
+            }
+            return result
+        }
+
+        val defaultOnly = (flagsWithDirectBoot and PackageManager.MATCH_DEFAULT_ONLY) != 0
+
+        synchronized(packages) {
+            val pkgName = query.`package`
+
+            // No package restriction: query all registered providers
+            if (pkgName == null) {
+                mProviderResolver.mFlags = flagsWithDirectBoot
+                return mProviderResolver.queryIntent(query, resolvedType, defaultOnly, userId)
+            }
+
+            // Restricted to one package
+            val pkg = packages[pkgName] ?: return emptyList()
+            val providers = pkg.providers ?: return emptyList()
+
+            mProviderResolver.mFlags = flagsWithDirectBoot
+
+            val filters = ArrayList<Array<VPackage.ProviderIntentInfo?>>(providers.size)
+            for (provider in providers) {
+                val intents = provider.intents
+                if (intents != null && intents.isNotEmpty()) {
+                    filters.add(intents.toTypedArray())
+                }
+            }
+            return mProviderResolver.queryIntentFromList(
+                query, resolvedType, defaultOnly, filters, userId
+            )
+        }
     }
 
     override fun queryIntentReceivers(
         intent: Intent?,
-        str: String?,
-        i: Int,
-        i2: Int
+        resolvedType: String?,
+        flags: Int,
+        userId: Int
     ): List<ResolveInfo>? {
-        TODO("Not yet implemented")
+        checkUserId(userId)
+
+        val flagsWithDirectBoot = withDirectBootFlags(flags)
+
+        var query = intent
+        var component = query!!.component
+        val selector = query!!.selector
+        if (component == null && selector != null) {
+            query = selector
+            component = query.component
+        }
+
+        // Explicit component: resolve directly, no filter matching
+        if (component != null) {
+            val result = ArrayList<ResolveInfo>(1)
+            getReceiverInfo(component, flagsWithDirectBoot, userId)?.let { info ->
+                result.add(ResolveInfo().apply { activityInfo = info })
+            }
+            return result
+        }
+
+        synchronized(packages) {
+            val pkgName = query.`package`
+
+            // No package restriction: query all registered receivers
+            if (pkgName == null) {
+                mReceiverResolver.mFlags = flagsWithDirectBoot
+                val defaultOnly = (flagsWithDirectBoot and PackageManager.MATCH_DEFAULT_ONLY) != 0
+                return mReceiverResolver.queryIntent(query, resolvedType, defaultOnly, userId)
+            }
+
+            // Restricted to one package
+            val pkg = packages[pkgName] ?: return emptyList()
+            return mReceiverResolver.queryIntentForPackage(
+                query, resolvedType, flagsWithDirectBoot, pkg.receivers, userId
+            )
+        }
     }
 
 
@@ -564,8 +772,20 @@ class VPackageManagerService : IPackageManager.Stub()
         }
     }
 
-    override fun getPackagesForUid(i: Int): Array<String>? {
-        TODO("Not yet implemented")
+    override fun getPackagesForUid(uid: Int): Array<String> {
+        val i2 = uid / 100000
+        if (!isUserExist(i2)) {
+            return arrayOf()
+        }
+        synchronized(this) {
+            val arrayList = ArrayList<String>(2)
+            for (vPackage in packages.values) {
+                if (VUserHandle.makeUid(i2, vPackage.packageSetting!!.appId) == uid) {
+                    arrayList.add(vPackage.packageName!!)
+                }
+            }
+            return arrayList.toTypedArray()
+        }
     }
 
     override fun getPermissionGroupInfo(
@@ -574,7 +794,16 @@ class VPackageManagerService : IPackageManager.Stub()
         j: Long,
         str2: String?
     ): PermissionGroupInfo? {
-        TODO("Not yet implemented")
+        synchronized(packages) {
+            if (!TextUtils.isEmpty(str) && "androidxx" != str) {
+                if (!TextUtils.isEmpty(str2)) {
+                    return null
+                }
+                val permissionGroupComponent = mPermissionGroups[str!!] ?: return null
+                return PermissionGroupInfo(permissionGroupComponent.info!!)
+            }
+            return null
+        }
     }
 
     override fun getProviderInfo(
@@ -582,7 +811,28 @@ class VPackageManagerService : IPackageManager.Stub()
         i: Int,
         i2: Int
     ): ProviderInfo? {
-        TODO("Not yet implemented")
+        checkUserId(i2)
+        val iWithDirectBootFlags = withDirectBootFlags(i)
+        synchronized(packages) {
+            val vPackage = packages[componentName!!.packageName]
+            if (vPackage != null) {
+                val packageSetting = vPackage.packageSetting
+                val providerComponent = mProvidersByComponent[componentName]
+                if (providerComponent != null &&
+                    PackageParserEx.isComponentEnabled(providerComponent.info!!, iWithDirectBootFlags, i2)
+                ) {
+                    val providerInfoGenerateProviderInfo = PackageParserEx.generateProviderInfo(
+                        providerComponent,
+                        iWithDirectBootFlags,
+                        packageSetting!!.readUserState(i2),
+                        i2
+                    )
+                    ComponentFixer.fix(providerInfoGenerateProviderInfo)
+                    return providerInfoGenerateProviderInfo
+                }
+            }
+            return null
+        }
     }
 
     override fun getReceiverInfo(
@@ -590,7 +840,28 @@ class VPackageManagerService : IPackageManager.Stub()
         i: Int,
         i2: Int
     ): ActivityInfo? {
-        TODO("Not yet implemented")
+        checkUserId(i2)
+        val iWithDirectBootFlags = withDirectBootFlags(i)
+        synchronized(packages) {
+            val vPackage = packages[componentName!!.packageName]
+            if (vPackage != null) {
+                val packageSetting = vPackage.packageSetting
+                val activityComponent = mReceiverResolver.mActivities[componentName]
+                if (activityComponent != null &&
+                    PackageParserEx.isComponentEnabled(activityComponent.info!!, iWithDirectBootFlags, i2)
+                ) {
+                    val activityInfoGenerateActivityInfo = PackageParserEx.generateActivityInfo(
+                        activityComponent,
+                        iWithDirectBootFlags,
+                        packageSetting!!.readUserState(i2),
+                        i2
+                    )
+                    ComponentFixer.fix(activityInfoGenerateActivityInfo)
+                    return activityInfoGenerateActivityInfo
+                }
+            }
+            return null
+        }
     }
 
     // io.IPackageManager.Stub, io.IPackageManager
@@ -619,7 +890,13 @@ class VPackageManagerService : IPackageManager.Stub()
         i2: Int,
         i3: Int
     ) {
-        TODO("Not yet implemented")
+        if (componentName == null) {
+            return
+        }
+        checkUserId(i3)
+        ComponentStatusMgr.get(i3).prefs.edit {
+            putInt(ComponentStatusMgr.UserStatus.componentKey(componentName), i)
+        }
     }
 
     // inside the package manager service (smali class io.xu8, jadx VPMS)
@@ -744,11 +1021,41 @@ class VPackageManagerService : IPackageManager.Stub()
         i: Int,
         i2: Int
     ): VParceledListSlice<ProviderInfo>? {
-        TODO("Not yet implemented")
+        val i3 = i / 100000
+        val iWithDirectBootFlags = withDirectBootFlags(i2)
+        val arrayList = ArrayList<ProviderInfo>(3)
+        if (isUserExist(i3)) {
+            synchronized(packages) {
+                for (providerComponent in mProvidersByComponent.values) {
+                    val packageSetting = providerComponent!!.owner!!.packageSetting
+                    if (str == null ||
+                        (packageSetting!!.appId == i % 100000 && providerComponent.info!!.processName == str)
+                    ) {
+                        PackageParserEx.generateProviderInfo(
+                            providerComponent,
+                            iWithDirectBootFlags,
+                            packageSetting!!.readUserState(i3),
+                            i3
+                        )?.let {
+                            arrayList.add(
+                                it
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        if (arrayList.isNotEmpty()) {
+            Collections.sort(arrayList, providerInitOrderComparator)
+        }
+        return VParceledListSlice(arrayList)
     }
 
     override fun getSharedLibraries(str: String?): List<String>? {
-        TODO("Not yet implemented")
+        synchronized(packages) {
+            val vPackage = packages[str] ?: return null
+            return vPackage.usesLibraries
+        }
     }
 
 

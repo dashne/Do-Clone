@@ -42,7 +42,7 @@ interface IPackageManager : IInterface {
         str: String?,
         flag: Int,
         vuid: Int,
-    ): VParceledListSlice<PackageInfo>?
+    ): VParceledListSlice<ApplicationInfo>?
 
     @Throws(RemoteException::class)
     fun getApplicationInfo(str: String?, i: Int, i2: Int): ApplicationInfo?
@@ -241,7 +241,7 @@ interface IPackageManager : IInterface {
                 str: String?,
                 flag: Int,
                 vuid: Int,
-            ): VParceledListSlice<PackageInfo>? {
+            ): VParceledListSlice<ApplicationInfo>? {
                 val data = Parcel.obtain()
                 val reply = Parcel.obtain()
                 try {
@@ -253,7 +253,7 @@ interface IPackageManager : IInterface {
                     data.writeInt(vuid)
                     remote.transact(TRANSACTION_getAppInstalled, data, reply, 0)
                     reply.readException()
-                    return ParcelUtils.readNullableParcelable<VParceledListSlice<PackageInfo>>(
+                    return ParcelUtils.readNullableParcelable<VParceledListSlice<ApplicationInfo>>(
                         reply, VParceledListSlice.CREATOR
                     )
                 } finally {
@@ -1068,7 +1068,7 @@ interface IPackageManager : IInterface {
             str: String?,
             flag: Int,
             vuid: Int,
-        ): VParceledListSlice<PackageInfo>? = null
+        ): VParceledListSlice<ApplicationInfo>? = null
 
         @Throws(RemoteException::class)
         override fun getApplicationInfo(str: String?, i: Int, i2: Int): ApplicationInfo? = null
