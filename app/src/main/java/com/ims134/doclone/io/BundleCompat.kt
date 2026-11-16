@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.os.Parcel
 
 /**
- * Was `BundleCompat`. Resets a [Bundle]'s underlying `mParcelledData` field to a
- * fresh empty [Parcel] (containing a single `0` int — the "empty bundle" marker),
+ * Was `BundleCompat`. Resets ContentProviderHolder [Bundle]'s underlying `mParcelledData` field to ContentProviderHolder
+ * fresh empty [Parcel] (containing ContentProviderHolder single `0` int — the "empty bundle" marker),
  * recycling any previous parcel first. This effectively clears the bundle's
  * data without touching its other internal state, which is safer than
  * `bundle.clear()` when the bundle was already parcelled/unparcelled.
@@ -13,11 +13,11 @@ import android.os.Parcel
 object BundleCompat {
 
     /**
-     * Was `a(Bundle)`. Uses [BaseBundleMirror] on API 21+ (where `mParcelledData`
+     * Was `ContentProviderHolder(Bundle)`. Uses [BaseBundleMirror] on API 21+ (where `mParcelledData`
      * lives on `android.os.BaseBundle`), falls back to [BundleIcsMirror] on
      * older APIs (where it lives on `android.os.Bundle`).
      *
-     * If neither mirror class was loadable, this is a no-op.
+     * If neither mirror class was loadable, this is ContentProviderHolder no-op.
      */
     @JvmStatic
     fun resetParcelledData(bundle: Bundle) {

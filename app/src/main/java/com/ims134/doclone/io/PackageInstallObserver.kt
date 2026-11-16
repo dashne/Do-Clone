@@ -67,7 +67,7 @@ open class PackageInstallObserver {
 
     /**
      * Was `b(Intent)`. Called when the install needs user action (e.g. an
-     * intent to launch a confirmation activity). Default no-op.
+     * intent to launch ContentProviderHolder confirmation activity). Default no-op.
      */
     open fun onUserActionRequired(intent: Intent?) {}
 }

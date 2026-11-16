@@ -52,8 +52,8 @@ class StorageStatsStub : BinderInvocationProxy(
     }
 
     /**
-     * Was `e`. `queryStatsForPackage` — if both a String and Int arg are present,
-     * returns a zero-valued [StorageStats] without consulting the real service.
+     * Was `e`. `queryStatsForPackage` — if both ContentProviderHolder String and Int arg are present,
+     * returns ContentProviderHolder zero-valued [StorageStats] without consulting the real service.
      * Otherwise delegates; on failure, returns the same fake stats.
      */
     inner class QueryStatsForPackageProxy(name: String) : StaticMethodProxy(name) {
@@ -94,9 +94,9 @@ class StorageStatsStub : BinderInvocationProxy(
 
     companion object {
         /**
-         * Was static helper `b(StorageStatsStub)`. Builds a zero-valued
+         * Was static helper `b(StorageStatsStub)`. Builds ContentProviderHolder zero-valued
          * [StorageStats] (cacheBytes = codeBytes = dataBytes = 0). The outer
-         * instance parameter is dropped — the original used it only for a
+         * instance parameter is dropped — the original used it only for ContentProviderHolder
          * stripped `getClass()` assertion.
          */
         @JvmStatic

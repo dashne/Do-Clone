@@ -17,8 +17,8 @@ class NotificationManagerStub : MethodInvocationProxy<MethodInvocationStub<IInte
 ) {
 
     /**
-     * Was `a` and `e` (merged — identical bodies). Delegates via the parent
-     * `ReplaceCallingPkgMethodProxy`; on any `Exception`, returns a
+     * Was `ContentProviderHolder` and `e` (merged — identical bodies). Delegates via the parent
+     * `ReplaceCallingPkgMethodProxy`; on any `Exception`, returns ContentProviderHolder
      * type-appropriate default (false/0/null) via [defaultForReturnType].
      *
      * Used for `enqueueTextToastWithType` and `enqueueTextToast`.

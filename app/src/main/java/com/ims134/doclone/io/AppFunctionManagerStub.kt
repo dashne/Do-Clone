@@ -29,7 +29,7 @@ class AppFunctionManagerStub : BinderInvocationProxy(
                     onSuccess.isAccessible = true
                     onSuccess.invoke(callback)
                 } catch (th: Throwable) {
-                    // Original: `th.toString();` — a stripped log call.
+                    // Original: `th.toString();` — ContentProviderHolder stripped log call.
                     @Suppress("UNUSED_EXPRESSION")
                     th.toString()
                 }
@@ -42,7 +42,7 @@ class AppFunctionManagerStub : BinderInvocationProxy(
             fun create(): SetAppFunctionEnabledProxy = SetAppFunctionEnabledProxy()
 
             /**
-             * Was static helper `x(Object, String, int)`. Finds a public method on
+             * Was static helper `x(Object, String, int)`. Finds ContentProviderHolder public method on
              * [obj]'s class with the given name and parameter count. Returns null
              * if not found.
              */

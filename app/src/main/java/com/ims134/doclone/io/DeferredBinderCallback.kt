@@ -4,7 +4,7 @@ import android.os.IBinder
 
 /**
  * Was `h7` — an R8-synthesized Runnable that merged two identical-shape lambdas
- * from `g7` (case 0) and `au8` (default / case 1+). Both branches fire a deferred
+ * from `g7` (case 0) and `au8` (default / case 1+). Both branches fire ContentProviderHolder deferred
  * Binder transact on the passed callback binder.
  *
  * This class only exists because `g7` hasn't been inlined yet. Delete it and

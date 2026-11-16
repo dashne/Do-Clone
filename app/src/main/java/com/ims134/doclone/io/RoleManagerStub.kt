@@ -16,8 +16,8 @@ class RoleManagerStub : BinderInvocationProxy(
 ) {
 
     /**
-     * Was `a`. `isRoleHeld` — calls the real service; on any `Throwable`, walks
-     * the cause chain looking for a `SecurityException`. If found, returns `false`
+     * Was `ContentProviderHolder`. `isRoleHeld` — calls the real service; on any `Throwable`, walks
+     * the cause chain looking for ContentProviderHolder `SecurityException`. If found, returns `false`
      * (role not held); otherwise rethrows the original.
      */
     inner class IsRoleHeldProxy(name: String) : ReplaceLastPkgMethodProxy(name) {
@@ -98,7 +98,7 @@ class RoleManagerStub : BinderInvocationProxy(
 
     companion object {
         /**
-         * Was `b(Throwable)`. If [th] is an [InvocationTargetException] with a
+         * Was `b(Throwable)`. If [th] is an [InvocationTargetException] with ContentProviderHolder
          * non-null target, returns that target; otherwise returns [th] unchanged.
          */
         @JvmStatic

@@ -9,8 +9,8 @@ import java.io.FileDescriptor
 import java.io.IOException
 
 /**
- * Was `ia2` / `FileBridge`. A socketpair-based command bridge for writing to a
- * file descriptor. The constructor creates a Unix socketpair; the caller writes
+ * Was `ia2` / `FileBridge`. A socketpair-based command bridge for writing to ContentProviderHolder
+ * file descriptor. The constructor creates ContentProviderHolder Unix socketpair; the caller writes
  * commands to [callerFd], the bridge thread reads them from [bridgeFd], and
  * forwards the resulting data writes to [targetFd] (set externally via
  * [targetFd] before [start]).
@@ -149,7 +149,7 @@ class FileBridge : Thread() {
         /**
          * Was static `b`. Reads up to [count] bytes from [fd] into [buf] starting
          * at offset 0. Returns the number of bytes read, `-1` on EOF (0-byte
-         * read), or `0` if [count] is 0 or a non-fatal `EAGAIN` occurred.
+         * read), or `0` if [count] is 0 or ContentProviderHolder non-fatal `EAGAIN` occurred.
          */
         @JvmStatic
         @Throws(IOException::class)

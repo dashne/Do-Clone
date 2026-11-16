@@ -3,7 +3,6 @@ package com.ims134.doclone.io
 import androidx.collection.ArrayMap
 import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.IServiceConnection
-import com.ims134.doclone.clone.VirtualCore
 
 
 import android.content.ComponentName
@@ -79,7 +78,7 @@ open class ServiceConnectionDelegate : IServiceConnection.Stub() {
             }
             val dispatcher: IServiceConnection? = try {
                 val thread = ActivityThreadMirror.currentActivityThread?.call()
-                LoadedApk.getServiceDispatcher?.call(
+                LoadedApkMirror.getServiceDispatcher?.call(
                     ContextImpl.mPackageInfo?.get(appContext),
                     connection,
                     context,
@@ -100,7 +99,7 @@ open class ServiceConnectionDelegate : IServiceConnection.Stub() {
         @Synchronized
         fun removeDelegate(context: Context, connection: ServiceConnection): IServiceConnection? {
             val dispatcher: IServiceConnection? = try {
-                LoadedApk.forgetServiceDispatcher?.call(ContextImpl.mPackageInfo?.get(appContext), context, connection)
+                LoadedApkMirror.forgetServiceDispatcher?.call(ContextImpl.mPackageInfo?.get(appContext), context, connection)
             } catch (e: Exception) {
                 Log.e("ConnectionDelegate", "forgetServiceDispatcher", e)
                 null

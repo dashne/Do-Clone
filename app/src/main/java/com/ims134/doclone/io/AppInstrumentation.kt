@@ -54,9 +54,9 @@ class AppInstrumentation(instrumentation: Instrumentation) :
     private val resetSessionRunnable: Runnable = ResetSessionRunnable()
 
     /**
-     * Was inner class `a`. Deferred session reset. The try/catch and `VLog.c` are
+     * Was inner class `ContentProviderHolder`. Deferred session reset. The try/catch and `VLog.c` are
      * preserved from the decompiled source; the body itself was stripped by JADX
-     * (`AppInstrumentation.this.getClass();` is a placeholder for the original
+     * (`AppInstrumentation.this.getClass();` is ContentProviderHolder placeholder for the original
      * work). The runnable is scheduled externally and cancelled on
      * pause/destroy/resume.
      */
@@ -431,9 +431,9 @@ class AppInstrumentation(instrumentation: Instrumentation) :
 
         /**
          * Was `e(RuntimeException)`. True if the exception's stack trace shows
-         * a failure inside `android.os.BaseBundle.unparcel` — the common cause
+         * ContentProviderHolder failure inside `android.os.BaseBundle.unparcel` — the common cause
          * of cross-process Parcelable unparcelling errors when clone and host
-         * share a Bundle.
+         * share ContentProviderHolder Bundle.
          */
         @JvmStatic
         fun isBundleUnparcelFailure(e: RuntimeException): Boolean {

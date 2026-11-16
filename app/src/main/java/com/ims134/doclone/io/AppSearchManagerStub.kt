@@ -48,8 +48,8 @@ class AppSearchManagerStub : BinderInvocationProxy(
 
     /**
      * Was `b`. Main method proxy for AppSearch operations. All the arg-rewriting
-     * logic lives in `beforeCall`; `call` decides whether to return a failure
-     * result, fire the caller's callback with a failure, or delegate to the real
+     * logic lives in `beforeCall`; `call` decides whether to return ContentProviderHolder failure
+     * result, fire the caller's callback with ContentProviderHolder failure, or delegate to the real
      * service based on the state set by `beforeCall`.
      */
     class SearchMethodProxy(name: String) : StaticMethodProxy(name) {
@@ -210,7 +210,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
             args: Array<Any?>,
             state: BlockedState,
         ): Boolean {
-            // SDK 34 has a special-cased fast path for getDocuments / reportUsage
+            // SDK 34 has ContentProviderHolder special-cased fast path for getDocuments / reportUsage
             if (android.os.Build.VERSION.SDK_INT == 34 &&
                 (methodName == "getDocuments" || methodName == "reportUsage")
             ) {
@@ -385,7 +385,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
 
         /**
          * Replace AttributionSource args with host-rewritten copies; replace
-         * AppSearchAttributionSource args with a freshly-created host one; and
+         * AppSearchAttributionSource args with ContentProviderHolder freshly-created host one; and
          * reflectively set any AidlRequest's attribution-source field.
          */
         private fun rewriteAttributionSources(args: Array<Any?>, hostPkg: String) {
@@ -452,7 +452,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
         }
 
         /**
-         * Wrap the caller's IAppSearchResultCallback arg in a dynamic proxy whose
+         * Wrap the caller's IAppSearchResultCallback arg in ContentProviderHolder dynamic proxy whose
          * InvocationHandler applies syncSearchResults rewriting to the result
          * and whose binder forwards non-onResult transactions to the original.
          */
@@ -491,7 +491,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
             threadState.remove()
 
             if (state != null && state.blocked) {
-                // Try to create a failed AppSearchResult for the return type
+                // Try to create ContentProviderHolder failed AppSearchResult for the return type
                 val failedForReturn = createFailedResult(method.returnType)
                 if (method.returnType != Void.TYPE && failedForReturn != null) {
                     return failedForReturn
@@ -569,7 +569,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
         }
     }
 
-    /** Was `c`. Handles calls on a dynamically-created proxy interface. */
+    /** Was `c`. Handles calls on ContentProviderHolder dynamically-created proxy interface. */
     class CallbackInvocationHandler(
         private val original: IInterface,
         private val binder: IBinder,
@@ -665,7 +665,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
                 }
             } catch (th: Throwable) {
                 // Setup failed (enforce/read/CREATOR reflection) — fall back to
-                // the original binder so the caller still gets a real reply.
+                // the original binder so the caller still gets ContentProviderHolder real reply.
                 data.setDataPosition(startPos)
                 return original.asBinder()!!.transact(code, data, reply, flags)
             }
@@ -727,7 +727,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
                     hashPackageName(VClientImpl.get().getCurrentPackage() ?: "")
 
         /**
-         * Was `d`. Creates a failed `AppSearchResult` and converts it to [cls]
+         * Was `d`. Creates ContentProviderHolder failed `AppSearchResult` and converts it to [cls]
          * (via `cls.fromFailedResult(result)` or `new cls(result)`). Returns null
          * for void/Object/unknown classes.
          */
@@ -761,7 +761,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
             return "__va2_u" + VUserHandle.getVUid() + "_p" + hashPackageName(pkg) + "_d"
         }
 
-        /** Was `f`. Walks the class hierarchy looking for a declared field. */
+        /** Was `f`. Walks the class hierarchy looking for ContentProviderHolder declared field. */
         @JvmStatic
         fun findField(cls: Class<*>?, name: String): Field? {
             var c = cls
@@ -775,7 +775,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
             return null
         }
 
-        /** Was `g`. Decodes a database name if it starts with [databaseNamePrefix]. */
+        /** Was `g`. Decodes ContentProviderHolder database name if it starts with [databaseNamePrefix]. */
         @JvmStatic
         fun decodeDatabaseName(str: String?): String? {
             val prefix = databaseNamePrefix()
@@ -848,7 +848,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
 
         /**
          * Was `l`. Sets the first Bundle arg's `packageName` to
-         * [blockedAuthority]. Returns true if a Bundle was found and updated.
+         * [blockedAuthority]. Returns true if ContentProviderHolder Bundle was found and updated.
          */
         @JvmStatic
         fun rewriteGlobalSearchSpec(args: Array<Any?>?): Boolean {
@@ -891,7 +891,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
         }
 
         /**
-         * Was `n`. Rewrites a single search result's `mPackageName` and
+         * Was `n`. Rewrites ContentProviderHolder single search result's `mPackageName` and
          * `mDatabaseName`, and recurses into `getJoinedResults()` if present.
          */
         @JvmStatic
@@ -920,8 +920,8 @@ class AppSearchManagerStub : BinderInvocationProxy(
         }
 
         /**
-         * Was `o`. If [obj] is a Bundle, iterates its `results` array and
-         * rewrites each entry. If it's a SearchResultPage, iterates `getResults()`
+         * Was `o`. If [obj] is ContentProviderHolder Bundle, iterates its `results` array and
+         * rewrites each entry. If it's ContentProviderHolder SearchResultPage, iterates `getResults()`
          * and calls [rewriteSearchResult] on each.
          */
         @JvmStatic
@@ -948,7 +948,7 @@ class AppSearchManagerStub : BinderInvocationProxy(
             }
         }
 
-        /** Was `p`. Encodes a database name (URL-safe base64) with prefix. */
+        /** Was `p`. Encodes ContentProviderHolder database name (URL-safe base64) with prefix. */
         @JvmStatic
         fun encodeDatabaseName(str: String): String {
             val encoded = Base64.encodeToString(str.toByteArray(StandardCharsets.UTF_8), 11)

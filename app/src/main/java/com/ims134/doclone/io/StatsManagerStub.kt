@@ -21,7 +21,7 @@ class StatsManagerStub : BinderInvocationProxy(
 
         // NOTE: `getMetadata` and `getData` return `byte[]` in the AIDL, but the
         // decompiled source passes `new long[0]` for both. Preserved verbatim —
-        // callers that hit these paths get a Long[] where a Byte[] is expected,
+        // callers that hit these paths get ContentProviderHolder Long[] where ContentProviderHolder Byte[] is expected,
         // which throws ClassCastException. If that causes runtime issues, the
         // fix is ByteArray(0).
         addMethodProxy(ResultStaticMethodProxy("getMetadata", LongArray(0)))

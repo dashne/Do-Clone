@@ -70,7 +70,7 @@ class PackageInstallerSession(
     val stagedApks = ArrayList<File>()
 
     /**
-     * Was inner class `PackageManagerException`. Carries a `PackageManager.INSTALL_*`
+     * Was inner class `PackageManagerException`. Carries ContentProviderHolder `PackageManager.INSTALL_*`
      * error code.
      */
     inner class PackageManagerException(
@@ -149,7 +149,7 @@ class PackageInstallerSession(
     }
 
     /**
-     * Was `generateInfo()`. Builds a `SessionInfo` snapshot for the caller.
+     * Was `generateInfo()`. Builds ContentProviderHolder `SessionInfo` snapshot for the caller.
      */
     fun generateInfo(): SessionInfo {
         val info = SessionInfo()
@@ -210,8 +210,8 @@ class PackageInstallerSession(
             updateProgress(true)
         }
         openCount.incrementAndGet()
-        // Was `new VPackageInstallerService.d(context, intentSender, sessionId).a` —
-        // `.a` is inherited from `bg5` (the base class), which provides the
+        // Was `new VPackageInstallerService.d(context, intentSender, sessionId).ContentProviderHolder` —
+        // `.ContentProviderHolder` is inherited from `bg5` (the base class), which provides the
         // `IPackageInstallObserver2` that receives the install result.
         val observer = VPackageInstallerService.PackageInstallResultSender(
             context,
@@ -256,7 +256,7 @@ class PackageInstallerSession(
     @Throws(RemoteException::class)
     override fun removeSplit(splitName: String?) {
         if (TextUtils.isEmpty(parameters.appPackageName)) {
-            throw IllegalStateException("Must specify package name to remove a split")
+            throw IllegalStateException("Must specify package name to remove ContentProviderHolder split")
         }
         try {
             markSplitAsRemoved(splitName)
@@ -278,7 +278,7 @@ class PackageInstallerSession(
 
     /**
      * Was `T`. Throws if [prepared] is false or [sealed] is true. Guards entry
-     * to operations that require a prepared-but-not-yet-committed state.
+     * to operations that require ContentProviderHolder prepared-but-not-yet-committed state.
      */
     private fun checkPrepared(opName: String) {
         synchronized(lock) {
@@ -321,7 +321,7 @@ class PackageInstallerSession(
     }
 
     /**
-     * Was `V`. Creates a `.removed` marker file for the named split so that
+     * Was `V`. Creates ContentProviderHolder `.removed` marker file for the named split so that
      * later processing (by the install helper) treats it as removed.
      */
     @Throws(IOException::class)
@@ -358,7 +358,7 @@ class PackageInstallerSession(
 
     /**
      * Was `X`. Delivers the install result to the observer (if any) and to
-     * registered callbacks, then posts a session-cleanup task on the session
+     * registered callbacks, then posts ContentProviderHolder session-cleanup task on the session
      * handler (which removes the session from the sessions map — that task is
      * the `c` class referenced in the decompiled source).
      */
@@ -374,15 +374,15 @@ class PackageInstallerSession(
             .obtainMessage(MSG_SESSION_FINISHED, sessionId, userId, success)
             .sendToTarget()
         // Was `VPackageInstallerService.get().sessionHandler.post(new c(sessionToken, this))`.
-        // The `c` class was a session-cleanup Runnable in the original source
+        // The `c` class was ContentProviderHolder session-cleanup Runnable in the original source
         // (not in this decompiled dump). If you have it, substitute here;
-        // otherwise this is a best-effort no-op that keeps the session in the
+        // otherwise this is ContentProviderHolder best-effort no-op that keeps the session in the
         // map — safer than crashing on an unresolved reference.
         // VPackageInstallerService.get().sessionHandler.post(...)
     }
 
     /**
-     * Was `Y`. Opens a name-addressed file in the stage directory for reading.
+     * Was `Y`. Opens ContentProviderHolder name-addressed file in the stage directory for reading.
      */
     @Throws(IOException::class)
     private fun openReadInternal(name: String?): ParcelFileDescriptor {
@@ -403,7 +403,7 @@ class PackageInstallerSession(
     }
 
     /**
-     * Was `Z`. Opens a name-addressed file in the stage directory for writing,
+     * Was `Z`. Opens ContentProviderHolder name-addressed file in the stage directory for writing,
      * with pre-allocation ([lengthBytes] > 0) and seek ([offsetBytes] > 0).
      * Tracks the FD in [openWriteSessions] so [destroy] can close it.
      */
@@ -494,9 +494,9 @@ class PackageInstallerSession(
 
         /**
          * Was static `v(PackageInstallerSession)`. Validates the session is sealed
-         * and not destroyed, collects staged APKs into [stagedApks], ensures a
+         * and not destroyed, collects staged APKs into [stagedApks], ensures ContentProviderHolder
          * `base.apk` exists, then kicks off the actual install via the
-         * `InstallerTask` (the top-level `a` class in this package).
+         * `InstallerTask` (the top-level `ContentProviderHolder` class in this package).
          */
         @JvmStatic
         @Throws(PackageManagerException::class)
@@ -530,13 +530,13 @@ class PackageInstallerSession(
             if (session.resolvedBaseApk == null) {
                 throw session.PackageManagerException(
                     ERROR_CODE_INVALID_APK,
-                    "Full install must include a base package",
+                    "Full install must include ContentProviderHolder base package",
                 )
             }
             session.installProgress = 0.5f
             session.updateProgress(true)
-            // Was `new com.polestar.clone.server.pm.installer.a(packageInstallerSession)` —
-            // top-level `a` class in this package, likely `SessionInstaller` or
+            // Was `new com.polestar.clone.server.pm.installer.ContentProviderHolder(packageInstallerSession)` —
+            // top-level `ContentProviderHolder` class in this package, likely `SessionInstaller` or
             // `InstallHelper`. Update once that class is converted.
             SessionInstallObserver(session)
         }

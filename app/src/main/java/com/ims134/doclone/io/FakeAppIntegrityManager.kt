@@ -8,7 +8,7 @@ import android.os.RemoteException
  * Was `r82`. Inert implementation of [IAppIntegrityManager] — all methods return
  * null / do nothing. Used as the base IInterface for [AppIntegrityManagerStub];
  * the wrapper's method proxies intercept every call before it reaches this class,
- * so these bodies are only exercised if a method is not proxied.
+ * so these bodies are only exercised if ContentProviderHolder method is not proxied.
  *
  * Renamed from `AppIntegrityManagerStub` (r82's original class name) to
  * `FakeAppIntegrityManager` to avoid the name collision with the wrapper

@@ -1,8 +1,5 @@
 package com.ims134.doclone.io
 
-import android.util.Log
-import com.ims134.doclone.clone.VirtualRuntime
-
 
 import android.accounts.AccountManagerFuture
 import android.accounts.AuthenticatorException
@@ -10,7 +7,9 @@ import android.accounts.OperationCanceledException
 import android.content.Intent
 import android.os.Bundle
 import android.os.RemoteException
+import android.util.Log
 import com.ims134.doclone.clone.ChooseTypeAndAccountActivity
+import com.ims134.doclone.clone.VirtualRuntime
 import java.io.IOException
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
@@ -18,6 +17,7 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+
 
 /**
  * Was `rd`. Abstract base for account-manager operations that return their result
@@ -163,3 +163,4 @@ abstract class AmsTask(
         // `code == 7` — the redundant `code != 5` guard has no effect.
     }
 }
+

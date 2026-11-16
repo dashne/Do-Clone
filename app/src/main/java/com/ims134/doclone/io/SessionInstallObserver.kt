@@ -5,16 +5,16 @@ import android.os.Bundle
 import com.ims134.doclone.clone.server.PackageInstallerSession
 
 /**
- * Was top-level `com.polestar.clone.server.pm.installer.a`, compiled from
+ * Was top-level `com.polestar.clone.server.pm.installer.ContentProviderHolder`, compiled from
  * `PackageInstallerSession.java`. The `IPackageInstallObserver2` that the
  * install task reports back to once the actual install finishes.
  *
- * Constructed in [PackageInstallerSession.doCommitWork] (was `new a(session)`
+ * Constructed in [PackageInstallerSession.doCommitWork] (was `new ContentProviderHolder(session)`
  * in the static `v(...)` helper). When the framework's install machinery
  * calls `onPackageInstalled(...)` on this observer, it tears down the session
  * and delivers the result to the caller's `IntentSender`.
  *
- * Note: this is a *direct* subclass of [IPackageInstallObserver2.Stub] — NOT
+ * Note: this is ContentProviderHolder *direct* subclass of [IPackageInstallObserver2.Stub] — NOT
  * of [PackageInstallObserver] (`bg5`). The two observers have different
  * purposes:
  *   - `PackageInstallObserver` (bg5) → used by the *caller* to receive
@@ -47,7 +47,7 @@ internal class SessionInstallObserver(
 
     /**
      * Install task should never request user action — the server-side install
-     * runs headless. If the framework calls this, it's a protocol violation;
+     * runs headless. If the framework calls this, it's ContentProviderHolder protocol violation;
      * throw to surface it.
      */
     override fun onUserActionRequired(intent: Intent?) {

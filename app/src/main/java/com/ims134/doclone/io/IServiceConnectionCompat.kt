@@ -52,7 +52,7 @@ object IServiceConnectionCompat {
             connectedMethod.call(connection, name, service, dead)
             return
         }
-        if (connection.asBinder() === connection && "android.app.LoadedApk\$ServiceDispatcher\$InnerConnection" == connection.javaClass.name) {
+        if (connection.asBinder() === connection && "android.app.LoadedApkMirror\$ServiceDispatcher\$InnerConnection" == connection.javaClass.name) {
             val method = findSessionConnectedMethod(connection.javaClass)
             if (method != null) {
                 val sessionClass = method.parameterTypes[2]

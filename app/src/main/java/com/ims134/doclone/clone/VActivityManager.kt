@@ -21,7 +21,7 @@ class VActivityManager private constructor() {
 
     /** was b */
     @Volatile
-    private var service: IActivityManager? = null
+    var service_: IActivityManager? = null
 
     /** was get: virtual activity records by their token */
     @JvmField
@@ -71,9 +71,9 @@ class VActivityManager private constructor() {
     /** was get(VActivityManager, IBinder) */
     private fun clearServiceIfSame(binder: IBinder) {
         synchronized(VActivityManager::class.java) {
-            val current = service
+            val current = service_
             if (current != null && current.asBinder() === binder) {
-                service = null
+                service_ = null
             }
         }
     }
@@ -101,7 +101,7 @@ class VActivityManager private constructor() {
 
     /** was e: the connected manager, or null if there is none or its process is dead */
     fun getServiceIfAlive(): IActivityManager? {
-        val manager = service ?: return null
+        val manager = service_ ?: return null
         return try {
             if (manager.asBinder().isBinderAlive) manager else null
         } catch (_: Throwable) {
@@ -116,10 +116,10 @@ class VActivityManager private constructor() {
      */
     @Throws(RemoteException::class)
     fun getService(): IActivityManager {
-        val cached = service
+        val cached = service_
         if (cached != null && cached.asBinder().isBinderAlive) return cached
         synchronized(VActivityManager::class.java) {
-            val again = service
+            val again = service_
             if (again != null && again.asBinder().isBinderAlive) return again
             val manager = IActivityManager.Stub.asInterface(ServiceManagerNative.getService("activity"))
                 ?: throw RemoteException("Unable to get the virtual ActivityManager")
@@ -127,7 +127,7 @@ class VActivityManager private constructor() {
                 manager.asBinder().linkToDeath(ServiceDeathRecipient(manager), 0)
             } catch (_: Throwable) {
             }
-            service = manager
+            service_ = manager
             return manager
         }
     }
@@ -158,12 +158,12 @@ class VActivityManager private constructor() {
         if (binder == null) return false
         val manager = IActivityManager.Stub.asInterface(binder) ?: return false
         synchronized(VActivityManager::class.java) {
-            val current = service
+            val current = service_
             if (current != null && current.asBinder() === binder && binder.isBinderAlive) return true
             if (!binder.isBinderAlive) return false
             try {
                 binder.linkToDeath(TokenDeathRecipient(binder), 0)
-                service = manager
+                service_ = manager
                 return true
             } catch (t: Throwable) {
                 Log.d(VActivityManager::class.java.simpleName, t.toString())

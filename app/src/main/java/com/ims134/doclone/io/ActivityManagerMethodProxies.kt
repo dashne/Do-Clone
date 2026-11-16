@@ -1582,12 +1582,12 @@ object ActivityManagerMethodProxies {
                             ContentProviderHolderOreo.provider.set(holder, provider)
                             return holder
                         }
-                        var provider = IActivityManagerMirror.a.provider?.get(holder)
-                        val holderInfo = IActivityManagerMirror.a.info?.get(holder)
+                        var provider = IActivityManagerMirror.ContentProviderHolder.provider?.get(holder)
+                        val holderInfo = IActivityManagerMirror.ContentProviderHolder.info?.get(holder)
                         if (provider != null) {
                             provider = ContentProviderHook.wrap(true, holderInfo?.authority, provider)
                         }
-                        IActivityManagerMirror.a.provider?.set(holder, provider)
+                        IActivityManagerMirror.ContentProviderHolder.provider?.set(holder, provider)
                         return holder
                     }
                 } catch (t: Throwable) {
@@ -1634,7 +1634,7 @@ object ActivityManagerMethodProxies {
                     ContentProviderHolderOreo.info.set(holder, info)
                     return holder
                 }
-                var provider = IActivityManagerMirror.a.provider?.get(holder)
+                var provider = IActivityManagerMirror.ContentProviderHolder.provider?.get(holder)
                 if (provider != null) {
                     provider = manager.acquireProviderClient(userId, info)
                     Log.d(TAG, "provider != null $name process: ${info.processName} pkg: ${info.packageName} provider $provider")
@@ -1649,8 +1649,8 @@ object ActivityManagerMethodProxies {
                     }
                     Log.d(TAG, "provider result $provider")
                 }
-                IActivityManagerMirror.a.provider?.set(holder, provider)
-                IActivityManagerMirror.a.info?.set(holder, info)
+                IActivityManagerMirror.ContentProviderHolder.provider?.set(holder, provider)
+                IActivityManagerMirror.ContentProviderHolder.info?.set(holder, info)
                 return holder
             } catch (e: RemoteException) {
                 VirtualRuntime.crash(e)
@@ -2124,9 +2124,9 @@ object ActivityManagerMethodProxies {
                                 proxy = created
                             }
                             Log.e(TAG, "old class " + receiver.javaClass)
-                            val dispatcher = LoadedApk.ReceiverDispatcher.InnerReceiver.mDispatcher?.get(receiver)
+                            val dispatcher = LoadedApkMirror.ReceiverDispatcher.InnerReceiver.mDispatcher?.get(receiver)
                             if (dispatcher != null) {
-                                LoadedApk.ReceiverDispatcher.mIIntentReceiver?.set(dispatcher.get(), proxy)
+                                LoadedApkMirror.ReceiverDispatcher.mIIntentReceiver?.set(dispatcher.get(), proxy)
                                 argv[receiverIndex] = proxy
                             }
                             Log.e(TAG, "proxyIIntentReceiver $proxy")

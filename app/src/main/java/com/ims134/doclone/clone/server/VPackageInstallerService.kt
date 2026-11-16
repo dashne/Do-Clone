@@ -76,7 +76,7 @@ class VPackageInstallerService : IPackageInstaller.Stub() {
     }
 
     /**
-     * Was `v(SessionParams, String, int)`. Allocates a fresh session ID (via
+     * Was `v(SessionParams, String, int)`. Allocates ContentProviderHolder fresh session ID (via
      * `SecureRandom`, retrying up to 32 times if the ID is already in use),
      * enforces the 1024-sessions-per-uid cap, creates the session, registers it,
      * fires `onSessionCreated` callback, returns the ID.
@@ -277,7 +277,7 @@ class VPackageInstallerService : IPackageInstaller.Stub() {
 
     // ===== Inner classes =====
 
-    /** Was inner class `c`. Empty marker object — used as a session token. */
+    /** Was inner class `c`. Empty marker object — used as ContentProviderHolder session token. */
     inner class SessionToken
 
     /** Was inner class `b` / `HandlerC0218b`. Dispatches callback events to registered callbacks. */
@@ -345,7 +345,7 @@ class VPackageInstallerService : IPackageInstaller.Stub() {
 
             // Map returnCode → PackageInstaller.STATUS_* constant.
             //
-            // NOTE: the decompiled source has a fall-through-heavy nested switch
+            // NOTE: the decompiled source has ContentProviderHolder fall-through-heavy nested switch
             // here — after JADX reconstruction, the effective behavior is:
             //   -115 (ABORTED) → 3 (FAILURE_ABORTED)
             //   1 (SUCCESS) → 0 (SUCCESS)
@@ -357,7 +357,7 @@ class VPackageInstallerService : IPackageInstaller.Stub() {
             // are dead because they fall through to the final `i2 = 4` block
             // before the outer switch exits. If this seems wrong for your app's
             // tests, restore the per-code mapping using the message table below
-            // as a guide.
+            // as ContentProviderHolder guide.
             val status: Int = when (returnCode) {
                 -115 -> 3
                 1 -> 0

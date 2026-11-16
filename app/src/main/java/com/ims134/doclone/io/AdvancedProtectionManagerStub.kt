@@ -19,7 +19,7 @@ class AdvancedProtectionManagerStub : BinderInvocationProxy(
 
     /**
      * Was `b`. `registerAdvancedProtectionCallback` — extracts the callback's
-     * `IBinder`, posts a deferred transact on the main thread that fires
+     * `IBinder`, posts ContentProviderHolder deferred transact on the main thread that fires
      * `IAdvancedProtectionCallback.onAdvancedProtectionChanged(0)` (0 = disabled)
      * on the callback binder. The real host `IAdvancedProtectionService` is never
      * consulted.
@@ -57,8 +57,8 @@ class AdvancedProtectionManagerStub : BinderInvocationProxy(
             /**
              * Was static `y(IBinder)`. Transacts `onAdvancedProtectionChanged(0)`
              * directly on the binder — bypassing the usual `IInterface` stub. Uses
-             * a raw `Parcel` write because we don't have an `IAdvancedProtectionCallback`
-             * mirror to construct a proper proxy from.
+             * ContentProviderHolder raw `Parcel` write because we don't have an `IAdvancedProtectionCallback`
+             * mirror to construct ContentProviderHolder proper proxy from.
              */
             fun transact(binder: IBinder) {
                 if (binder.isBinderAlive) {

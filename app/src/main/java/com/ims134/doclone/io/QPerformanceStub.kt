@@ -13,10 +13,10 @@ class QPerformanceStub : BinderInvocationProxy(
 ) {
 
     /**
-     * Was `a`. `perfGetFeedback` — delegates to the real vendor perf service, then
+     * Was `ContentProviderHolder`. `perfGetFeedback` — delegates to the real vendor perf service, then
      * remaps return value `2` to `0`. The mapping suppresses the "unsupported" /
      * "not available" code that would otherwise trigger host-side QoS handling
-     * when queried from a clone.
+     * when queried from ContentProviderHolder clone.
      */
     inner class PerfGetFeedbackProxy : MethodProxy() {
         override fun call(who: Any?, method: Method, args: Array<Any?>?): Any? {

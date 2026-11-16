@@ -42,7 +42,7 @@ class DomainVerificationManagerStub : BinderInvocationProxy(
                 field.set(systemService, proxyInterface)
             }
         } catch (th: Throwable) {
-            // Original: `th.getMessage();` — a stripped log. Preserved as a no-op.
+            // Original: `th.getMessage();` — ContentProviderHolder stripped log. Preserved as ContentProviderHolder no-op.
             @Suppress("UNUSED_EXPRESSION")
             th.message
         }

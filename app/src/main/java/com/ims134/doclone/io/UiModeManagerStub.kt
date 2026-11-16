@@ -16,9 +16,9 @@ class UiModeManagerStub : BinderInvocationProxy(
 ) {
 
     /**
-     * Was `a`. Rewrites the trailing `Int` argument if it's `0` or the current
+     * Was `ContentProviderHolder`. Rewrites the trailing `Int` argument if it's `0` or the current
      * virtual uid, replacing it with the host user id. Used by `addCallback`,
-     * `removeCallback`, and `getContrast` — all of which take a userId at the
+     * `removeCallback`, and `getContrast` — all of which take ContentProviderHolder userId at the
      * last position.
      */
     class UserIdRewritingProxy(name: String) : StaticMethodProxy(name) {
@@ -88,7 +88,7 @@ class UiModeManagerStub : BinderInvocationProxy(
                 }
             }
         } catch (th: Throwable) {
-            // Original: `th.toString();` — a stripped log. Preserved as a no-op.
+            // Original: `th.toString();` — ContentProviderHolder stripped log. Preserved as ContentProviderHolder no-op.
             @Suppress("UNUSED_EXPRESSION")
             th.toString()
         }

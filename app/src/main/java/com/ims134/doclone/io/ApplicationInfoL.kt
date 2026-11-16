@@ -2,6 +2,7 @@ package com.ims134.doclone.io
 
 import android.annotation.TargetApi
 import android.app.Activity
+import android.app.AlarmManager
 import android.app.Application
 import android.app.Instrumentation
 import android.content.ComponentName
@@ -45,15 +46,19 @@ import android.app.job.JobInfo
 import android.widget.RemoteViews
 import android.app.job.JobParameters
 import android.content.ClipboardManager
+import android.content.ContentProviderClient
 import android.content.ContentResolver
 import android.location.Location
 import android.location.LocationListener
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiInfo
+import android.os.Build
 import android.os.IBinder
 import android.os.IInterface
+import android.os.Message
 import android.os.PersistableBundle
 import android.os.health.SystemHealthManager
+import android.provider.Settings
 import android.telephony.CellInfoCdma
 import android.telephony.CellInfoGsm
 import android.telephony.NeighboringCellInfo
@@ -269,7 +274,7 @@ object PackageParserNougat {
 }
 object LoadedApkHuaWei {
     var TYPE: Class<*>? =
-        load(LoadedApkHuaWei::class.java as Class<*>, "android.app.LoadedApk")
+        load(LoadedApkHuaWei::class.java as Class<*>, "android.app.LoadedApkMirror")
     var mReceiverResource: RefObject<Any?>? = null
 }
 object ReceiverResourceN {
@@ -489,9 +494,9 @@ object IActivityManagerMirror {
     var startActivity: RefMethod<Int?>? = null
 
     /* JADX INFO: renamed from: io.d23$get */ /* JADX INFO: compiled from: IActivityManager.java */
-    object a {
+    object ContentProviderHolder {
         var TYPE: Class<*>? = load(
-            a::class.java as Class<*>,
+            ContentProviderHolder::class.java as Class<*>,
             "android.app.IActivityManager\$ContentProviderHolder"
         )
         var info: RefObject<ProviderInfo?>? = null
@@ -887,8 +892,8 @@ object IServiceConnectionO {
 
 
 
-/** Mirror of android.app.LoadedApk (was io.ke4). */
-object LoadedApk {
+/** Mirror of android.app.LoadedApkMirror (was io.ke4). */
+object LoadedApkMirror {
 
     @JvmField
     @MethodParams([Context::class, ServiceConnection::class])
@@ -922,9 +927,9 @@ object LoadedApk {
     var setApplicationInfo: RefMethod<Any>? = null
 
     @JvmField
-    var TYPE: Class<*>? = RefClass.load(LoadedApk::class.java, "android.app.LoadedApk")
+    var TYPE: Class<*>? = RefClass.load(LoadedApkMirror::class.java, "android.app.LoadedApkMirror")
 
-    /** was io.ke4$get: android.app.LoadedApk$ReceiverDispatcher */
+    /** was io.ke4$get: android.app.LoadedApkMirror$ReceiverDispatcher */
     object ReceiverDispatcher {
         @JvmField
         var getIIntentReceiver: RefMethod<IInterface>? = null
@@ -936,7 +941,7 @@ object LoadedApk {
         var mReceiver: RefObject<BroadcastReceiver>? = null
 
         @JvmField
-        var TYPE: Class<*>? = RefClass.load(ReceiverDispatcher::class.java, "android.app.LoadedApk\$ReceiverDispatcher")
+        var TYPE: Class<*>? = RefClass.load(ReceiverDispatcher::class.java, "android.app.LoadedApkMirror\$ReceiverDispatcher")
 
         /** was io.ke4$get$get: ...$ReceiverDispatcher$InnerReceiver */
         object InnerReceiver {
@@ -944,11 +949,11 @@ object LoadedApk {
             var mDispatcher: RefObject<WeakReference<*>>? = null
 
             @JvmField
-            var TYPE: Class<*>? = RefClass.load(InnerReceiver::class.java, "android.app.LoadedApk\$ReceiverDispatcher\$InnerReceiver")
+            var TYPE: Class<*>? = RefClass.load(InnerReceiver::class.java, "android.app.LoadedApkMirror\$ReceiverDispatcher\$InnerReceiver")
         }
     }
 
-    /** was io.ke4$b: android.app.LoadedApk$ServiceDispatcher */
+    /** was io.ke4$b: android.app.LoadedApkMirror$ServiceDispatcher */
     object ServiceDispatcher {
         @JvmField
         var mConnection: RefObject<ServiceConnection>? = null
@@ -957,7 +962,7 @@ object LoadedApk {
         var mContext: RefObject<Context>? = null
 
         @JvmField
-        var TYPE: Class<*>? = RefClass.load(ServiceDispatcher::class.java, "android.app.LoadedApk\$ServiceDispatcher")
+        var TYPE: Class<*>? = RefClass.load(ServiceDispatcher::class.java, "android.app.LoadedApkMirror\$ServiceDispatcher")
 
         /** was io.ke4$b$get: ...$ServiceDispatcher$InnerConnection */
         object InnerConnection {
@@ -965,7 +970,7 @@ object LoadedApk {
             var mDispatcher: RefObject<WeakReference<*>>? = null
 
             @JvmField
-            var TYPE: Class<*>? = RefClass.load(InnerConnection::class.java, "android.app.LoadedApk\$ServiceDispatcher\$InnerConnection")
+            var TYPE: Class<*>? = RefClass.load(InnerConnection::class.java, "android.app.LoadedApkMirror\$ServiceDispatcher\$InnerConnection")
         }
     }
 }
@@ -2322,7 +2327,7 @@ object IDeviceIdentifiersPolicyServiceMirror {
         "android.os.IDeviceIdentifiersPolicyService"
     )
 
-    /* JADX INFO: renamed from: io.t33$a */ /* JADX INFO: compiled from: IDeviceIdentifiersPolicyService.java */
+    /* JADX INFO: renamed from: io.t33$ContentProviderHolder */ /* JADX INFO: compiled from: IDeviceIdentifiersPolicyService.java */
     object Stub {
         var TYPE: Class<*>? = RefClass.load(
             Stub::class.java as Class<*>,
@@ -2337,7 +2342,7 @@ object IPerfManagerMirror {
     var TYPE: Class<*>? =
         RefClass.load(IPerfManagerMirror::class.java as Class<*>, "com.qualcomm.qti.IPerfManager")
 
-    /* JADX INFO: renamed from: io.g53$a */ /* JADX INFO: compiled from: IPerfManager.java */
+    /* JADX INFO: renamed from: io.g53$ContentProviderHolder */ /* JADX INFO: compiled from: IPerfManager.java */
     object Stub {
         var TYPE: Class<*>? =
             RefClass.load(Stub::class.java as Class<*>, "com.qualcomm.qti.IPerfManager\$Stub")
@@ -2352,7 +2357,7 @@ object IClipboardServiceMirror {
         "android.sec.clipboard.IClipboardService"
     )
 
-    /* JADX INFO: renamed from: io.m33$a */ /* JADX INFO: compiled from: IClipboardService.java */
+    /* JADX INFO: renamed from: io.m33$ContentProviderHolder */ /* JADX INFO: compiled from: IClipboardService.java */
     object Stub {
         var TYPE: Class<*>? = RefClass.load(
             Stub::class.java as Class<*>,
@@ -2369,7 +2374,7 @@ object ITextServicesManagerMirror {
         "com.android.internal.textservice.ITextServicesManager"
     )
 
-    /* JADX INFO: renamed from: io.k63$a */ /* JADX INFO: compiled from: ITextServicesManager.java */
+    /* JADX INFO: renamed from: io.k63$ContentProviderHolder */ /* JADX INFO: compiled from: ITextServicesManager.java */
     object Stub {
         var TYPE: Class<*>? = RefClass.load(
             Stub::class.java as Class<*>,
@@ -2386,7 +2391,7 @@ object IPermissionManagerMirror {
         "android.permission.IPermissionManager"
     )
 
-    /* JADX INFO: renamed from: io.h53$a */ /* JADX INFO: compiled from: IPermissionManager.java */
+    /* JADX INFO: renamed from: io.h53$ContentProviderHolder */ /* JADX INFO: compiled from: IPermissionManager.java */
     object Stub {
         var TYPE: Class<*>? = RefClass.load(
             Stub::class.java as Class<*>,
@@ -2410,7 +2415,7 @@ object ITetheringConnectorMirror {
         "android.net.ITetheringConnector"
     )
 
-    /* JADX INFO: renamed from: io.j63$a */ /* JADX INFO: compiled from: ITetheringConnector.java */
+    /* JADX INFO: renamed from: io.j63$ContentProviderHolder */ /* JADX INFO: compiled from: ITetheringConnector.java */
     object Stub {
         var TYPE: Class<*>? =
             RefClass.load(Stub::class.java as Class<*>, "android.net.ITetheringConnector\$Stub")
@@ -2425,7 +2430,7 @@ object IVibratorManagerService {
         "android.os.IVibratorManagerService"
     )
 
-    /* JADX INFO: renamed from: io.w63$a */ /* JADX INFO: compiled from: IVibratorManagerService.java */
+    /* JADX INFO: renamed from: io.w63$ContentProviderHolder */ /* JADX INFO: compiled from: IVibratorManagerService.java */
     object Stub {
         var TYPE: Class<*>? =
             RefClass.load(Stub::class.java as Class<*>, "android.os.IVibratorManagerService\$Stub")
@@ -2440,7 +2445,7 @@ object IDomainVerificationManagerMirror {
         "android.content.pm.verify.domain.IDomainVerificationManager"
     )
 
-    /* JADX INFO: renamed from: io.x33$a */ /* JADX INFO: compiled from: IDomainVerificationManager.java */
+    /* JADX INFO: renamed from: io.x33$ContentProviderHolder */ /* JADX INFO: compiled from: IDomainVerificationManager.java */
     object Stub {
         var TYPE: Class<*>? = RefClass.load(
             Stub::class.java as Class<*>,
@@ -2455,7 +2460,7 @@ object ILocaleManagerMirror {
     var TYPE: Class<*>? =
         RefClass.load(ILocaleManagerMirror::class.java as Class<*>, "android.app.ILocaleManager")
 
-    /* JADX INFO: renamed from: io.r43$a */ /* JADX INFO: compiled from: ILocaleManager.java */
+    /* JADX INFO: renamed from: io.r43$ContentProviderHolder */ /* JADX INFO: compiled from: ILocaleManager.java */
     object Stub {
         var TYPE: Class<*>? =
             RefClass.load(Stub::class.java as Class<*>, "android.app.ILocaleManager\$Stub")
@@ -2470,7 +2475,7 @@ object ISafetyCenterManagerMirror {
         "android.safetycenter.ISafetyCenterManager"
     )
 
-    /* JADX INFO: renamed from: io.q53$a */ /* JADX INFO: compiled from: ISafetyCenterManager.java */
+    /* JADX INFO: renamed from: io.q53$ContentProviderHolder */ /* JADX INFO: compiled from: ISafetyCenterManager.java */
     object Stub {
         var TYPE: Class<*>? = RefClass.load(
             Stub::class.java as Class<*>,
@@ -2487,7 +2492,7 @@ object ICredentialManagerMirror {
         "android.credentials.ICredentialManager"
     )
 
-    /* JADX INFO: renamed from: io.s33$a */ /* JADX INFO: compiled from: ICredentialManager.java */
+    /* JADX INFO: renamed from: io.s33$ContentProviderHolder */ /* JADX INFO: compiled from: ICredentialManager.java */
     object Stub {
         var TYPE: Class<*>? = RefClass.load(
             Stub::class.java as Class<*>,
@@ -2512,7 +2517,7 @@ object IStorageStatsManagerMirror {
         "android.app.usage.IStorageStatsManager"
     )
 
-    /* JADX INFO: renamed from: io.d63$a */ /* JADX INFO: compiled from: IStorageStatsManager.java */
+    /* JADX INFO: renamed from: io.d63$ContentProviderHolder */ /* JADX INFO: compiled from: IStorageStatsManager.java */
     object Stub {
         var TYPE: Class<*>? = RefClass.load(
             Stub::class.java as Class<*>,
@@ -2558,4 +2563,279 @@ object NotificationManagerMirror {
 object ToastMirror {
     var TYPE: Class<*>? = RefClass.load(ToastMirror::class.java, Toast::class.java as Class<*>)
     var sService: RefStaticObject<IInterface?>? = null
+}
+object ReferrerIntentMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ReferrerIntentMirror::class.java as Class<*>,
+        "com.android.internal.content.ReferrerIntent"
+    )
+
+    @MethodParams([Intent::class, String::class])
+    var ctor: RefConstructor<Intent?>? = null
+}
+object ActivityThreadNMR1Mirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ActivityThreadNMR1Mirror::class.java as Class<*>,
+        "android.app.ActivityThread"
+    )
+
+    @MethodParams([IBinder::class, MutableList::class, Boolean::class])
+    var performNewIntents: RefMethod<Void?>? = null
+}
+object IActivityManagerNMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IActivityManagerNMirror::class.java as Class<*>,
+        "android.app.IActivityManager"
+    )
+
+    @MethodParams([IBinder::class, Int::class, Intent::class, Int::class])
+    var finishActivity: RefMethod<Boolean?>? = null
+}
+object ContentProviderClientMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ContentProviderClientMirror::class.java,
+        ContentProviderClient::class.java as Class<*>
+    )
+    var mContentProvider: RefObject<IInterface?>? = null
+}
+object BuildMirror {
+    var DEVICE: RefStaticObject<String?>? = null
+    var SERIAL: RefStaticObject<String?>? = null
+    var TYPE: Class<*>? = RefClass.load(BuildMirror::class.java, Build::class.java as Class<*>)
+}
+object ThreadGroupNMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(ThreadGroupNMirror::class.java, ThreadGroup::class.java as Class<*>)
+    var groups: RefObject<Array<ThreadGroup?>?>? = null
+    var ngroups: RefObject<Int?>? = null
+    var parent: RefObject<ThreadGroup?>? = null
+}
+object SettingsMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(SettingsMirror::class.java, Settings::class.java as Class<*>)
+
+    /* JADX INFO: renamed from: io.x57$ContentProviderHolder */ /* JADX INFO: compiled from: Settings.java */
+    object Config {
+        var TYPE: Class<*>? =
+            RefClass.load(Config::class.java as Class<*>, "android.provider.Settings\$Config")
+        var sNameValueCache: RefStaticObject<Any?>? = null
+    }
+
+    /* JADX INFO: renamed from: io.x57$b */ /* JADX INFO: compiled from: Settings.java */
+    object ContentProviderHolder {
+        var TYPE: Class<*>? = RefClass.load(
+            ContentProviderHolder::class.java as Class<*>,
+            "android.provider.Settings\$ContentProviderHolder"
+        )
+        var mContentProvider: RefObject<IInterface?>? = null
+    }
+
+    /* JADX INFO: renamed from: io.x57$c */ /* JADX INFO: compiled from: Settings.java */
+    @TargetApi(17)
+    object Global {
+        var TYPE: Class<*>? =
+            RefClass.load(Global::class.java, Settings.Global::class.java as Class<*>)
+        var sNameValueCache: RefStaticObject<Any?>? = null
+    }
+
+    /* JADX INFO: renamed from: io.x57$d */ /* JADX INFO: compiled from: Settings.java */
+    object NameValueCache {
+        var TYPE: Class<*>? = RefClass.load(
+            NameValueCache::class.java as Class<*>,
+            "android.provider.Settings\$NameValueCache"
+        )
+        var mContentProvider: RefObject<Any?>? = null
+    }
+
+    /* JADX INFO: renamed from: io.x57$e */ /* JADX INFO: compiled from: Settings.java */
+    object NameValueCache1 {
+        var TYPE: Class<*>? = RefClass.load(
+            NameValueCache1::class.java as Class<*>,
+            "android.provider.Settings\$NameValueCache"
+        )
+        var mProviderHolder: RefObject<Any?>? = null
+    }
+
+    /* JADX INFO: renamed from: io.x57$f */ /* JADX INFO: compiled from: Settings.java */
+    object SettingsSecure {
+        var TYPE: Class<*>? =
+            RefClass.load(SettingsSecure::class.java, Settings.Secure::class.java as Class<*>)
+        var sNameValueCache: RefStaticObject<Any?>? = null
+    }
+
+    /* JADX INFO: renamed from: io.x57$g */ /* JADX INFO: compiled from: Settings.java */
+    object SettingSystem {
+        var TYPE: Class<*>? =
+            RefClass.load(SettingSystem::class.java, Settings.System::class.java as Class<*>)
+        var sNameValueCache: RefStaticObject<Any?>? = null
+    }
+}
+
+object ProcessMirror {
+    var TYPE: Class<*>? = RefClass.load(ProcessMirror::class.java, Process::class.java as Class<*>)
+
+    @MethodParams([String::class])
+    var setArgV0: RefStaticMethod<Void?>? = null
+}
+object DdmHandleAppNameJBMR1Mirror {
+    var TYPE: Class<*>? = RefClass.load(
+        DdmHandleAppNameJBMR1Mirror::class.java as Class<*>,
+        "android.ddm.DdmHandleAppName"
+    )
+
+    @MethodParams([String::class, Int::class])
+    var setAppName: RefStaticMethod<Void?>? = null
+}
+object StrictModeMirror {
+    var DETECT_VM_FILE_URI_EXPOSURE: RefStaticInt? = null
+    var PENALTY_DEATH_ON_FILE_URI_EXPOSURE: RefStaticInt? = null
+    var TYPE: Class<*>? =
+        RefClass.load(StrictModeMirror::class.java as Class<*>, "android.os.StrictMode")
+    var disableDeathOnFileUriExposure: RefStaticMethod<*>? = null
+    var sVmPolicyMask: RefStaticInt? = null
+}
+object AlarmManagerMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(AlarmManagerMirror::class.java, AlarmManager::class.java as Class<*>)
+    var mService: RefObject<*>? = null
+    var mTargetSdkVersion: RefInt? = null
+}
+object MessageMirror {
+    var TYPE: Class<*>? = RefClass.load(MessageMirror::class.java, Message::class.java as Class<*>)
+
+    @MethodParams([Int::class])
+    var updateCheckRecycle: RefStaticMethod<Void?>? = null
+}
+object CompatibilityInfoMirror {
+    var DEFAULT_COMPATIBILITY_INFO: RefStaticObject<Any?>? = null
+    var TYPE: Class<*>? = RefClass.load(
+        CompatibilityInfoMirror::class.java as Class<*>,
+        "android.content.res.CompatibilityInfo"
+    )
+
+    @MethodParams([ApplicationInfo::class, Int::class, Int::class, Boolean::class])
+    var ctor: RefConstructor<*>? = null
+    var ctorLG: RefConstructor<*>? = null
+}
+object ThreadedRendererMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ThreadedRendererMirror::class.java as Class<*>,
+        "android.view.ThreadedRenderer"
+    )
+
+    @MethodParams([File::class])
+    var setupDiskCache: RefStaticMethod<Void?>? = null
+}
+object RenderScriptCacheDirMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        RenderScriptCacheDirMirror::class.java as Class<*>,
+        "android.renderscript.RenderScriptCacheDir"
+    )
+
+    @MethodParams([File::class])
+    var setupDiskCache: RefStaticMethod<Void?>? = null
+}
+object CompatibilityMirror {
+    var TYPE: Class<*>? =
+        RefClass.load(CompatibilityMirror::class.java as Class<*>, "android.compat.Compatibility")
+    var clearBehaviorChangeDelegate: RefStaticMethod<*>? = null
+    var sCallbacks: RefStaticObject<Any?>? = null
+
+    /* JADX INFO: renamed from: io.mu0$a */ /* JADX INFO: compiled from: Compatibility.java */
+    object BehaviorChangeDelegate {
+        var TYPE: Class<*>? = RefClass.load(
+            CompatibilityMirror::class.java as Class<*>,
+            "android.compat.Compatibility\$BehaviorChangeDelegate"
+        )
+    }
+}
+object AppCompatCallbacksMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        AppCompatCallbacksMirror::class.java as Class<*>,
+        "android.app.AppCompatCallbacks"
+    )
+    var install: RefStaticMethod<*>? = null
+}
+object DisplayAdjustmentsMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        DisplayAdjustmentsMirror::class.java as Class<*>,
+        "android.view.DisplayAdjustments"
+    )
+
+    @MethodReflectParams(["android.content.res.CompatibilityInfo"])
+    var setCompatibilityInfo: RefMethod<*>? = null
+}
+object ApplicationConfigMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ApplicationConfigMirror::class.java as Class<*>,
+        "android.security.net.config.ApplicationConfig"
+    )
+    var sInstance: RefStaticObject<*>? = null
+
+    @MethodReflectParams(["android.security.net.config.ApplicationConfig"])
+    var setDefaultInstance: RefStaticMethod<*>? = null
+}
+object IApplicationThreadKitkatMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IApplicationThreadKitkatMirror::class.java as Class<*>,
+        "android.app.IApplicationThread"
+    )
+
+    @MethodParams([IBinder::class, Intent::class, Boolean::class, Int::class])
+    var scheduleBindService: RefMethod<Void?>? = null
+
+    @MethodParams([IBinder::class, ServiceInfo::class, CompatibilityInfoMirror::class, Int::class])
+    var scheduleCreateService: RefMethod<Void?>? = null
+
+    @MethodReflectParams(["android.content.Intent", "android.content.pm.ActivityInfo", "android.content.res.CompatibilityInfo", "int", "java.lang.String", "android.os.Bundle", "boolean", "int", "int"])
+    var scheduleReceiver: RefMethod<Void?>? = null
+}
+object IApplicationThreadQprMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IApplicationThreadQprMirror::class.java as Class<*>,
+        "android.app.IApplicationThread"
+    )
+
+    @MethodParams([IBinder::class, IBinder::class, Intent::class, Boolean::class, Int::class, Long::class])
+    var scheduleBindService: RefMethod<Void?>? = null
+
+    @MethodParams([IBinder::class, IBinder::class, Intent::class])
+    var scheduleUnbindService: RefMethod<Void?>? = null
+}
+object ServiceStartArgsMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        ServiceStartArgsMirror::class.java as Class<*>,
+        "android.app.ServiceStartArgs"
+    )
+    var args: RefObject<Intent?>? = null
+
+    @MethodParams([Boolean::class, Int::class, Int::class, Intent::class])
+    var ctor: RefConstructor<Any?>? = null
+    var flags: RefInt? = null
+    var startId: RefInt? = null
+    var taskRemoved: RefBoolean? = null
+}
+object IApplicationThreadICSMR1Mirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IApplicationThreadICSMR1Mirror::class.java as Class<*>,
+        "android.app.IApplicationThread"
+    )
+
+    @MethodParams([IBinder::class, ServiceInfo::class, CompatibilityInfoMirror::class])
+    var scheduleCreateService: RefMethod<Void?>? = null
+
+    @MethodReflectParams(["android.content.Intent", "android.content.pm.ActivityInfo", "android.content.res.CompatibilityInfo", "int", "java.lang.String", "android.os.Bundle", "boolean"])
+    var scheduleReceiver: RefMethod<Void?>? = null
+
+    @MethodParams([IBinder::class, Boolean::class, Int::class, Int::class, Intent::class])
+    var scheduleServiceArgs: RefMethod<Void?>? = null
+}
+object IApplicationThreadUMirror {
+    var TYPE: Class<*>? = RefClass.load(
+        IApplicationThreadUMirror::class.java as Class<*>,
+        "android.app.IApplicationThread"
+    )
+
+    @MethodParams([IBinder::class, Intent::class, Boolean::class, Int::class, Long::class])
+    var scheduleBindService: RefMethod<Void?>? = null
 }

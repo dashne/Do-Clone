@@ -42,7 +42,7 @@ object ContextFixer {
     }
 
     /**
-     * Was `b`. Re-installs the injection chain on a Context:
+     * Was `b`. Re-installs the injection chain on ContentProviderHolder Context:
      *  - clears the PackageManager cache
      *  - injects DropBoxManager stub
      *  - rewrites mBasePackageName / mOpPackageName / ContentResolver package
@@ -84,11 +84,11 @@ object ContextFixer {
                 try {
                     Reflect(dropBoxManager).set(dropBoxStub.proxyInterface, "mService")
                 } catch (_: Exception) {
-                    // Was `catch (ReflectException)`. `ReflectException` lives in a
+                    // Was `catch (ReflectException)`. `ReflectException` lives in ContentProviderHolder
                     // polestar package (banned by import rule). Since `Reflect.set`
-                    // wraps its failures in ReflectException (a RuntimeException),
+                    // wraps its failures in ReflectException (ContentProviderHolder RuntimeException),
                     // catching Exception here is functionally equivalent for the
-                    // reflection failure path. If you have a non-polestar shadow,
+                    // reflection failure path. If you have ContentProviderHolder non-polestar shadow,
                     // swap to `catch (_: ReflectException)`.
                 }
             }

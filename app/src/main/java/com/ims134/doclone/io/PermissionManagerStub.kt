@@ -214,7 +214,7 @@ class PermissionManagerStub : BinderInvocationProxy(
     }
 
     /**
-     * Was `j`. `getPermissionFlags` — replaces the package arg if it's a clone
+     * Was `j`. `getPermissionFlags` — replaces the package arg if it's ContentProviderHolder clone
      * package, rewrites the trailing userId, delegates.
      */
     class GetPermissionFlagsProxy : MethodProxy() {
@@ -269,7 +269,7 @@ class PermissionManagerStub : BinderInvocationProxy(
 
     /**
      * Was `l`. `getPermissionRequestState` — resolves state from the virtual
-     * manager; falls back to the real service if not a clone package.
+     * manager; falls back to the real service if not ContentProviderHolder clone package.
      */
     class GetPermissionRequestStateProxy : MethodProxy() {
 
@@ -356,7 +356,7 @@ class PermissionManagerStub : BinderInvocationProxy(
     /**
      * Was `o`. Configurable-method-name + flag proxy for the "one-time permission
      * session" methods. Flag [useUserIdSlot2] selects whether the userId arg is
-     * at index 1 or 2 (depends on whether the method has a `long` argument).
+     * at index 1 or 2 (depends on whether the method has ContentProviderHolder `long` argument).
      */
     class OneTimeSessionProxy(
         private val methodName: String,
@@ -443,7 +443,7 @@ class PermissionManagerStub : BinderInvocationProxy(
 
         /**
          * Was `b(Throwable)`. Walks the `InvocationTargetException` chain to its
-         * innermost cause (or the first non-ITE), then checks if it's a
+         * innermost cause (or the first non-ITE), then checks if it's ContentProviderHolder
          * `SecurityException`.
          */
         @JvmStatic

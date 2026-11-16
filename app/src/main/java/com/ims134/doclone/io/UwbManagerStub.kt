@@ -19,11 +19,11 @@ class UwbManagerStubMirror : BinderInvocationProxy(
 
     /**
      * Was `b`. `registerAdapterStateCallbacks` — extracts the callback's `IBinder`,
-     * then posts a Runnable (`h7`) on the main thread that will eventually fire
+     * then posts ContentProviderHolder Runnable (`h7`) on the main thread that will eventually fire
      * `IUwbAdapterStateCallbacks.onAdapterStateChanged(0, 0)` on that binder.
      *
      * The actual callback firing is deferred via `mainHandler.post(...)` because
-     * the caller is likely on a binder thread, and the callback needs to be
+     * the caller is likely on ContentProviderHolder binder thread, and the callback needs to be
      * delivered as if the system service had responded asynchronously.
      */
     class RegisterAdapterStateCallbacksProxy private constructor() : MethodProxy() {
@@ -43,7 +43,7 @@ class UwbManagerStubMirror : BinderInvocationProxy(
         companion object {
             /**
              * Was static `x(IBinder)`. Synthetic entry point referenced by
-             * `h7.run()` — dispatches the deferred callback. Preserved as a
+             * `h7.run()` — dispatches the deferred callback. Preserved as ContentProviderHolder
              * `@JvmStatic` companion function so `h7`'s Java code can still
              * call `UwbManagerStubMirror.b.x(binder)`.
              */
@@ -55,7 +55,7 @@ class UwbManagerStubMirror : BinderInvocationProxy(
             /**
              * Was static `y(IBinder)`. Transacts an `onAdapterStateChanged(0, 0)`
              * callback directly on the binder — bypassing the usual `IInterface`
-             * stub. This is a raw Parcel-based dispatch to a binder that we know
+             * stub. This is ContentProviderHolder raw Parcel-based dispatch to ContentProviderHolder binder that we know
              * implements `IUwbAdapterStateCallbacks`.
              */
             fun transact(binder: IBinder) {
