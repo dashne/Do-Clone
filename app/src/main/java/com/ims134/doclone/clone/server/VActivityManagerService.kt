@@ -4,6 +4,7 @@ package com.ims134.doclone.clone.server
 import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -12,8 +13,10 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ProviderInfo
+import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.Binder
+import android.os.Build
 import android.os.Bundle
 import android.os.ConditionVariable
 import android.os.Handler
@@ -21,8 +24,11 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Message
+import android.os.Parcel
 import android.os.Process
 import android.os.RemoteException
+import android.os.SystemClock
+import android.os.TransactionTooLargeException
 import android.util.Log
 import android.util.SparseArray
 import androidx.collection.ArrayMap
@@ -41,15 +47,24 @@ import com.ims134.doclone.clone.PendingIntentData
 import com.ims134.doclone.clone.PendingResultData
 import com.ims134.doclone.clone.ProcessMap
 import com.ims134.doclone.clone.ProviderCall
+import com.ims134.doclone.clone.VBinder
 import com.ims134.doclone.clone.VParceledListSlice
 import com.ims134.doclone.clone.VUserHandle
 import com.ims134.doclone.clone.VUserHandle.Companion.makeUid
 import com.ims134.doclone.clone.VirtualCore
+import com.ims134.doclone.clone.VirtualRuntime
 import com.ims134.doclone.clone.server.StartProcessMonitor.ProcessKey
 import com.ims134.doclone.io.ApplicationThreadNative
+import com.ims134.doclone.io.BinderDelegateService
+import com.ims134.doclone.io.CompatibilityInfoMirror
 import com.ims134.doclone.io.ComponentUtils
+import com.ims134.doclone.io.IApplicationThread
+import com.ims134.doclone.io.IApplicationThreadCompatMirror
+import com.ims134.doclone.io.IApplicationThreadKitkatMirror
 import com.ims134.doclone.io.IApplicationThreadOreo
+import com.ims134.doclone.io.IApplicationThreadQprMirror
 import com.ims134.doclone.io.IProcessObserver
+import com.ims134.doclone.io.IServiceConnectionCompat
 import com.ims134.doclone.io.IVClient
 import com.ims134.doclone.io.NativeLibraryHelperCompat
 import com.ims134.doclone.io.PackageCacheManager
@@ -57,6 +72,8 @@ import com.ims134.doclone.io.PendingIntents
 import com.ims134.doclone.io.PermissionCompat
 import com.ims134.doclone.io.SpecialComponentList
 import com.ims134.doclone.io.VASettings
+import com.ims134.doclone.io.VNotificationManager
+import com.ims134.doclone.io.VNotificationManagerService
 import java.util.concurrent.atomic.AtomicReference
 
 
@@ -107,6 +124,11 @@ open class VActivityManagerService(): IActivityManager.Stub()
 
         val TAG: String = VActivityManagerService::class.java.getSimpleName()
 
+        const val GMS_PACKAGE = "com.google.android.gms"
+        const val CHECKIN_RECEIVER =
+            "com.google.android.gms.checkin.CheckinServiceImposeReceiver"
+        const val ACTION_CHECKIN_NOW = "android.server.checkin.CHECKIN_NOW"
+
 
         fun get(): VActivityManagerService {
             return instance.get()
@@ -143,7 +165,130 @@ open class VActivityManagerService(): IActivityManager.Stub()
         {
             VActivityManagerService().onCreate(context)
         }
+        /**
+         * Was `resolveServiceInfo(int, Intent)`. Looks up a [ServiceInfo] for the
+         * given intent under the given virtual user. Returns null if the intent is
+         * null or if no matching service is installed.
+         *
+         * `@JvmStatic` preserves the static entry point — `bindService` (and any
+         * other instance method on the AMS) calls it unqualified via Kotlin's
+         * implicit companion resolution.
+         */
+        @JvmStatic
+        fun resolveServiceInfo(userId: Int, intent: Intent?): ServiceInfo? {
+            if (intent == null) return null
+            return VirtualCore.resolveServiceInfo(userId, intent)
+        }
 
+        /**
+         * Was `requireVClient(ProcessRecord)`. Returns the process's [IVClient] proxy,
+         * throwing [RemoteException] if the process (or its client) is null.
+         *
+         * Used by the SDK-36+ service-dispatch paths in [startServiceLocked] and
+         * [bindService] as the "modern" alternative to `requireAppThread(...)`. The
+         * caller catches `RemoteException` inline, so a dead/missing process is
+         * treated the same as a `scheduleCreateService` / `scheduleServiceArgs` IPC
+         * failure — the dispatch is silently skipped.
+         */
+        @JvmStatic
+        @Throws(RemoteException::class)
+        fun requireVClient(process: ProcessRecord?): IVClient {
+            val client = process?.client
+                ?: throw RemoteException("Target process has no IVClient for service dispatch")
+            return client
+        }
+        /**
+         * Was `requireAppThread(ProcessRecord)`. Returns the process's `IApplicationThread`
+         * proxy, throwing [RemoteException] if the process (or its app-thread binder) is null.
+         *
+         * The pre-SDK-36 counterpart to [requireVClient]. Used by service and provider
+         * dispatch paths where the target framework still exposes the raw
+         * `IApplicationThread` (`scheduleCreateService`, `scheduleService`,
+         * `scheduleUnbindService`, `scheduleStopService`, …).
+         *
+         * The caller catches `RemoteException` inline and treats it the same as an IPC
+         * failure — dispatch is silently skipped rather than crashing the AMS.
+         */
+        @JvmStatic
+        @Throws(RemoteException::class)
+        fun requireAppThread(process: ProcessRecord?): IInterface {
+            val appThread = process?.appThread
+                ?: throw RemoteException("Target process has no ApplicationThread")
+            return appThread
+        }
+
+        /**
+         * Was `requestServiceBind(ProcessRecord, ServiceRecord, IntentBindRecord, Intent, boolean)`.
+         * Dispatches a bind request to the target process's `IApplicationThread`.
+         *
+         * Three cases:
+         *  - **GMS chimera**: some chimera services bind themselves internally — no
+         *    client-side dispatch is needed. The original logged this case (stripped).
+         *  - **SDK 36+**: route through `IVClient.scheduleBindService(...)` — the
+         *    newer API path that takes the richer `ServiceRecord` / `IntentBindRecord`
+         *    objects directly.
+         *  - **Pre-36**: use the compat mirror to reach the framework's
+         *    `IApplicationThread.scheduleBindService(...)` overload for the current
+         *    API level.
+         *
+         * [doRebind] is the `isRebind` flag passed through to the framework — true when
+         * rebinding to an already-started service, false for the initial bind.
+         */
+        @JvmStatic
+        @Throws(RemoteException::class)
+        fun requestServiceBind(
+            process: ProcessRecord?,
+            serviceRecord: ServiceRecord,
+            intentBindRecord: ServiceRecord.IntentBindRecord,
+            intent: Intent,
+            doRebind: Boolean,
+        ) {
+            when {
+                GmsSupport.isChimeraBoundServiceStart(intent, serviceRecord.serviceInfo) -> {
+                    // Chimera handles its own binding internally — nothing to dispatch.
+                    // Was `Objects.toString(intent);` — a stripped log.
+                    intent.toString()
+                }
+                Build.VERSION.SDK_INT >= 36 -> {
+                    requireVClient(process).scheduleBindService(
+                        serviceRecord, intentBindRecord, intent, doRebind, 0,
+                    )
+                }
+                else -> {
+                    IApplicationThreadCompatMirror.scheduleBindService(
+                        requireAppThread(process),
+                        serviceRecord,
+                        intentBindRecord,
+                        intent,
+                        doRebind,
+                        0,
+                    )
+                }
+            }
+        }
+
+        @JvmStatic
+        fun connectionConnected(
+            connection: IServiceConnection,
+            name: ComponentName,
+            intentBindRecord: ServiceRecord.IntentBindRecord,
+        ) {
+            try {
+                val binder = intentBindRecord.binder
+                if (binder == null || !binder.isBinderAlive) {
+                    Log.d(TAG, "binder not available")
+                } else {
+                    IServiceConnectionCompat.connected(
+                        connection,
+                        name,
+                        BinderDelegateService(name, binder),
+                        null,
+                        false,
+                    )
+                }
+            } catch (_: RemoteException) {
+            }
+        }
     }
 
     val mProcessNames: ProcessMap<ProcessRecord> = ProcessMap()
@@ -151,6 +296,10 @@ open class VActivityManagerService(): IActivityManager.Stub()
     fun findProcessLocked(processName: String, uid: Int): ProcessRecord? {
         return this.mProcessNames.get(uid, processName)
     }
+    fun findProcessLocked(pid: Int): ProcessRecord? {
+        return this.mPidsSelfLocked.get(pid)
+    }
+
 
     @JvmName("V")
     fun getAliveVpids(): HashSet<Int> {
@@ -868,7 +1017,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
     }
     //---------------------------------------------------------------------------------------------
     override fun dump() {
-        TODO("Not yet implemented")
+
     }
 
     override fun getFreeStubCount(): Int = synchronized(mPidsSelfLocked) {
@@ -881,148 +1030,842 @@ open class VActivityManagerService(): IActivityManager.Stub()
 }
 
     override fun getInitialPackage(pid: Int): String? {
-        TODO("Not yet implemented")
+        synchronized(this.mPidsSelfLocked) {
+            try {
+                val processRecord = this.mPidsSelfLocked.get(pid)
+                if (processRecord == null) {
+                    return null
+                }
+                return processRecord.appInfo.packageName
+            } catch (th: Throwable) {
+                throw th
+            }
+        }
+
     }
 
     override fun getPendingIntent(binder: IBinder?): PendingIntentData? {
-        TODO("Not yet implemented")
+        return this.mPendingIntents.getPendingIntentData(binder!!)
     }
 
     override fun handleApplicationCrash() {
-        TODO("Not yet implemented")
+
     }
 
     override fun isAppProcess(processName: String?): Boolean {
-        TODO("Not yet implemented")
+        return parseVPid(processName) != -1;
+
     }
 
     override fun registerProcessObserver(observer: IProcessObserver?) {
-        TODO("Not yet implemented")
+
     }
 
-    override fun removePendingIntent(binder: IBinder?) {
-        TODO("Not yet implemented")
+    override fun removePendingIntent(token: IBinder?) {
+        val store = mPendingIntents
+        synchronized(store.mPendingIntents) {
+            store.mPendingIntents.remove(token)
+            // Original tries to remove from mPendingIntentsByKey too, but that map
+            // is keyed by <whatever-the-key-type-is>, not IBinder — the remove
+            // never matches and is a no-op. Cast preserves the original behavior.
+            @Suppress("UNCHECKED_CAST")
+            (store.mPendingIntentsByKey as MutableMap<Any?, *>).remove(token)
+        }
     }
 
     override fun unregisterProcessObserver(observer: IProcessObserver?) {
-        TODO("Not yet implemented")
+
     }
 
     override fun acquireProviderClient(
         userId: Int,
-        info: ProviderInfo?
+        providerInfo: ProviderInfo?
     ): IBinder? {
-        TODO("Not yet implemented")
+        val authority = providerInfo!!.authority
+
+        // Diagnostics: who called us? A null result means the caller isn't in our
+        // process table — log the stack but keep going (the call below will fail
+        // or succeed on its own merits).
+        val callingProcess = synchronized(mPidsSelfLocked) {
+            findProcessLocked(getCallingPid())
+        }
+        if (callingProcess == null) {
+            Log.d(TAG, Log.getStackTraceString(SecurityException("Who are you?")))
+        }
+
+        val processName = providerInfo.processName
+        val targetProcess = startProcessIfNeeded(
+            processName, userId, providerInfo.packageName, true,
+        )
+        val targetClient = targetProcess?.client
+
+        // Process died or wasn't started — log and fall through to the null return.
+        if (targetProcess == null || targetClient == null ||
+            !targetClient.asBinder().isBinderAlive
+        ) {
+            Log.d(TAG, "Process $processName died after got binder")
+        } else {
+            try {
+                return targetClient.acquireProviderClient(providerInfo)
+            } catch (e: RemoteException) {
+                if (e is TransactionTooLargeException) {
+                    for (i in 0 until 5) {
+                        Log.d(
+                            TAG,
+                            "retry $i for acquireProviderClient $authority",
+                        )
+                        try {
+                            Thread.sleep(250L)
+                            // NOTE: re-reads targetProcess.client each iteration.
+                            // If the process was killed between attempts, `!!` NPEs
+                            // here → caught by the inner catch(Throwable) → retry.
+                            // Same behavior as the Java original.
+                            return targetProcess.client!!.acquireProviderClient(providerInfo)
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }
+            } catch (_: Throwable) {
+                // Was `th.toString();` — stripped log
+            }
+        }
+
+        Log.d(TAG, "acquireProviderClient return null : $authority")
+        return null
     }
 
-    override fun addPendingIntent(binder: IBinder?, packageName: String?) {
-        TODO("Not yet implemented")
+    override fun addPendingIntent(token: IBinder?, packageName: String?) {
+        val store = mPendingIntents
+        val callingUserId = VBinder.getUidByPid() / 100000
+
+        synchronized(store.mPendingIntents) {
+            // Register the death recipient *before* inserting — matches the Java
+            // order. If linkToDeath fails (already linked / dead binder), swallow
+            // and proceed — the entry may still be valid.
+            try {
+                token?.linkToDeath(BinderDeathRecipient(store, token), 0)
+            } catch (_: RemoteException) {
+            }
+
+            val existing = store.mPendingIntents[token]
+            if (existing == null) {
+                // First registration for this token — reconstruct the PendingIntent
+                // by round-tripping the binder through a Parcel. The binder *is* the
+                // IIntentSender; PendingIntent.readPendingIntentOrNullFromParcel
+                // decodes it back into a PendingIntent.
+                val data = PendingIntentData().apply { creatorPackage = packageName }
+                val parcel = Parcel.obtain()
+                try {
+                    parcel.writeStrongBinder(token)
+                    parcel.setDataPosition(0)
+                    data.pendingIntent = PendingIntent.readPendingIntentOrNullFromParcel(parcel)
+                } finally {
+                    parcel.recycle()
+                }
+                store.mPendingIntents[token!!] = data
+            } else {
+                // Already registered — just update the package name (the PendingIntent
+                // itself is unchanged).
+                existing.creatorPackage = packageName
+            }
+
+            store.mPendingIntentsByKey[token!!] = callingUserId
+        }
     }
 
     override fun appDoneExecuting() {
-        TODO("Not yet implemented")
+        synchronized(this.mPidsSelfLocked) {
+            try {
+                val processRecord = this.mPidsSelfLocked.get(getCallingPid())
+                if (processRecord != null) {
+                    processRecord.attachCondition.open()
+                }
+            } catch (th: Throwable) {
+                throw th
+            }
+        }
+
+    }
+
+    /**
+     * Was `findServiceRecord(int, ServiceInfo)`. Finds the [ServiceRecord] matching
+     * the given [serviceInfo] under the given virtual user, or null if no live
+     * service exists.
+     *
+     * A record matches when:
+     *   - its owning process either doesn't exist yet OR belongs to [userId], AND
+     *   - its `serviceInfo` is the same service as [serviceInfo] (compared via
+     *     [ComponentUtils.isSameService] — package/name/class-name comparison that
+     *     tolerates minor ComponentName shape variations).
+     *
+     * The "process is null" case matters: a newly-created `ServiceRecord` (from
+     * `bindService` with `BIND_AUTO_CREATE`) has no process yet — the lookup must
+     * find it so a subsequent `bindService` call doesn't create a duplicate.
+     */
+    fun findServiceRecord(userId: Int, serviceInfo: ServiceInfo): ServiceRecord? {
+        synchronized(mServices) {
+            for (record in mServices) {
+                val process = record?.process
+                if (process == null || process.userId == userId) {
+                    if (ComponentUtils.isSameService(serviceInfo, record?.serviceInfo)) {
+                        return record
+                    }
+                }
+            }
+            return null
+        }
+    }
+
+    /**
+     * Was `stopServiceLocked(ServiceRecord)`. Tears down a service:
+     *
+     *  1. Refuses if the service still has auto-create bindings (someone is actively
+     *     using it — `Context.bindService` with `BIND_AUTO_CREATE`).
+     *  2. Marks every client connection as "connected" (the framework's internal
+     *     `connected=true` flag means "disconnection notification was sent") and
+     *     invokes `IServiceConnection.connected(...)` with null binder (the
+     *     disconnection signal). SDK 26+ uses the compat helper; older APIs call
+     *     the 2-arg form directly.
+     *  3. For every binding that has been delivered to the target process
+     *     (`received = true`), resets the flag and dispatches `scheduleUnbindService`.
+     *     SDK 36+ routes through `IVClient`; older APIs try QPR first, fall back to
+     *     AOSP's 2-arg version, throw if neither is available.
+     *  4. Dispatches `scheduleStopService` to the target process.
+     *  5. Removes the record from the global service registry.
+     *
+     * Any per-connection or per-binding IPC failure is swallowed — the teardown
+     * continues so the record can still be removed. A `RemoteException` from the
+     * final `scheduleStopService` is swallowed too.
+     */
+    fun stopServiceLocked(serviceRecord: ServiceRecord) {
+        // Refuse to stop while auto-create bindings exist.
+        if (serviceRecord.hasAutoCreateConnections()) return
+
+        // ===== Notify each client connection of the disconnection =====
+        val connections = serviceRecord.connections
+        if (connections != null) {
+            for (list in connections.values) {
+                for (connectionRecord in list) {
+                    connectionRecord.connected = true
+                    val serviceConnection = connectionRecord.connection
+                    if (serviceConnection?.asBinder() != null) {
+                        try {
+                            if (Build.VERSION.SDK_INT >= 26) {
+                                IServiceConnectionCompat.connected(
+                                    serviceConnection,
+                                    serviceRecord.name,
+                                    null,   // no binder — disconnection
+                                    null,   // no extras
+                                    true,   // dead
+                                )
+                            } else {
+                                serviceConnection.connected(serviceRecord.name, null)
+                            }
+                        } catch (_: Exception) {
+                            // Best-effort — proceed with teardown regardless.
+                        }
+                    }
+                }
+            }
+        }
+
+        // ===== Unbind every "received" binding from the target process =====
+        val unbindProcess = serviceRecord.process
+        if (unbindProcess != null && unbindProcess.appThread != null) {
+            for (bindRecord in serviceRecord.bindings.values) {
+                if (!bindRecord.received) continue
+                try {
+                    bindRecord.received = false
+                    // Re-read process — could have been nulled/replaced since the
+                    // outer check. Preserved from original.
+                    val currentProcess = serviceRecord.process
+                    val intent = bindRecord.intent
+                    if (Build.VERSION.SDK_INT >= 36) {
+                        requireVClient(currentProcess).scheduleUnbindService(
+                            serviceRecord, bindRecord, intent,
+                        )
+                    } else {
+                        val appThread = requireAppThread(currentProcess)
+                        val qpr = IApplicationThreadQprMirror.scheduleUnbindService
+                        if (qpr != null) {
+                            qpr.call(appThread, serviceRecord, bindRecord, intent)
+                        } else {
+                            val aosp = IApplicationThread.scheduleUnbindService
+                                ?: throw RemoteException(
+                                    "No compatible scheduleUnbindService method"
+                                )
+                            aosp.call(appThread, serviceRecord, intent)
+                        }
+                    }
+                } catch (_: Exception) {
+                    // Swallow — `received` already reset, move on to next binding.
+                    // Same as the original's `continue` in the catch block.
+                }
+            }
+        }
+
+        // ===== Ask the target process to stop the service =====
+        val stopProcess = serviceRecord.process
+        if (stopProcess != null && stopProcess.appThread != null) {
+            try {
+                if (Build.VERSION.SDK_INT >= 36) {
+                    requireVClient(stopProcess).scheduleStopService(serviceRecord)
+                } else {
+                    IApplicationThread.scheduleStopService?.call(
+                        requireAppThread(stopProcess), serviceRecord,
+                    )
+                }
+            } catch (_: RemoteException) {
+            }
+        }
+
+        // ===== Remove from the global registry =====
+        synchronized(mServices) {
+            mServices.remove(serviceRecord)
+        }
+    }
+
+
+    /**
+     * Was `k0(Intent, boolean, int)`. Server-side `startService` handler.
+     *
+     * Steps:
+     *  1. Resolve the target [ServiceInfo]. Null → return null.
+     *  2. Ensure `processName` is set (defaults to `packageName`).
+     *  3. Start the process if needed. Null → log, return null.
+     *  4. Find an existing [ServiceRecord]. If it's already in the *same* process
+     *     with no auto-create bindings, and it's the GMS chimera finalize intent,
+     *     stop it first so we create a fresh record (GMS's notorious chimera reload).
+     *  5. Create a new record OR reuse the existing one, marking whether a
+     *     `scheduleCreateService` call is needed (new / process changed / process
+     *     was null). When the process changed, reset every [IntentBindRecord]'s
+     *     binder/requested/received/g state.
+     *  6. If create is needed: dispatch `scheduleCreateService`, register in
+     *     [mServices], then iterate every bind record and, for each with pending
+     *     app connections, call [requestServiceBind] to actually bind.
+     *  7. Update `lastActivityTime`. If [start] is set, increment `startId` and
+     *     dispatch `scheduleService` / `scheduleServiceArgs` with the intent.
+     *  8. Return the resolved [ComponentName].
+     *
+     * SDK 36+ routes through the VClient interface; earlier APIs fall back to the
+     * mirror-based reflection calls. Preserved exactly.
+     */
+    fun startServiceLocked(
+        intent: Intent?,
+        start: Boolean,
+        userId: Int,
+    ): ComponentName? {
+        val serviceInfo = resolveServiceInfo(userId, intent) ?: return null
+
+        // ComponentInfo.processName is nullable; default to packageName. Extracted
+        // to a local so the compiler sees non-null without a `!!`.
+        val processName = serviceInfo.processName
+            ?: serviceInfo.packageName.also { serviceInfo.processName = it }
+
+        val process = startProcessIfNeeded(
+            processName, userId, serviceInfo.packageName, true,
+        )
+        if (process == null) {
+            Log.e(
+                TAG,
+                "Unable to start new Process for : ${ComponentUtils.createComponentName(serviceInfo)}",
+            )
+            return null
+        }
+
+        var existingRecord = findServiceRecord(userId, serviceInfo)
+
+        // GMS chimera: force-stop a stale GmsIntentOperationService before re-creating.
+        if (existingRecord != null &&
+            existingRecord.process === process &&
+            !existingRecord.hasAutoCreateConnections() &&
+            intent != null &&
+            "com.google.android.gms" == serviceInfo.packageName &&
+            "com.google.android.gms.chimera.GmsIntentOperationService" == serviceInfo.name &&
+            "com.google.android.chimera.container.NEW_MODULE_FINALIZE" == intent.action
+        ) {
+            stopServiceLocked(existingRecord)
+            existingRecord = null
+        }
+
+        val serviceRecord: ServiceRecord
+        val needsCreate: Boolean
+        when {
+            existingRecord == null -> {
+                // No existing record — create a fresh one.
+                serviceRecord = ServiceRecord().apply {
+                    name = ComponentName(serviceInfo.packageName, serviceInfo.name)
+                    startId = 0
+                    activeSince = SystemClock.elapsedRealtime()
+                    this.process = process
+                    this.serviceInfo = serviceInfo
+                }
+                needsCreate = true
+            }
+            existingRecord.process == null -> {
+                // Record exists but was never assigned a process — attach and create.
+                existingRecord.process = process
+                serviceRecord = existingRecord
+                needsCreate = true
+            }
+            existingRecord.process !== process -> {
+                // Process changed — reset every binding so the new process re-binds.
+                existingRecord.process = process
+                synchronized(existingRecord.bindings) {
+                    for (bindRecord in existingRecord.bindings.values) {
+                        bindRecord.binder = null
+                        bindRecord.requested = false
+                        bindRecord.received = false
+                        bindRecord.doRebind = false
+                    }
+                }
+                serviceRecord = existingRecord
+                needsCreate = true
+            }
+            else -> {
+                // Already bound to this process — nothing to create.
+                serviceRecord = existingRecord
+                needsCreate = false
+            }
+        }
+
+        if (needsCreate) {
+            try {
+                val createServiceInfo = serviceRecord.serviceInfo
+                if (Build.VERSION.SDK_INT >= 36) {
+                    requireVClient(process)
+                        .scheduleCreateService(serviceRecord, createServiceInfo, 0)
+                } else {
+                    IApplicationThreadKitkatMirror.scheduleCreateService?.call(
+                        requireAppThread(process),
+                        serviceRecord,
+                        createServiceInfo,
+                        CompatibilityInfoMirror.DEFAULT_COMPATIBILITY_INFO?.get(),
+                        0,
+                    )
+                }
+            } catch (_: RemoteException) {
+            }
+
+            synchronized(mServices) {
+                mServices.add(serviceRecord)
+            }
+
+            // Request binds for every binding that has pending app connections.
+            val bindings = serviceRecord.bindings
+            if (bindings != null) {
+                for (bindRecord in bindings.values) {
+                    val bindProcess = serviceRecord.process
+                    if (bindProcess == null || bindProcess.appThread == null) break
+
+                    val shouldRequest: Boolean
+                    synchronized(bindRecord) {
+                        shouldRequest = !bindRecord.requested && bindRecord.apps.size > 0
+                        if (shouldRequest) bindRecord.requested = true
+                    }
+
+                    if (shouldRequest) {
+                        try {
+                            requestServiceBind(
+                                bindProcess, serviceRecord, bindRecord, bindRecord.intent!!, false,
+                            )
+                            bindRecord.received = true
+                            bindRecord.doRebind = false
+                        } catch (_: RemoteException) {
+                            synchronized(bindRecord) {
+                                bindRecord.requested = false
+                            }
+                            break
+                        }
+                    }
+                }
+            }
+        }
+
+        serviceRecord.lastActivityTime = SystemClock.uptimeMillis()
+
+        if (start) {
+            val newStartId = serviceRecord.startId + 1
+            serviceRecord.startId = newStartId
+
+            // Pre-Eclair (API < 5) services get the `rebind` flag; anything newer
+            // passes false. Preserved for legacy SDK compat.
+            val appInfo = serviceInfo.applicationInfo
+            val doRebind = appInfo != null && appInfo.targetSdkVersion < 5
+
+            try {
+                if (Build.VERSION.SDK_INT >= 36) {
+                    requireVClient(process).scheduleServiceArgs(
+                        serviceRecord, doRebind, newStartId, 0, intent,
+                    )
+                } else {
+                    IApplicationThreadCompatMirror.scheduleService(
+                        requireAppThread(process),
+                        serviceRecord,
+                        doRebind,
+                        newStartId,
+                        0,
+                        intent,
+                    )
+                }
+            } catch (_: RemoteException) {
+            }
+        }
+
+        return ComponentUtils.createComponentName(serviceInfo)
     }
 
     override fun bindService(
-        caller: IBinder?,
+        appThreadBinder: IBinder?,
         token: IBinder?,
-        service: Intent?,
+        intent: Intent?,
         resolvedType: String?,
         connection: IServiceConnection?,
         flags: Int,
         userId: Int
     ): Int {
-        TODO("Not yet implemented")
+        val serviceInfo = resolveServiceInfo(userId, intent) ?: return 0
+
+        if (GmsSupport.isChimeraBoundServiceStart(intent, serviceInfo)) {
+            return 0
+        }
+
+        // Look up existing ServiceRecord; may become non-null after startServiceLocked
+        var record = findServiceRecord(userId, serviceInfo)
+
+        // BIND_AUTO_CREATE (flag 1): start the service if it isn't running
+        if (flags and 1 != 0) {
+            if (startServiceLocked(intent, false, userId) != null) {
+                record = findServiceRecord(userId, serviceInfo)
+            }
+        }
+
+        // Create the ServiceRecord if still missing
+        var wasExisting = true
+        val serviceRecord: ServiceRecord = if (record == null) {
+            wasExisting = false
+            val newRecord = ServiceRecord().also { sr ->
+                sr.name = ComponentName(serviceInfo.packageName, serviceInfo.name)
+                sr.startId = 0
+                sr.activeSince = SystemClock.elapsedRealtime()
+                sr.serviceInfo = serviceInfo
+                sr.retrieveIntentBindRecord(intent!!).addConnection(connection!!)
+            }
+            synchronized(mServices) {
+                mServices.add(newRecord)
+            }
+            newRecord
+        } else {
+            record
+        }
+
+        // Find the caller's ProcessRecord by matching the appThread binder
+        var callingProcess: ProcessRecord? = null
+        synchronized(mProcessNames) {
+            val map = mProcessNames.cache
+            var i = map.size
+            outer@ while (true) {
+                val idx = i - 1
+                if (i <= 0) {
+                    callingProcess = null
+                    break
+                }
+                val sparseArray = map.valueAt(idx)
+                if (sparseArray != null) {
+                    for (j in 0 until sparseArray.size)
+                    {
+                        val pr = sparseArray.valueAt(j)
+                        if ((userId == -1 || pr.userId == userId) &&
+                            appThreadBinder === pr.appThread?.asBinder()
+                        ) {
+                            callingProcess = pr
+                            break@outer
+                        }
+                    }
+                }
+                i = idx
+            }
+        }
+
+        val appBindRecord = serviceRecord.retrieveAppBindingLocked(intent!!, callingProcess!!)
+        val connectionRecord = ConnectionRecord(appBindRecord, connection!!, flags)
+
+        val connectionBinder = connection?.asBinder()!!
+
+        // Register the ConnectionRecord with the ServiceRecord and the app binding
+        val perServiceConnections = serviceRecord.connections
+            .getOrPut(connectionBinder) { ArrayList() }
+        perServiceConnections.add(connectionRecord)
+        appBindRecord.connections.add(connectionRecord)
+
+        // Also register globally, under the mServiceConnections monitor
+        val globalConnections = synchronized(mServiceConnections) {
+            mServiceConnections.getOrPut(connectionBinder) { ArrayList() }
+        }
+        globalConnections!!.add(connectionRecord)
+
+        // Ensure an IntentBindRecord exists for this intent
+        var intentBindRecord = serviceRecord.findIntentBindRecord(intent)
+        if (intentBindRecord == null) {
+            intentBindRecord = ServiceRecord.IntentBindRecord().also { it.intent = intent }
+            synchronized(serviceRecord.bindings) {
+                serviceRecord.bindings[Intent.FilterComparison(intent)] = intentBindRecord
+            }
+        }
+        intentBindRecord.addConnection(connection)
+
+        // If we just created the ServiceRecord, or the target process isn't running,
+        // there's no binder to deliver yet — the bind will complete asynchronously.
+        if (!wasExisting) return 0
+        val targetProcess = serviceRecord.process ?: return 0
+        if (targetProcess.appThread == null) return 0
+
+        // Re-read the bind record — may differ from the one we created above if
+        // another thread created it first.
+        val bindRecord = serviceRecord.findIntentBindRecord(intent)
+        if (bindRecord != null) {
+            var binderAlive: Boolean
+            var newlyRequested: Boolean
+            synchronized(bindRecord) {
+                val binder = bindRecord.binder
+                binderAlive = binder != null && binder.isBinderAlive
+                if (binderAlive || bindRecord.requested) {
+                    newlyRequested = false
+                } else {
+                    bindRecord.requested = true
+                    newlyRequested = true
+                }
+            }
+
+            if (binderAlive) {
+                // Binder already alive — rebind (if allowed) and notify immediately
+                if (bindRecord.doRebind) {
+                    try {
+                        requestServiceBind(targetProcess, serviceRecord, bindRecord, intent, true)
+                    } catch (_: RemoteException) {
+                    }
+                }
+                connectionConnected(
+                    connection,
+                    ComponentName(serviceInfo.packageName, serviceInfo.name),
+                    bindRecord,
+                )
+            } else if (newlyRequested) {
+                // Binder not alive and we're the first requester — ask the target
+                try {
+                    requestServiceBind(targetProcess, serviceRecord, bindRecord, intent, false)
+                } catch (_: RemoteException) {
+                    // Failure: clear the requested flag so a future bind retries
+                    synchronized(bindRecord) {
+                        bindRecord.requested = false
+                    }
+                }
+            }
+        }
+
+        serviceRecord.lastActivityTime = SystemClock.uptimeMillis()
+        return 1
     }
 
     override fun broadcastFinish(data: PendingResultData?) {
-        TODO("Not yet implemented")
+        BroadcastSystem.broadcastSystem?.finishPendingBroadcast(data)
     }
 
     override fun forceStopPackage(packageName: String?, userId: Int) {
-        TODO("Not yet implemented")
+        if (packageName == null ||
+            !VUserManagerService.get()!!.exists(userId) ||
+            !VAppManagerService.get()!!.isAppInstalledAsUser(userId, packageName)
+        ) {
+            return
+        }
+
+        VAppManagerService.get()?.setPackageStoppedState(userId, packageName, true)
+        killAppByPkg(packageName, userId)
+        VJobSchedulerService.get()?.cancelAll(packageName, userId)
+
+        // ===== Cancel pending intents registered by this package + user =====
+        val store = mPendingIntents
+        val toCancel = ArrayList<PendingIntentData>()
+        synchronized(store.mPendingIntents) {
+            val iterator = store.mPendingIntents.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                val registeredUserId = store.mPendingIntentsByKey[entry.key]
+                val data = entry.value
+                if (data != null &&
+                    packageName == data.creatorPackage &&
+                    registeredUserId != null &&
+                    registeredUserId == userId
+                ) {
+                    toCancel.add(data)
+                    store.mPendingIntentsByKey.remove(entry.key)
+                    iterator.remove()
+                }
+            }
+        }
+        for (data in toCancel) {
+            data.pendingIntent?.cancel()
+        }
+
+        // ===== Cancel notifications =====
+        VNotificationManagerService.get()?.let { notifService ->
+            notifService.cancelAllNotification(packageName, userId)
+            notifService.clearNotificationCnt(packageName, userId)
+        }
     }
 
     override fun getActivityClassForToken(
         userId: Int,
         token: IBinder?
     ): ComponentName? {
-        TODO("Not yet implemented")
+        val stack = mActivityStack
+        synchronized(stack.mTask) {
+            val record = stack.findActivityByToken(userId, token) ?: return null
+            return record.componentName
+        }
     }
 
     override fun getAppProcessName(pid: Int): String? {
-        TODO("Not yet implemented")
+        synchronized(mPidsSelfLocked) {
+            val processRecord = mPidsSelfLocked[pid] ?: return null
+            return processRecord.processName
+        }
     }
 
     override fun getCallingActivity(
         userId: Int,
         token: IBinder?
     ): ComponentName? {
-        TODO("Not yet implemented")
+        val stack = mActivityStack
+        synchronized(stack.mTask) {
+            val record = stack.findActivityByToken(userId, token) ?: return null
+
+            ActivityStack.fixCaller(record)
+            // Was `Objects.toString(record.componentName2);` — stripped log
+            record.componentName2?.let { return it }
+            return record.componentName
+        }
     }
 
     override fun getCallingPackage(userId: Int, token: IBinder?): String? {
-        TODO("Not yet implemented")
+        val stack = mActivityStack
+        synchronized(stack.mTask) {
+            val record = stack.findActivityByToken(userId, token) ?: return "android"
+
+            // Was `Objects.toString(record.intent);` — stripped log
+            ActivityStack.fixCaller(record)
+            // Was `Objects.toString(record.componentName2);` — stripped log
+            return record.componentName2?.packageName ?: "android"
+        }
     }
 
     override fun getPackageForIntentSender(sender: IBinder?): String? {
-        TODO("Not yet implemented")
+        val pendingIntentData = mPendingIntents.getPendingIntentData(sender!!)
+        return pendingIntentData?.creatorPackage
     }
 
     override fun getPackageForToken(
         userId: Int,
         token: IBinder?
     ): String? {
-        TODO("Not yet implemented")
+        val activityStack = mActivityStack
+        return synchronized(activityStack.mTask) {
+            activityStack.findActivityByToken(userId, token)?.componentName?.packageName
+        }
+
     }
 
     override fun getProcessPkgList(pid: Int): List<String>? {
-        TODO("Not yet implemented")
+        synchronized(mPidsSelfLocked) {
+            val processRecord = mPidsSelfLocked[pid] ?: return emptyList()
+            return ArrayList(processRecord.packageList)
+        }
     }
 
     override fun getServices(
         maxNum: Int,
         flags: Int,
         userId: Int
-    ): VParceledListSlice<*>? {
-        TODO("Not yet implemented")
+    ): VParceledListSlice<*>? =
+        synchronized(mServices) {
+            val result = ArrayList<ActivityManager.RunningServiceInfo>(mServices.size)
+            for (serviceRecord in mServices) {
+                val processRecord = serviceRecord?.process ?: continue
+                if (processRecord.userId != userId) continue
+
+                val client = synchronized(mPidsSelfLocked) {
+                    findProcessLocked(processRecord.Pid)
+                }
+
+                result += ActivityManager.RunningServiceInfo().apply {
+                    uid = processRecord.vuid
+                    pid = processRecord.Pid
+                    if (client != null) {
+                        process = client.processName
+                        clientPackage = client.appInfo.packageName
+                    }
+                    activeSince = serviceRecord.activeSince
+                    lastActivityTime = serviceRecord.lastActivityTime
+                    clientCount = serviceRecord.getClientCount()
+                    service = ComponentUtils.createComponentName(serviceRecord.serviceInfo!!)
+                    started = serviceRecord.startId > 0
+                }
+            }
+            VParceledListSlice(result)
+        }
+
+
+    override fun getSystemPid(): Int = Process.myPid()
+
+    override fun getTaskInfo(tid: Int): AppTaskInfo? {
+        val activityStack = mActivityStack
+        return synchronized(activityStack.mTask) {
+            val taskRecord = activityStack.mTask[tid] ?: return null
+            val activities = taskRecord.activities
+            if (activities.isEmpty()) return null
+
+            val topComponent = activities[activities.lastIndex].componentName
+            val intent = taskRecord.intent
+            AppTaskInfo().apply {
+
+                taskId = taskRecord.taskId
+                baseIntent = intent
+                baseActivity = intent?.component
+                topActivity = topComponent
+            }
+        }
     }
 
-    override fun getSystemPid(): Int {
-        TODO("Not yet implemented")
+    override fun getUidByPid(pid: Int): Int = synchronized(mPidsSelfLocked) {
+    findProcessLocked(pid)?.vuid ?: Process.myUid()
     }
 
-    override fun getTaskInfo(taskId: Int): AppTaskInfo? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getUidByPid(pid: Int): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun getVirtualUidByPid(pid: Int): Int {
-        TODO("Not yet implemented")
-    }
+    override fun getVirtualUidByPid(pid: Int): Int =
+        synchronized(mPidsSelfLocked) {
+            findProcessLocked(pid)?.vuid ?: -10000
+        }
 
     override fun initProcess(
         packageName: String?,
         processName: String?,
         userId: Int
-    ): Int {
-        TODO("Not yet implemented")
-    }
+    ): Int =
+        startProcessIfNeeded(processName!!, userId, packageName!!, true)?.vpid ?: -1
 
-    override fun isAppPid(pid: Int): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun isAppPid(pid: Int): Boolean =
+        synchronized(mPidsSelfLocked) { findProcessLocked(pid) != null }
 
-    override fun isAppRunning(packageName: String?, userId: Int): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun isAppRunning(packageName: String?, userId: Int): Boolean =
+        synchronized(mPidsSelfLocked) {
+            for (index in mPidsSelfLocked.size - 1 downTo 0) {
+                val processRecord = mPidsSelfLocked.valueAt(index) ?: continue
+                if (processRecord.userId == userId && processRecord.appInfo.packageName == packageName) return true
+            }
+            false
+        }
 
-    override fun isVAServiceToken(token: IBinder?): Boolean {
-        TODO("Not yet implemented")
-    }
+
+    override fun isVAServiceToken(token: IBinder?): Boolean = token is ServiceRecord
 
     override fun killAllApps() {
         synchronized(mPidsSelfLocked) {
@@ -1057,11 +1900,18 @@ open class VActivityManagerService(): IActivityManager.Stub()
     }
 
     override fun killApplicationProcess(processName: String?, vuid: Int) {
-        TODO("Not yet implemented")
+        synchronized(mProcessNames) {
+            mProcessNames.get(vuid, processName!!)?.let { Process.killProcess(it.Pid) }
+        }
     }
 
     override fun notifyBadgerChange(info: BadgerInfo?) {
-        TODO("Not yet implemented")
+        val intent = Intent("com.lody.virtual.BADGER_CHANGE").apply {
+            putExtra("userId", info?.vuid)
+            putExtra("packageName", info?.packageName)
+            putExtra("badgerCount", info?.badgenumber)
+        }
+        appContext.sendBroadcast(intent)
     }
 
     override fun onActivityCreated(
@@ -1074,18 +1924,56 @@ open class VActivityManagerService(): IActivityManager.Stub()
         launchMode: Int,
         flags: Int
     ) {
-        TODO("Not yet implemented")
+        val callingPid = Binder.getCallingPid()
+        val processRecord = synchronized(mPidsSelfLocked) { findProcessLocked(callingPid) } ?: return
+
+        val activityStack = mActivityStack
+        synchronized(activityStack.mTask) {
+            activityStack.optimizeTasks()
+            val taskRecord = activityStack.mTask[taskId]
+                ?: TaskRecord(intent, affinity, taskId, processRecord.userId).also {
+                    activityStack.mTask.put(taskId, it)
+                }
+
+            val activityRecord = ActivityRecord()
+            activityRecord.taskRecord = taskRecord
+            activityRecord.componentName = component
+            activityRecord.componentName2 = caller
+            activityRecord.binder = token
+            activityRecord.processRecord = processRecord
+            activityRecord.launchMode = launchMode
+            activityRecord.intent = intent
+
+            synchronized(taskRecord.activities) {
+                taskRecord.activities.add(activityRecord)
+            }
+        }
     }
 
-    override fun onActivityDestroyed(
-        userId: Int,
-        token: IBinder?
-    ): Boolean {
-        TODO("Not yet implemented")
+    override fun onActivityDestroyed(userId: Int, token: IBinder?): Boolean {
+        val activityStack = mActivityStack
+        return synchronized(activityStack.mTask) {
+            activityStack.optimizeTasks()
+            val activityRecord = activityStack.findActivityByToken(userId, token) ?: return false
+            val activities = activityRecord.taskRecord?.activities!!
+            synchronized(activities) {
+                activities.remove(activityRecord)
+            }
+            true
+        }
     }
 
     override fun onActivityResumed(userId: Int, token: IBinder?) {
-        TODO("Not yet implemented")
+        val activityStack = mActivityStack
+        synchronized(activityStack.mTask) {
+            activityStack.optimizeTasks()
+            val activityRecord = activityStack.findActivityByToken(userId, token) ?: return
+            val activities = activityRecord.taskRecord?.activities!!
+            synchronized(activities) {
+                activities.remove(activityRecord)
+                activities.add(activityRecord)
+            }
+        }
     }
 
     override fun peekService(
@@ -1093,7 +1981,9 @@ open class VActivityManagerService(): IActivityManager.Stub()
         resolvedType: String?,
         userId: Int
     ): IBinder? {
-        TODO("Not yet implemented")
+        val serviceInfo = resolveServiceInfo(userId, intent) ?: return null
+        val serviceRecord = findServiceRecord(userId, serviceInfo) ?: return null
+        return serviceRecord.findIntentBindRecord(intent!!)?.binder?.takeIf { it.isBinderAlive }
     }
 
     override fun processRestarted(
@@ -1101,7 +1991,34 @@ open class VActivityManagerService(): IActivityManager.Stub()
         processName: String?,
         userId: Int
     ) {
-        TODO("Not yet implemented")
+        val callingPid = Binder.getCallingPid()
+        val vuid = VUserHandle.makeUid(userId, VAppManagerService.get()?.getAppId(packageName)!!)
+
+        val existing = synchronized(mPidsSelfLocked) { findProcessLocked(callingPid) }
+        if (existing != null) return
+
+        val applicationInfo =
+            VPackageManagerService.get().getApplicationInfo(packageName, 0, userId) ?: return
+        applicationInfo.flags = applicationInfo.flags or ApplicationInfo.FLAG_HAS_CODE
+
+        val realProcessName = activityManager?.runningAppProcesses
+            ?.firstOrNull { it.pid == callingPid }
+            ?.processName
+
+        val vPid = parseVPid(realProcessName)
+        if (vPid == -1) return
+
+        val key = synchronized(mProcessStartLocks) {
+            mProcessStartLocks.getKey(vuid, processName!!)
+        }
+        synchronized(key) {
+            mProcessStartLocks.startMonitor(vuid, processName!!)
+            synchronized(mProcessNames) {
+                mProcessNames.remove(vuid, processName)
+            }
+            startProcessLocked(applicationInfo, processName, vuid, vPid)
+            mProcessStartLocks.stopMonitor(vuid, processName)
+        }
     }
 
     override fun publishService(
@@ -1111,11 +2028,62 @@ open class VActivityManagerService(): IActivityManager.Stub()
         extra: IBinder?,
         userId: Int
     ) {
-        TODO("Not yet implemented")
+        val serviceRecord = token as? ServiceRecord ?: return
+        val bindRecord = (if (binder != null) serviceRecord.findIntentBindRecord(binder) else serviceRecord.findIntentBindRecord(intent!!))
+            ?: return
+
+        val connections = synchronized(bindRecord) {
+            bindRecord.binder = extra
+            synchronized(bindRecord.connections) {
+                ArrayList(bindRecord.connections)
+            }
+        }
+
+        if (extra != null) {
+            try {
+                extra.linkToDeath(SelfUnlinkDeathRecipient(extra), 0)
+            } catch (ignored: Throwable) {
+                // remote already dead — linkToDeath throws, original swallows it
+            }
+        }
+
+        for (connection in connections) {
+            connectionConnected(
+                connection,
+                ComponentUtils.createComponentName(serviceRecord.serviceInfo!!),
+                bindRecord
+            )
+        }
     }
 
     override fun requestGmsCheckin(userId: Int) {
-        TODO("Not yet implemented")
+        if (!VASettings.gmsState || userId < 0) return
+        try {
+            if (!VAppManagerService.get()!!.isAppInstalledAsUser(userId, GMS_PACKAGE)) return
+
+            val vPackage = PackageCacheManager.getPackage(GMS_PACKAGE) ?: return
+            val packageSetting = PackageCacheManager.getPackageSetting(GMS_PACKAGE) ?: return
+
+            val componentName = ComponentName(GMS_PACKAGE, CHECKIN_RECEIVER)
+            val receiver = vPackage.receivers.firstOrNull {
+                componentName == ComponentUtils.createComponentName(it.info!!)
+            } ?: return
+
+            dispatchStaticReceiver(
+                packageSetting.appId,
+                receiver.info!!,
+                BroadcastIntentData(
+                    userId,
+                    Intent(ACTION_CHECKIN_NOW).setComponent(componentName),
+                    GMS_PACKAGE,
+                    componentName
+                ),
+                null,
+                null
+            )
+        } catch (th: Throwable) {
+            // original swallowed everything — see note below
+        }
     }
 
     override fun serviceDoneExecuting(
@@ -1125,7 +2093,12 @@ open class VActivityManagerService(): IActivityManager.Stub()
         res: Int,
         userId: Int
     ) {
-        TODO("Not yet implemented")
+        val serviceRecord = token as? ServiceRecord ?: return
+        if (type == 2) {
+            synchronized(mServices) {
+                mServices.remove(serviceRecord)
+            }
+        }
     }
 
     override fun setServiceForeground(
@@ -1136,7 +2109,58 @@ open class VActivityManagerService(): IActivityManager.Stub()
         removeNotification: Boolean,
         userId: Int
     ) {
-        TODO("Not yet implemented")
+        val serviceRecord = token as? ServiceRecord ?: return
+
+        if (id == 0) {
+            if (removeNotification) {
+                val pkg = serviceRecord.serviceInfo?.packageName
+                val vnm = VNotificationManager.instance
+                val dealtId = vnm.dealNotificationId(serviceRecord.foregroundId, pkg, null, userId)
+                val tag = try {
+                    vnm.service?.dealNotificationTag(dealtId, pkg, null, userId)
+                } catch (ignored: RemoteException) {
+                    null
+                }
+                notificationManager?.cancel(tag, dealtId)
+                serviceRecord.foregroundId = 0
+            }
+            return
+        }
+
+        requireNotNull(notification) { "null notification" }
+
+        val oldId = serviceRecord.foregroundId
+        if (oldId != id) {
+            if (oldId != 0) {
+                val oldPkg = serviceRecord.serviceInfo?.packageName
+                val oldVnm = VNotificationManager.instance
+                val oldDealtId = oldVnm.dealNotificationId(oldId, oldPkg, null, userId)
+                val oldTag = try {
+                    oldVnm.service?.dealNotificationTag(oldDealtId, oldPkg, null, userId)
+                } catch (ignored: RemoteException) {
+                    null
+                }
+                notificationManager?.cancel(oldTag, oldDealtId)
+            }
+            serviceRecord.foregroundId = id
+        }
+
+        val newPkg = serviceRecord.serviceInfo?.packageName
+        val newVnm = VNotificationManager.instance
+        val newDealtId = newVnm.dealNotificationId(id, newPkg, null, userId)
+        val newTag = try {
+            newVnm.service?.dealNotificationTag(newDealtId, newPkg, null, userId)
+        } catch (ignored: RemoteException) {
+            null
+        }
+        try {
+            newVnm.service?.addNotification(newDealtId, newTag, newPkg, userId)
+        } catch (ignored: Exception) {
+        }
+        try {
+            notificationManager?.notify(newTag, newDealtId, notification)
+        } catch (ignored: Throwable) {
+        }
     }
 
     override fun startActivities(
@@ -1146,7 +2170,74 @@ open class VActivityManagerService(): IActivityManager.Stub()
         options: Bundle?,
         userId: Int
     ): Int {
-        TODO("Not yet implemented")
+        if (intents == null) return 0
+
+        val activityInfos = ArrayList<ActivityInfo>(intents.size)
+        for (i in intents.indices) {
+            activityInfos += (VirtualCore.gCore.resolveActivityInfo(userId, intents[i]) ?: return -1)
+        }
+        for (info in activityInfos) {
+            VAppManagerService.get()?.setPackageStoppedState(userId, info.packageName, false)
+        }
+
+        val activityStack = mActivityStack
+        activityStack.optimizeTasks()
+
+        val intent = intents[0]
+        val activityInfo = activityInfos[0]
+        val callerRecord = activityStack.findActivityByToken(userId, token)
+
+        if (callerRecord != null && callerRecord.launchMode == ActivityInfo.LAUNCH_SINGLE_INSTANCE) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        if (ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_CLEAR_TOP, intent)) {
+            intent.flags = intent.flags and Intent.FLAG_ACTIVITY_REORDER_TO_FRONT.inv()
+        }
+        if (ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_CLEAR_TASK, intent) &&
+            !ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_NEW_TASK, intent)
+        ) {
+            intent.flags = intent.flags and Intent.FLAG_ACTIVITY_CLEAR_TASK.inv()
+        }
+
+        var reuseTarget = when (activityInfo.documentLaunchMode) {
+            ActivityInfo.DOCUMENT_LAUNCH_INTO_EXISTING -> ActivityStack.ReuseTarget.DOCUMENT
+            ActivityInfo.DOCUMENT_LAUNCH_ALWAYS -> ActivityStack.ReuseTarget.MULTIPLE
+            else -> ActivityStack.ReuseTarget.CURRENT
+        }
+        if (ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_NEW_TASK, intent) ||
+            activityInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK
+        ) {
+            reuseTarget = if (ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_MULTIPLE_TASK, intent)) {
+                ActivityStack.ReuseTarget.MULTIPLE
+            } else {
+                ActivityStack.ReuseTarget.AFFINITY
+            }
+        }
+        if (callerRecord == null && reuseTarget == ActivityStack.ReuseTarget.CURRENT) {
+            reuseTarget = ActivityStack.ReuseTarget.AFFINITY
+        }
+
+        val taskAffinity = ComponentUtils.getTaskAffinity(activityInfo)
+        val taskRecord = when (reuseTarget) {
+            ActivityStack.ReuseTarget.AFFINITY -> activityStack.findTaskByAffinity(userId, taskAffinity)
+            ActivityStack.ReuseTarget.CURRENT -> callerRecord!!.taskRecord
+            ActivityStack.ReuseTarget.DOCUMENT -> activityStack.findTaskByDocument(userId, intent)
+            else -> null // MULTIPLE
+        }
+
+        val stubIntents = arrayOfNulls<Intent>(intents.size)
+        for (i in intents.indices) {
+            stubIntents[i] = activityStack.createStubIntent(userId, callerRecord, intents[i], activityInfos[i])
+        }
+        for (stubIntent in stubIntents) {
+            if (stubIntent == null) return -1
+        }
+
+        if (taskRecord == null) {
+            return ActivityStack.startActivities(null, stubIntents.filterNotNull().toTypedArray(), resolvedTypes?.filterNotNull()?.toTypedArray(), options)
+        }
+        val topActivity = ActivityStack.topActivity(taskRecord) ?: return -1
+        return ActivityStack.startActivities(topActivity.binder, stubIntents.filterNotNull().toTypedArray(), resolvedTypes?.filterNotNull()?.toTypedArray(), options)
     }
 
     override fun startActivity(
@@ -1158,7 +2249,247 @@ open class VActivityManagerService(): IActivityManager.Stub()
         requestCode: Int,
         userId: Int
     ): Int {
-        TODO("Not yet implemented")
+        if (info != null) {
+            VAppManagerService.get()?.setPackageStoppedState(userId, info.packageName, false)
+        }
+
+        val activityStack = mActivityStack
+        activityStack.optimizeTasks()
+        val callerRecord = activityStack.findActivityByToken(userId, resultTo)
+
+//        if (VLog.b) { // stripped-log scaffolding; reads are dead but kept for fidelity
+//            val tasks = activityStack.mTask
+//            for (i in 0 until tasks.size()) {
+//                val task = tasks.valueAt(i)
+//                task.taskId
+//                task.activities.size
+//            }
+//        }
+
+        val callerTask = callerRecord?.taskRecord
+        // The dex dereferences both unconditionally from here on, so null must throw.
+        val realIntent = intent!!
+        val activityInfo = info!!
+
+        var hasClearTop = ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_CLEAR_TOP, realIntent)
+        val hasClearTask = ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_CLEAR_TASK, realIntent)
+
+        if (realIntent.component == null) {
+            realIntent.component = ComponentName(activityInfo.packageName, activityInfo.name)
+        }
+        if (activityInfo.packageName == "com.google.android.gms" &&
+            activityInfo.name == "com.google.android.gms.games.ui.signinflow.SignInActivity" &&
+            realIntent.action == "com.google.android.gms.games.SIGN_IN" &&
+            ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_FORWARD_RESULT, realIntent)
+        ) {
+            realIntent.flags = realIntent.flags and Intent.FLAG_ACTIVITY_FORWARD_RESULT.inv()
+        }
+        if (callerRecord != null && callerRecord.launchMode == ActivityInfo.LAUNCH_SINGLE_INSTANCE) {
+            realIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        var clearTarget = ActivityStack.ClearTarget.NOTHING
+        if (hasClearTop) {
+            realIntent.flags = realIntent.flags and Intent.FLAG_ACTIVITY_REORDER_TO_FRONT.inv()
+            clearTarget = ActivityStack.ClearTarget.TOP
+        }
+        if (hasClearTask) {
+            if (ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_NEW_TASK, realIntent)) {
+                clearTarget = ActivityStack.ClearTarget.TASK
+            } else {
+                realIntent.flags = realIntent.flags and Intent.FLAG_ACTIVITY_CLEAR_TASK.inv()
+            }
+        }
+
+        var reuseTarget = when (activityInfo.documentLaunchMode) {
+            ActivityInfo.DOCUMENT_LAUNCH_INTO_EXISTING -> {
+                clearTarget = ActivityStack.ClearTarget.TASK
+                ActivityStack.ReuseTarget.DOCUMENT
+            }
+            ActivityInfo.DOCUMENT_LAUNCH_ALWAYS -> ActivityStack.ReuseTarget.MULTIPLE
+            else -> ActivityStack.ReuseTarget.CURRENT
+        }
+
+        val singleTop = when (activityInfo.launchMode) {
+            ActivityInfo.LAUNCH_SINGLE_TOP -> {
+                if (ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_NEW_TASK, realIntent)) {
+                    reuseTarget =
+                        if (ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_MULTIPLE_TASK, realIntent))
+                            ActivityStack.ReuseTarget.MULTIPLE
+                        else ActivityStack.ReuseTarget.AFFINITY
+                }
+                true
+            }
+            ActivityInfo.LAUNCH_SINGLE_TASK -> {
+                if (clearTarget != ActivityStack.ClearTarget.TASK) {
+                    clearTarget = ActivityStack.ClearTarget.TOP
+                }
+                reuseTarget =
+                    if (ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_MULTIPLE_TASK, realIntent))
+                        ActivityStack.ReuseTarget.MULTIPLE
+                    else ActivityStack.ReuseTarget.AFFINITY
+                hasClearTop = false
+                false
+            }
+            ActivityInfo.LAUNCH_SINGLE_INSTANCE -> {
+                clearTarget = ActivityStack.ClearTarget.TOP
+                reuseTarget = ActivityStack.ReuseTarget.AFFINITY
+                hasClearTop = false
+                false
+            }
+            else -> ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_SINGLE_TOP, realIntent)
+        }
+
+        if (clearTarget == ActivityStack.ClearTarget.NOTHING &&
+            ActivityStack.hasFlag(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT, realIntent)
+        ) {
+            clearTarget = ActivityStack.ClearTarget.SPEC_ACTIVITY
+        }
+        if (callerTask == null && reuseTarget == ActivityStack.ReuseTarget.CURRENT) {
+            reuseTarget = ActivityStack.ReuseTarget.AFFINITY
+        }
+
+        var taskAffinity = ComponentUtils.getTaskAffinity(activityInfo)
+        val targetTask = when (reuseTarget) {
+            ActivityStack.ReuseTarget.CURRENT -> callerTask
+            ActivityStack.ReuseTarget.AFFINITY -> {
+                if (realIntent.action == "com.google.android.gms.games.SIGN_IN") {
+                    taskAffinity =
+                        realIntent.getStringExtra("com.google.android.gms.games.GAME_PACKAGE_NAME")!!
+                    Log.d("ActivityStack", "GMS login: from $taskAffinity")
+                }
+                if (taskAffinity == null) null
+                else activityStack.findTaskByAffinity(userId, taskAffinity)
+            }
+            ActivityStack.ReuseTarget.DOCUMENT -> activityStack.findTaskByDocument(userId, realIntent)
+            else -> null // MULTIPLE
+        }
+
+        // All activities already marked (or empty) => behave as "no reusable task".
+        val reuseTask = targetTask?.takeIf { task -> task.activities.any { !it.marked } }
+        if (reuseTask == null) {
+            val stubIntent =
+                activityStack.createStubIntent(userId, null, realIntent, activityInfo) ?: return -1
+            stubIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            stubIntent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            stubIntent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+            stubIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+            return try {
+                appContext.startActivity(stubIntent, options)
+                0
+            } catch (e: RuntimeException) {
+                Log.d("ActivityStack", "Unable to start new virtual task", e)
+                -1
+            }
+        }
+
+        val taskIntent = reuseTask.intent
+        val sameIntent = if (!hasClearTop && !singleTop && !hasClearTask) {
+            val matches = taskIntent == null || (
+                    realIntent.action == taskIntent.action &&
+                            realIntent.data == taskIntent.data &&
+                            realIntent.type == taskIntent.type &&
+                            (realIntent.getPackage() ?: realIntent.component?.packageName) ==
+                            (taskIntent.getPackage() ?: taskIntent.component?.packageName) &&
+                            realIntent.component == taskIntent.component &&
+                            realIntent.categories == taskIntent.categories
+                    )
+            // Null task intent throws here in the original; !! preserves that.
+            matches && reuseTask.intent!!.flags == realIntent.flags
+        } else false
+
+        var markedAny = false
+        var delivered = false
+        if (clearTarget.deliverIntent || singleTop) {
+            val component = realIntent.component
+            val activities = reuseTask.activities
+            synchronized(activities) {
+                markedAny = when (clearTarget) {
+                    ActivityStack.ClearTarget.SPEC_ACTIVITY -> {
+                        var found = false
+                        for (record in activities) {
+                            if (record.componentName == component) {
+                                record.marked = true
+                                found = true
+                            }
+                        }
+                        found
+                    }
+                    ActivityStack.ClearTarget.TASK -> {
+                        var found = false
+                        for (record in activities) {
+                            record.marked = true
+                            found = true
+                        }
+                        found
+                    }
+                    ActivityStack.ClearTarget.TOP -> {
+                        val index = activities.indexOfLast { it.componentName == component }
+                        if (index >= 0) {
+                            for (i in index + 1 until activities.size) activities[i].marked = true
+                        }
+                        index >= 0
+                    }
+                    else -> false // NOTHING
+                }
+            }
+
+            val topActivity = ActivityStack.topActivity(reuseTask)
+            if (hasClearTop && !singleTop && topActivity != null && markedAny) {
+                topActivity.marked = true
+            }
+            if (topActivity != null && !topActivity.marked &&
+                topActivity.componentName == realIntent.component
+            ) {
+                val from = callerRecord?.componentName?.packageName ?: "android"
+                delivered = try {
+                    topActivity.processRecord!!.client!!.scheduleNewIntent(
+                        from, topActivity.binder, realIntent
+                    )
+                    true
+                } catch (e: RemoteException) {
+                    false
+                } catch (e: NullPointerException) {
+                    false
+                }
+            }
+        }
+
+        var result = 0
+        if (!sameIntent && !delivered) {
+            val stubIntent =
+                activityStack.createStubIntent(userId, callerRecord, realIntent, activityInfo)
+                    ?: return -1
+            val top = reuseTask.activities.lastOrNull()
+            result = if (top == null) -1 else ActivityStack.startActivity(
+                top.binder, stubIntent, resultWho, requestCode, options
+            )
+            if (result < 0) return result
+        }
+
+        if (markedAny) {
+            if (delivered) {
+                synchronized(activityStack.mTask) {
+                    ActivityStack.finishMarkedActivities(reuseTask)
+                }
+            } else {
+                val tasks = activityStack.mTask
+                for (i in tasks.size() - 1 downTo 0) {
+                    for (record in tasks.valueAt(i).activities) {
+                        if (record.marked) VirtualRuntime.uiHandler.post(ActivityStackHandler(record))
+                    }
+                }
+            }
+        }
+
+        if (!sameIntent && !delivered) return result
+
+        try {
+            activityStack.activityManager.moveTaskToFront(reuseTask.taskId, 0)
+        } catch (e: Exception) {
+            if (!delivered) return -1
+        }
+        return if (sameIntent) 2 else 0
     }
 
     override fun startService(
@@ -1167,7 +2498,7 @@ open class VActivityManagerService(): IActivityManager.Stub()
         resolvedType: String?,
         userId: Int
     ): ComponentName? {
-        TODO("Not yet implemented")
+        return startServiceLocked(service, true, userId)
     }
 
     override fun stopService(
@@ -1176,7 +2507,10 @@ open class VActivityManagerService(): IActivityManager.Stub()
         resolvedType: String?,
         userId: Int
     ): Int {
-        TODO("Not yet implemented")
+        val serviceInfo = resolveServiceInfo(userId, service) ?: return 0
+        val serviceRecord = findServiceRecord(userId, serviceInfo) ?: return 0
+        stopServiceLocked(serviceRecord)
+        return 1
     }
 
     override fun stopServiceToken(
@@ -1185,7 +2519,17 @@ open class VActivityManagerService(): IActivityManager.Stub()
         startId: Int,
         userId: Int
     ): Boolean {
-        TODO("Not yet implemented")
+        val serviceRecord = if (token != null) {
+            token as? ServiceRecord ?: return false
+        } else {
+            if (className == null) return false
+            val serviceInfo =
+                resolveServiceInfo(userId, Intent().setComponent(className)) ?: return false
+            findServiceRecord(userId, serviceInfo) ?: return false
+        }
+        if (serviceRecord.startId != startId && startId != -1) return false
+        stopServiceLocked(serviceRecord)
+        return true
     }
 
     override fun unbindFinished(
@@ -1195,14 +2539,81 @@ open class VActivityManagerService(): IActivityManager.Stub()
         doRebind: Boolean,
         userId: Int
     ) {
-        TODO("Not yet implemented")
+        val serviceRecord = token as? ServiceRecord ?: return
+        val bindRecord = (if (binder != null) serviceRecord.findIntentBindRecord(binder) else serviceRecord.findIntentBindRecord(service!!))
+            ?: return
+        bindRecord.doRebind = doRebind
     }
 
     override fun unbindService(
         connection: IServiceConnection?,
         userId: Int
     ): Boolean {
-        TODO("Not yet implemented")
+        val connectionKey = connection!!.asBinder()
+        val records = mServiceConnections[connectionKey] ?: return false
+
+        while (records.size > 0) {
+            val connectionRecord = records[0]
+            val binderKey = connectionRecord?.connection?.asBinder()
+            val appBind = connectionRecord?.appBind
+            val serviceRecord = appBind?.service
+
+            val serviceConnections = serviceRecord?.connections[binderKey]
+            if (serviceConnections != null) {
+                serviceConnections.remove(connectionRecord)
+                if (serviceConnections.isEmpty()) {
+                    serviceRecord.connections.remove(binderKey)
+                }
+            }
+            appBind?.connections?.remove(connectionRecord)
+
+            synchronized(mServiceConnections) {
+                val globalConnections = mServiceConnections[binderKey]
+                if (globalConnections != null) {
+                    globalConnections.remove(connectionRecord)
+                    if (globalConnections.isEmpty()) {
+                        mServiceConnections.remove(binderKey)
+                    }
+                }
+            }
+
+            if (appBind!!.connections.isEmpty()) {
+                appBind.intentBind.apps.remove(appBind.client)
+            }
+            appBind.intentBind.removeConnection(connectionRecord.connection)
+
+            val conn = connectionRecord.connection
+            val ownerRecord = synchronized(mServices) {
+                mServices.firstOrNull { it != null && it.containConnection(conn) }
+            }
+
+            if (ownerRecord != null && !connectionRecord.connected) {
+                val processRecord = ownerRecord.process
+                if (processRecord != null && processRecord.appThread != null) {
+                    try {
+                        val intentBind = appBind.intentBind
+                        val intent = intentBind.intent
+                        if (Build.VERSION.SDK_INT >= 36) {
+                            requireVClient(processRecord)
+                                .scheduleUnbindService(ownerRecord, intentBind, intent)
+                        } else {
+                            val appThread = requireAppThread(processRecord)
+                            val qprMethod = IApplicationThreadQprMirror.scheduleUnbindService
+                            if (qprMethod != null) {
+                                qprMethod.call(appThread, ownerRecord, intentBind, intent)
+                            } else {
+                                val baseMethod = IApplicationThread.scheduleUnbindService
+                                    ?: throw RemoteException("No compatible scheduleUnbindService method")
+                                baseMethod.call(appThread, ownerRecord, intent)
+                            }
+                        }
+                    } catch (ignored: RemoteException) {
+                        // original: `continue` — a no-op here, this is the end of the loop body
+                    }
+                }
+            }
+        }
+        return true
     }
 
 
@@ -1341,6 +2752,56 @@ open class VActivityManagerService(): IActivityManager.Stub()
                 synchronized(mGmsWarmupTokens) {
                     if (mGmsWarmupTokens[uid] === token) mGmsWarmupTokens.remove(uid)
                 }
+            }
+        }
+    }
+
+
+
+    /**
+     * Was `com.polestar.clone.server.am.f`. Binder-death recipient attached to
+     * every `PendingIntent` token that goes through [PendingIntents.addPendingIntent].
+     * When the caller process dies, removes the token from both maps so the server
+     * doesn't hold stale binders (and so the maps don't leak entries for dead
+     * processes).
+     *
+     * Package-private (`internal` in Kotlin) — only `PendingIntents` constructs it.
+     * Not nested inside `PendingIntents` because the original source declared it as
+     * a top-level class in the same package.
+     */
+    internal class BinderDeathRecipient(
+        private val pendingIntents: PendingIntents,
+        private val binder: IBinder,
+    ) : IBinder.DeathRecipient {
+
+        override fun binderDied() {
+            // Detach from the dead binder first — otherwise a future re-registration
+            // of the same IBinder object would attempt to linkToDeath twice.
+            binder.unlinkToDeath(this, 0)
+
+            // Same lock object as addPendingIntent / removePendingIntent —
+            // guarantees the two maps stay consistent (no torn view where
+            // mPendingIntents lost the token but mPendingIntentsByKey still has it).
+            synchronized(pendingIntents.mPendingIntents) {
+                pendingIntents.mPendingIntents.remove(binder)
+                pendingIntents.mPendingIntentsByKey.remove(binder)
+            }
+        }
+    }
+
+    private class SelfUnlinkDeathRecipient(private val binder: IBinder) : IBinder.DeathRecipient {
+        override fun binderDied() {
+            binder.unlinkToDeath(this, 0)
+        }
+    }
+
+    private class ActivityStackHandler(private val record: ActivityRecord) : Runnable {
+        override fun run() {
+            try {
+                record.processRecord!!.client!!.finishActivity(record.binder)
+            } catch (e: Exception) {
+                Log.e("ActivityStack", "async finishActivity failed for ${record.componentName}")
+                Log.d("ActivityStack", e.toString())
             }
         }
     }

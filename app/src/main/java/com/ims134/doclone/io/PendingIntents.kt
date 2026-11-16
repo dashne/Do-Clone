@@ -9,7 +9,7 @@ class PendingIntents {
     val mPendingIntents = HashMap<IBinder, PendingIntentData>()
 
     // b. Key type is unknown in the paste.
-    val mPendingIntentsByKey = HashMap<Any, PendingIntentData>()
+    val mPendingIntentsByKey = HashMap<Any, Int>()
 
     // get(IBinder)
     fun getPendingIntentData(binder: IBinder): PendingIntentData? {
