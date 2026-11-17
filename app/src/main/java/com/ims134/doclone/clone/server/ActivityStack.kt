@@ -23,6 +23,7 @@ import com.ims134.doclone.io.IApplicationThread
 import com.ims134.doclone.io.IntentMirror
 import com.ims134.doclone.io.R_Hide
 import com.ims134.doclone.io.VASettings
+import androidx.core.util.size
 
 /**
  * The virtual task stack: tasks, their activities, and the stub intents that start virtual activities
@@ -104,7 +105,7 @@ class ActivityStack(
         // 3 = RECENT_WITH_EXCLUDED | RECENT_IGNORE_UNAVAILABLE
         @Suppress("DEPRECATION")
         val recent = ArrayList(activityManager.getRecentTasks(Int.MAX_VALUE, 3))
-        for (index in mTask.size() - 1 downTo 0) {
+        for (index in mTask.size - 1 downTo 0) {
             val task = mTask.valueAt(index)
             val iterator = recent.listIterator()
             var found = false
