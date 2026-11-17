@@ -77,12 +77,12 @@ open class ServiceConnectionDelegate : IServiceConnection.Stub() {
                 throw IllegalArgumentException("connection is null")
             }
             val dispatcher: IServiceConnection? = try {
-                val thread = ActivityThreadMirror.currentActivityThread?.call()
+                val thread = ActivityThread.currentActivityThread?.call()
                 LoadedApkMirror.getServiceDispatcher?.call(
                     ContextImpl.mPackageInfo?.get(appContext),
                     connection,
                     context,
-                    ActivityThreadMirror.getHandler?.call(thread),
+                    ActivityThread.getHandler?.call(thread),
                     flags
                 )
             } catch (e: Exception) {

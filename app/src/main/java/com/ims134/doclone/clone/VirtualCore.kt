@@ -733,6 +733,60 @@ class VirtualCore
         }
     }
 
+    fun installPackage(pkgName: String?, path: String?, flags: Int): InstallResult {
+        var result: InstallResult? = null
+        repeat(5) {
+            try {
+                val manager = getAppManager()
+                if (manager != null) {
+                    result = manager.installPackage(pkgName, path, flags)
+                }
+            } catch (ignored: RemoteException) {
+                singleton = null
+            }
+            if (result != null && result.installed) return result
+            try {
+                Thread.sleep(300L)
+            } catch (ignored: Exception) {
+            }
+        }
+        return InstallResult.makeFailure("Service not available")
+    }
+
+    fun installPackageAsUser(uid: Int, pkg: String?): Boolean {
+        return try {
+            getAppManager()?.installPackageAsUser(uid, pkg) ?: false
+        } catch (e: RemoteException) {
+            VirtualRuntime.crash(e)
+            throw e
+        }
+    }
+
+    fun getLaunchIntent(userId: Int, packageName: String?): Intent? {
+        val vpm = VPackageManager.instance
+        val intent = Intent(Intent.ACTION_MAIN)
+        intent.addCategory(Intent.CATEGORY_INFO)
+        intent.setPackage(packageName)
+        return try {
+            var resolved = vpm?.queryIntentActivities(intent, intent.resolveType(appContext), 0, userId)
+            if (resolved.isNullOrEmpty()) {
+                intent.removeCategory(Intent.CATEGORY_INFO)
+                intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                intent.setPackage(packageName)
+                resolved = vpm?.queryIntentActivities(intent, intent.resolveType(appContext), 0, userId)
+            }
+            val activityInfo = resolved?.firstOrNull()?.activityInfo ?: return null
+            Intent(intent).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                setClassName(activityInfo.packageName, activityInfo.name)
+            }
+        } catch (e: SecurityException) {
+            Log.d("PLIB_", e.message.toString())
+            Log.e("PLIB_", "user invalid $userId")
+            null
+        }
+    }
+
 
     //===================================================================
     class VirtualCoreDeathRecipient(private val remote: IBinder): DeathRecipient

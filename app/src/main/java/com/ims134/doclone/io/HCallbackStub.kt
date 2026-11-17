@@ -40,11 +40,11 @@ class HCallbackStub : Handler.Callback, IInjector {
                 if (!handleLaunchActivity(message, message.obj)) return true
             } else {
                 if (CREATE_SERVICE == what) {
-                    val intent = ActivityThreadMirror.CreateServiceData.intent!!.get(message.obj)
-                    val serviceInfo = ActivityThreadMirror.CreateServiceData.info!!.get(message.obj) as ServiceInfo
+                    val intent = ActivityThread.CreateServiceData.intent!!.get(message.obj)
+                    val serviceInfo = ActivityThread.CreateServiceData.info!!.get(message.obj) as ServiceInfo
                     val core = VirtualCore.gCore
                     if (core.hostPackageName != serviceInfo.packageName) {
-                        VActivityManager.instance.trackToken(ActivityThreadMirror.CreateServiceData.token!!.get(message.obj))
+                        VActivityManager.instance.trackToken(ActivityThread.CreateServiceData.token!!.get(message.obj))
                         // RemoteException propagates (x09.get dropped)
                         VPackageManager.instance?.getPackageManager()?.let {
                             serviceInfo.applicationInfo = it
@@ -66,7 +66,7 @@ class HCallbackStub : Handler.Callback, IInjector {
                                 keepGmsStubServiceAlive(core, VClientImpl.get().getVPid())
                             }
                         } catch (t: Throwable) {
-                            val token = ActivityThreadMirror.CreateServiceData.token!!.get(message.obj)
+                            val token = ActivityThread.CreateServiceData.token!!.get(message.obj)
                             if (token != null) {
                                 try {
                                     if (Build.VERSION.SDK_INT >= 35) {
@@ -143,19 +143,19 @@ class HCallbackStub : Handler.Callback, IInjector {
     companion object {
         /** was c: LAUNCH_ACTIVITY message code, -1 from API 28 (replaced by EXECUTE_TRANSACTION) */
         @JvmField
-        val LAUNCH_ACTIVITY: Int = if (BuildCompat.sdk28OrLater()) -1 else ActivityThreadMirror.H.LAUNCH_ACTIVITY!!.get()
+        val LAUNCH_ACTIVITY: Int = if (BuildCompat.sdk28OrLater()) -1 else ActivityThread.H.LAUNCH_ACTIVITY!!.get()
 
         /** was d */
         @JvmField
-        val CREATE_SERVICE: Int = ActivityThreadMirror.H.CREATE_SERVICE!!.get()
+        val CREATE_SERVICE: Int = ActivityThread.H.CREATE_SERVICE!!.get()
 
         /** was e: -1 if the Android version has no such message */
         @JvmField
-        val SCHEDULE_CRASH: Int = ActivityThreadMirror.H.SCHEDULE_CRASH?.get() ?: -1
+        val SCHEDULE_CRASH: Int = ActivityThread.H.SCHEDULE_CRASH?.get() ?: -1
 
         /** was f: EXECUTE_TRANSACTION message code, -1 before API 28 */
         @JvmField
-        val EXECUTE_TRANSACTION: Int = if (BuildCompat.sdk28OrLater()) ActivityThreadMirror.H.EXECUTE_TRANSACTION!!.get() else -1
+        val EXECUTE_TRANSACTION: Int = if (BuildCompat.sdk28OrLater()) ActivityThread.H.EXECUTE_TRANSACTION!!.get() else -1
 
         /** was g */
         private val TAG: String = HCallbackStub::class.java.simpleName
@@ -166,7 +166,7 @@ class HCallbackStub : Handler.Callback, IInjector {
 
         /** was get(): the main thread's Handler (ActivityThread.mH) */
         @JvmStatic
-        fun getMainHandler(): Handler = ActivityThreadMirror.mH!!.get(VirtualCore.gCore.mainThread)!!
+        fun getMainHandler(): Handler = ActivityThread.mH!!.get(VirtualCore.gCore.mainThread)!!
 
         /**
          * was b(Message): handles an EXECUTE_TRANSACTION message (API 28+). Returns false if the message must be
@@ -215,7 +215,7 @@ class HCallbackStub : Handler.Callback, IInjector {
                 InvocationStubManager.instance.checkEnv(ActivityClientControllerStub::class.java) // p2: unseen class
             }
             val sdk = Build.VERSION.SDK_INT
-            val stubIntent = (if (sdk >= 28) LaunchActivityItem.mIntent else ActivityThreadMirror.ActivityClientRecord.intent)!!.get(record)
+            val stubIntent = (if (sdk >= 28) LaunchActivityItem.mIntent else ActivityThread.ActivityClientRecord.intent)!!.get(record)
                 ?: return true
             val stubRecord = StubActivityRecord(stubIntent)
             val intent = stubRecord.intent ?: return true
@@ -224,7 +224,7 @@ class HCallbackStub : Handler.Callback, IInjector {
                 val transaction = message.obj
                 ClientTransaction.mActivityToken.get(transaction) ?: ClientTransaction.getActivityToken.call(transaction)
             } else {
-                ActivityThreadMirror.ActivityClientRecord.token!!.get(record)
+                ActivityThread.ActivityClientRecord.token!!.get(record)
             }
             if (token == null) return true
             val activityInfo = stubRecord.info
@@ -272,16 +272,16 @@ class HCallbackStub : Handler.Callback, IInjector {
             intent.setExtrasClassLoader(VClientImpl.get().getClassLoader(activityInfo.applicationInfo))
 
             if (BuildCompat.sdk31OrLater()) {
-                val thread = ActivityThreadMirror.currentActivityThread!!.call()
+                val thread = ActivityThread.currentActivityThread!!.call()
                 val clientRecordObj = if (BuildCompat.sdk33OrLater()) { // unseen: get newer-Android check
-                    ActivityThreadMirror.getActivityClient!!.call(thread, token)
+                    ActivityThread.getActivityClient!!.call(thread, token)
                 } else {
-                    ActivityThreadMirror.getLaunchingActivity!!.call(thread, token)
+                    ActivityThread.getLaunchingActivity!!.call(thread, token)
                 }
                 if (clientRecordObj != null) {
-                    ActivityThreadMirror.ActivityClientRecord.intent!!.set(clientRecordObj, intent)
-                    ActivityThreadMirror.ActivityClientRecord.activityInfo!!.set(clientRecordObj, activityInfo)
-                    ActivityThreadMirror.ActivityClientRecord.packageInfo!!.set(clientRecordObj, null)
+                    ActivityThread.ActivityClientRecord.intent!!.set(clientRecordObj, intent)
+                    ActivityThread.ActivityClientRecord.activityInfo!!.set(clientRecordObj, activityInfo)
+                    ActivityThread.ActivityClientRecord.packageInfo!!.set(clientRecordObj, null)
                 }
             }
             if (Build.VERSION.SDK_INT >= 28) {
@@ -289,8 +289,8 @@ class HCallbackStub : Handler.Callback, IInjector {
                 LaunchActivityItem.mInfo!!.set(record, activityInfo)
                 return true
             }
-            ActivityThreadMirror.ActivityClientRecord.intent!!.set(record, intent)
-            ActivityThreadMirror.ActivityClientRecord.activityInfo!!.set(record, activityInfo)
+            ActivityThread.ActivityClientRecord.intent!!.set(record, intent)
+            ActivityThread.ActivityClientRecord.activityInfo!!.set(record, activityInfo)
             return true
         }
 

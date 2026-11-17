@@ -30,7 +30,7 @@ class PermissionManagerStub : BinderInvocationProxy(
 ) {
 
     init {
-        ActivityThreadMirror.sPermissionManager?.set(invocationStub.proxyInterface)
+        ActivityThread.sPermissionManager?.set(invocationStub.proxyInterface)
 
         val appPmMirror = ApplicationPackageManagerMirror.mPermissionManager
         if (BuildCompat.sdk31OrLater() && appPmMirror != null) {

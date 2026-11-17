@@ -15,7 +15,7 @@ import java.lang.reflect.Method
 //   yr  = mirror holding RefStaticMethod<Void> disableGetPackagesForUidCache (nullable: missing on old Android)
 @Inject(PackageManagerMethodProxies::class)
 class PackageManagerStub :
-    MethodInvocationProxy<MethodInvocationStub<IInterface>>(MethodInvocationStub(ActivityThreadMirror.sPackageManager!!.get())) {
+    MethodInvocationProxy<MethodInvocationStub<IInterface>>(MethodInvocationStub(ActivityThread.sPackageManager!!.get())) {
 
     /** jadx: fg5$Stub (isPermissionRevokedByPolicy). Last package + last user id replaced; false on failure. */
     private class LastPkgUserIdOrFalse(methodName: String) : ReplaceLastPkgMethodProxy(methodName) {
@@ -141,7 +141,7 @@ class PackageManagerStub :
 
     @Throws(Throwable::class)
     override fun inject() {
-        ActivityThreadMirror.sPackageManager!!.set(invocationStub.proxyInterface)
+        ActivityThread.sPackageManager!!.set(invocationStub.proxyInterface)
         ApplicationPackageManagerMirror.disableGetPackagesForUidCache.call()
         val binderStub = BinderInvocationStub(invocationStub.baseInterface)
         binderStub.methodProxies.putAll(invocationStub.methodProxies)
@@ -151,5 +151,5 @@ class PackageManagerStub :
     }
 
     override fun isEnvBad(): Boolean =
-        invocationStub.proxyInterface !== ActivityThreadMirror.sPackageManager!!.get()
+        invocationStub.proxyInterface !== ActivityThread.sPackageManager!!.get()
 }

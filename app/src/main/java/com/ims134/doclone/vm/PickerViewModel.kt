@@ -6,7 +6,6 @@ import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.graphics.Bitmap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -79,35 +78,34 @@ class PickerViewModel(app: Application) : AndroidViewModel(app) {
         }.start()
     }
 
+    // ===================================================================================================
+// C) vm/PickerViewModel.kt - replace the whole add(...) function
+// ===================================================================================================
     fun add(a: AppItem, onAdded: ((Clone?) -> Unit)? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             val c = getApplication<Application>()
             val pm = c.packageManager
-            val appInfo = try { pm.getApplicationInfo(a.pkg, 0) } catch (e: Throwable) { null }
-            val sourceDir = appInfo?.sourceDir ?: ""
+            val sourceDir = try { pm.getApplicationInfo(a.pkg, 0).sourceDir } catch (e: Throwable) { "" }
             val bmp = try {
                 pm.getApplicationIcon(a.pkg).toBitmap(96, 96)
             } catch (e: Throwable) {
                 Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
             }
-            val existing = CloneManager.getClones(a.pkg)
-            val clone = Clone(
+            val template = Clone(
                 id = System.currentTimeMillis(),
                 packageName = a.pkg,
                 appPath = sourceDir,
                 label = a.label,
                 description = a.launcher,
-                index = existing.size + 1,
+                index = 0,                       // set by CloneManager.addNewClone (user id + count)
                 cloneTime = System.currentTimeMillis(),
                 notificationEnabled = true,
                 lockerState = 0,
                 launched = 0,
                 icon = bmp
             )
-            val result = CloneManager.addClone(clone)
-            onAdded?.let { callback ->
-                ui.post { callback(result) }
-            }
+            val result = CloneManager.addNewClone(template)   // installs first; null = install failed
+            onAdded?.let { callback -> ui.post { callback(result) } }
         }
     }
 

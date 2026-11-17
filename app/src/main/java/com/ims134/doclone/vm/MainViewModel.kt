@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationManager
 import android.app.job.JobScheduler
 import android.content.Context
+import android.os.RemoteException
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +16,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.CloneSupportAgent.Companion.isArm64Only
+import com.ims134.doclone.clone.VActivityManager
 import com.ims134.doclone.clone.VPackageManager
 import com.ims134.doclone.model.Clone
 import com.ims134.doclone.repo.CloneManager
@@ -159,37 +161,33 @@ class MainViewModel(app: Application) : AndroidViewModel(app)
         }
     }
 
+    // ===================================================================================================
+// D) vm/MainViewModel.kt - replace the whole launchClone(...) function
+//    imports: com.ims134.doclone.clone.VActivityManager, com.ims134.doclone.repo.CloneManager
+//    (jadx AppLoadingActivity.MainCloneLauncher + StandardVirtualLauncher)
+// ===================================================================================================
     fun launchClone(clone: Clone)
     {
-        val isArm64Only = isArm64Only(clone.packageName)
-        val vPackageInfo = VPackageManager.instance?.getPackageInfo(clone.packageName,0,0)
-        val realPackageInfo = appContext.packageManager.getPackageInfo(clone.packageName,0)
-        val isStale =
-
-            try {
-                 !(vPackageInfo == null ||
-                        realPackageInfo == null ||
-                        (vPackageInfo.versionName == realPackageInfo.versionName && vPackageInfo.applicationInfo?.sourceDir.equals(
-                            realPackageInfo.applicationInfo!!.sourceDir
-                        )))
-            }
-            catch (e: Exception)
-            {
-                Log.d("DualHost", e.message.toString())
-                false
-            }
-        catch (_: Throwable)
+        viewModelScope.launch(Dispatchers.IO)
         {
-            false
+            val pkg = clone.packageName
+            val isStale = try {
+                val v = VPackageManager.instance?.getPackageInfo(pkg, 0, 0)
+                val r = appContext.packageManager.getPackageInfo(pkg, 0)
+                !(v == null || r == null ||
+                        (v.longVersionCode == r.longVersionCode && v.applicationInfo?.sourceDir == r.applicationInfo?.sourceDir))
+            } catch (e: Throwable) {
+                Log.d("DualHost", "stale check failed: $e"); false
+            }
+            if (isStale) {
+                try {
+                    VActivityManager.instance.getService().killAppByPkg(pkg, -1)
+                } catch (_: RemoteException) {
+                }
+                CloneManager.upgradeClone(pkg)
+            }
+            CloneManager.launchClone(pkg, clone.getVUid())
         }
-        if(isStale)
-        {
-            //TODO:: handle killing the app
-            Log.d("DualHost", "app is stale")
-        }
-
-
-
     }
 
 

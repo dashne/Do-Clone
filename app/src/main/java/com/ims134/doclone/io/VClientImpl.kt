@@ -266,18 +266,18 @@ class VClientImpl private constructor(): IVClient.Stub() {
             // Wrap every installed provider's IInterface so the clone sees the
             // wrapped (redirected) version instead of the host's real one.
             val mainThread = VirtualCore.gCore.mainThread
-            val providerMap = ActivityThreadMirror.mProviderMap?.get(mainThread) ?: return
+            val providerMap = ActivityThread.mProviderMap?.get(mainThread) ?: return
 
             for (record in providerMap.values) {
-                val iface = ActivityThreadMirror.f?.mProvider?.get(record)
-                val holder = ActivityThreadMirror.f?.mHolder?.get(record) ?: continue
+                val iface = ActivityThread.ProviderClientRecordJB.mProvider?.get(record)
+                val holder = ActivityThread.ProviderClientRecordJB.mHolder?.get(record) ?: continue
 
                 if (BuildCompat.isAtLeastOreo()) {
                     val info = ContentProviderHolderOreo.info?.get(holder) ?: continue
                     val authority = info.authority ?: continue
                     if (!authority.startsWith(VASettings.VIRTUAL_STUB)) {
                         val wrapped = ContentProviderHook.wrap(true, authority, iface)
-                        ActivityThreadMirror.f?.mProvider?.set(record, wrapped)
+                        ActivityThread.ProviderClientRecordJB.mProvider?.set(record, wrapped)
                         ContentProviderHolderOreo.provider?.set(holder, wrapped)
                     }
                 } else {
@@ -285,7 +285,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
                     val authority = info.authority ?: continue
                     if (!authority.startsWith(VASettings.VIRTUAL_STUB)) {
                         val wrapped = ContentProviderHook.wrap(true, authority, iface)
-                        ActivityThreadMirror.f?.mProvider?.set(record, wrapped)
+                        ActivityThread.ProviderClientRecordJB.mProvider?.set(record, wrapped)
                         IActivityManagerMirror.ContentProviderHolder?.provider?.set(holder, wrapped)
                     }
                 }
@@ -570,7 +570,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
     }
 
     override fun getAppThread(): IBinder? {
-        return ActivityThreadMirror.getApplicationThread?.call(
+        return ActivityThread.getApplicationThread?.call(
             VirtualCore.gCore.mainThread,
             emptyArray<Any?>(),
         )
@@ -646,7 +646,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
 
         BuildMirror.SERIAL?.set(deviceInfo?.serial)
         BuildMirror.DEVICE?.set(Build.DEVICE.replace(" ", "_"))
-        ActivityThreadMirror.mInitialApplication?.set(VirtualCore.gCore.mainThread, null)
+        ActivityThread.mInitialApplication?.set(VirtualCore.gCore.mainThread, null)
 
         val loadedApk = LoadedApk()
         val installedAppInfo = VirtualCore.gCore.getInstalledAppInfo(packageName)
@@ -915,7 +915,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
                         debugMsg = "createPackageContext split dependencies not correct"
                     }
                     if (mainThread != null) {
-                        val mirrorApk = ActivityThreadMirror.getPackageInfoNoCheck?.call(
+                        val mirrorApk = ActivityThread.getPackageInfoNoCheck?.call(
                             mainThread,
                             appInfo,
                             CompatibilityInfoMirror.DEFAULT_COMPATIBILITY_INFO?.get(),
@@ -956,23 +956,23 @@ class VClientImpl private constructor(): IVClient.Stub() {
 
         // ----- Populate ActivityThread.AppBindData -----
         val boundApk = this.boundAppData
-        val appBindData = ActivityThreadMirror.mBoundApplication?.get(mainThread)
-        ActivityThreadMirror.AppBindData.appInfo?.set(appBindData, boundApk?.appInfo)
-        ActivityThreadMirror.AppBindData.processName?.set(appBindData, boundApk?.processName)
-        ActivityThreadMirror.AppBindData.instrumentationName?.set(
+        val appBindData = ActivityThread.mBoundApplication?.get(mainThread)
+        ActivityThread.AppBindData.appInfo?.set(appBindData, boundApk?.appInfo)
+        ActivityThread.AppBindData.processName?.set(appBindData, boundApk?.processName)
+        ActivityThread.AppBindData.instrumentationName?.set(
             appBindData,
             ComponentName(
                 boundApk?.appInfo?.packageName!!,
                 PackageParser.Instrumentation::class.java.name
             ),
         )
-        ActivityThreadMirror.AppBindData.providers?.set(
+        ActivityThread.AppBindData.providers?.set(
             appBindData,
-            boundApk?.providerInfoList as MutableList<ProviderInfo?>?
+            boundApk?.providerInfoList
         )
 
         if (BuildCompat.sdk31OrLater()) {
-            ActivityThreadMirror.AppBindData.disabledCompatChanges?.let { compatField ->
+            ActivityThread.AppBindData.disabledCompatChanges?.let { compatField ->
                 val existing = compatField.get(appBindData)
                 val updated = if (existing == null) longArrayOf(160794467L)
                 else existing + 160794467L
@@ -989,16 +989,16 @@ class VClientImpl private constructor(): IVClient.Stub() {
         if (mainThread != null) {
             boundApk?.loadedApk = when {
                 BuildCompat.sdk34OrLater() ->
-                    ActivityThreadMirror.getPackageInfoNoCheck?.call(mainThread, appInfo)
+                    ActivityThread.getPackageInfoNoCheck?.call(mainThread, appInfo)
 
                 BuildCompat.sdk33OrLater() ->
-                    ActivityThreadMirror.getPackageInfoNoCheck?.call(
+                    ActivityThread.getPackageInfoNoCheck?.call(
                         mainThread, appInfo,
                         CompatibilityInfoMirror.DEFAULT_COMPATIBILITY_INFO?.get(), false,
                     )
 
                 else ->
-                    ActivityThreadMirror.getPackageInfoNoCheck?.call(
+                    ActivityThread.getPackageInfoNoCheck?.call(
                         mainThread,
                         appInfo,
                         CompatibilityInfoMirror.DEFAULT_COMPATIBILITY_INFO?.get(),
@@ -1012,7 +1012,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
             )
             boundApk?.loadedApk = ContextImpl.mPackageInfo?.get(hostContext)
         }
-        ActivityThreadMirror.AppBindData.info?.set(appBindData, boundApk?.loadedApk)
+        ActivityThread.AppBindData.info?.set(appBindData, boundApk?.loadedApk)
         VMRuntime.setTargetSdkVersion?.call(
             VMRuntime.getRuntime?.call(), appInfo.targetSdkVersion,
         )
@@ -1079,7 +1079,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
                         LoadedApkMirror.makeApplication?.call(it, false, null)
                 }
             }
-            ActivityThreadMirror.mInitialApplication?.set(mainThread, this.mInitialApplication)
+            ActivityThread.mInitialApplication?.set(mainThread, this.mInitialApplication)
             ContextFixer.fixContext(this.mInitialApplication!!)
             try {
                 wrapInstalledProviders()
@@ -1099,7 +1099,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
                     for (provider in providerList) {
                         if (provider.enabled) {
                             try {
-                                ActivityThreadMirror.installProvider?.call(
+                                ActivityThread.installProvider?.call(
                                     mainThread, app, provider, null,
                                 )
                             } catch (th: Throwable) {
@@ -1178,7 +1178,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
                 }
 
                 // Framework may have replaced mInitialApplication during provider installs — re-read.
-                ActivityThreadMirror.mInitialApplication?.get(mainThread)?.let { finalApp ->
+                ActivityThread.mInitialApplication?.get(mainThread)?.let { finalApp ->
                     this.mInitialApplication = finalApp
                     if (sdk in 26..28) {
                         val autofillManager =
@@ -1479,24 +1479,24 @@ class VClientImpl private constructor(): IVClient.Stub() {
                 val mainThread = VirtualCore.gCore.mainThread
                 val list = Collections.singletonList(intent)
 
-                if (ActivityThreadMirror.performNewIntents != null) {
-                    ActivityThreadMirror.performNewIntents?.call(mainThread, data.binder, list)
+                if (ActivityThread.performNewIntents != null) {
+                    ActivityThread.performNewIntents?.call(mainThread, data.binder, list)
                     return
                 }
-                if (BuildCompat.sdk31OrLater() && ActivityThreadMirror.mActivities != null) {
-                    val record = ActivityThreadMirror.mActivities?.get(mainThread)?.get(data.binder)
+                if (BuildCompat.sdk31OrLater() && ActivityThread.mActivities != null) {
+                    val record = ActivityThread.mActivities?.get(mainThread)?.get(data.binder)
                     if (record != null) {
-                        ActivityThreadMirror.handleNewIntent(record, list)
+                        ActivityThread.handleNewIntent(record, list)
                         return
                     }
                 }
                 if (BuildCompat.sdk29OrLater() &&
-                    ActivityThreadMirror.mActivities != null &&
-                    ActivityThreadMirror.deliverNewIntents != null
+                    ActivityThread.mActivities != null &&
+                    ActivityThread.deliverNewIntents != null
                 ) {
-                    val record = ActivityThreadMirror.mActivities?.get(mainThread)?.get(data.binder)
+                    val record = ActivityThread.mActivities?.get(mainThread)?.get(data.binder)
                     if (record != null) {
-                        ActivityThreadMirror.deliverNewIntents?.call(mainThread, record, list)
+                        ActivityThread.deliverNewIntents?.call(mainThread, record, list)
                         Objects.toString(intent)
                     } else {
                         Log.e("hu8", "error deliverNewIntents $intent")

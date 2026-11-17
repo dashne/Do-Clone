@@ -333,13 +333,13 @@ class AppInstrumentation(instrumentation: Instrumentation) :
     @Throws(Throwable::class)
     override fun inject() {
         val mainThread = VirtualCore.gCore.mainThread
-        val mirror = ActivityThreadMirror.mInstrumentation!!
+        val mirror = ActivityThread.mInstrumentation!!
         instrument = mirror.get(mainThread)!!
         mirror.set(mainThread, this)
     }
 
     override fun isEnvBad(): Boolean {
-        val current = ActivityThreadMirror.mInstrumentation!!
+        val current = ActivityThread.mInstrumentation!!
             .get(VirtualCore.gCore.mainThread)
         return current !is AppInstrumentation
     }
@@ -417,7 +417,7 @@ class AppInstrumentation(instrumentation: Instrumentation) :
             instance?.let { return it }
             synchronized(AppInstrumentation::class.java) {
                 instance?.let { return it }
-                val instrumentation = ActivityThreadMirror.mInstrumentation!!
+                val instrumentation = ActivityThread.mInstrumentation!!
                     .get(VirtualCore.gCore.mainThread)!!
                 val created = if (instrumentation is AppInstrumentation) {
                     instrumentation

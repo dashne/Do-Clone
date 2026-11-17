@@ -528,7 +528,10 @@ object BundleICS {
     var TYPE: Class<*>? = load(BundleICS::class.java as Class<*>, "android.os.Bundle")
     var mParcelledData: RefObject<Parcel?>? = null
 }
-object ActivityThreadMirror {
+
+/*
+object ActivityThread
+{
     var TYPE: Class<*>? = load(ActivityThread::class.java as Class<*>, "android.app.ActivityThread")
     var currentActivityThread: RefStaticMethod<*>? = null
     var deliverNewIntents: RefMethod<Void?>? = null
@@ -666,6 +669,8 @@ object ActivityThreadMirror {
         var ctor: RefConstructor<*>? = null
     }
 }
+
+*/
 object ClientTransaction {
 
     // Runs first, and fills in every static field below via reflection.
