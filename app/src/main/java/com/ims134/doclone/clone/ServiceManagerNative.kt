@@ -45,14 +45,21 @@ class ServiceManagerNative
                             "@",
                             request.bundle
                         )
+                        Log.e("SMN", "authority=${request.authority} bundle=$bundleCallWithRetry")
                         if (bundleCallWithRetry != null) {
                             val binder = bundleCallWithRetry.getBinder("_VA_|_binder_")
+                            Log.e("SMN", "binder=$binder")
                             if (binder == null) {
                                 Log.d("q47", "linkBinderDied null")
-                            } else {
-                                try {
+                            }
+                            else
+                            {
+                                try
+                                {
                                     binder.linkToDeath(VirtualCore.VirtualCoreDeathRecipient(binder), 0)
-                                } catch (unused: RemoteException) {
+                                }
+                                catch (unused: RemoteException)
+                                {
                                 }
                             }
                             serviceFetcher = IServiceFetcher.Stub.asInterface(binder)
@@ -62,14 +69,22 @@ class ServiceManagerNative
                     }
                 }
             }
-            if (serviceFetcher == null) {
+            if (serviceFetcher == null)
+            {
                 Log.d("q47", "Cannot fetch service")
             }
             val fetcher: IServiceFetcher? = serviceFetcher
-            if (fetcher != null) {
-                try {
-                    return fetcher.getService(service)
-                } catch (unused2: RemoteException) {
+            if (fetcher != null)
+            {
+                try
+                {
+                    val b =  fetcher.getService(service)
+                    Log.e("SMN", "getService($service) -> $b")
+                    return b
+                }
+                catch (unused2: RemoteException)
+                {
+                    Log.e("SMN", "getService RemoteException", unused2)
                 }
             }
             Log.d("q47", "getService_(${service}) return null.")

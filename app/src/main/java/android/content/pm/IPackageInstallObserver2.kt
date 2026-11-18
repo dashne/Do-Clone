@@ -1,21 +1,26 @@
-package com.ims134.doclone.io
+package android.content.pm
 
+import android.content.Intent
 import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Parcel
 import android.os.Parcelable
-import android.os.PersistableBundle
 import android.os.RemoteException
 
-interface ISystemUpdateManager : IInterface {
+interface IPackageInstallObserver2 : IInterface {
 
     @Throws(RemoteException::class)
-    fun retrieveSystemUpdateInfo(): Bundle?
+    fun onPackageInstalled(
+        packageName: String?,
+        returnCode: Int,
+        msg: String?,
+        extras: Bundle?,
+    )
 
     @Throws(RemoteException::class)
-    fun updateSystemUpdateInfo(info: PersistableBundle?)
+    fun onUserActionRequired(intent: Intent?)
 
     object _Parcel {
 
@@ -32,7 +37,7 @@ interface ISystemUpdateManager : IInterface {
         }
     }
 
-    abstract class Stub : Binder(), ISystemUpdateManager {
+    abstract class Stub : Binder(), IPackageInstallObserver2 {
 
         init {
             attachInterface(this, DESCRIPTOR)
@@ -40,38 +45,41 @@ interface ISystemUpdateManager : IInterface {
 
         override fun asBinder(): IBinder = this
 
-        class Proxy(private val mRemote: IBinder) : ISystemUpdateManager {
+        class Proxy(private val mRemote: IBinder) : IPackageInstallObserver2 {
 
             override fun asBinder(): IBinder = mRemote
 
             fun getInterfaceDescriptor(): String = DESCRIPTOR
 
             @Throws(RemoteException::class)
-            override fun retrieveSystemUpdateInfo(): Bundle? {
+            override fun onPackageInstalled(
+                packageName: String?,
+                returnCode: Int,
+                msg: String?,
+                extras: Bundle?,
+            ) {
                 val data = Parcel.obtain()
-                val reply = Parcel.obtain()
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
-                    mRemote.transact(TRANSACTION_retrieveSystemUpdateInfo, data, reply, 0)
-                    reply.readException()
-                    return _Parcel.readTypedObject(reply, Bundle.CREATOR)
+                    data.writeString(packageName)
+                    data.writeInt(returnCode)
+                    data.writeString(msg)
+                    _Parcel.writeTypedObject(data, extras, 0)
+                    // One-way call: no reply parcel, FLAG_ONEWAY (1).
+                    mRemote.transact(TRANSACTION_onPackageInstalled, data, null, 1)
                 } finally {
-                    reply.recycle()
                     data.recycle()
                 }
             }
 
             @Throws(RemoteException::class)
-            override fun updateSystemUpdateInfo(info: PersistableBundle?) {
+            override fun onUserActionRequired(intent: Intent?) {
                 val data = Parcel.obtain()
-                val reply = Parcel.obtain()
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
-                    _Parcel.writeTypedObject(data, info, 0)
-                    mRemote.transact(TRANSACTION_updateSystemUpdateInfo, data, reply, 0)
-                    reply.readException()
+                    _Parcel.writeTypedObject(data, intent, 0)
+                    mRemote.transact(TRANSACTION_onUserActionRequired, data, null, 1)
                 } finally {
-                    reply.recycle()
                     data.recycle()
                 }
             }
@@ -79,7 +87,7 @@ interface ISystemUpdateManager : IInterface {
 
         @Throws(RemoteException::class)
         override fun onTransact(code: Int, data: Parcel, out: Parcel?, flags: Int): Boolean {
-            val reply = out ?: return false
+            val reply = out?: return false
             if (code in 1..0xFFFFFF) {
                 data.enforceInterface(DESCRIPTOR)
             }
@@ -88,17 +96,17 @@ interface ISystemUpdateManager : IInterface {
                 return true
             }
             return when (code) {
-                TRANSACTION_retrieveSystemUpdateInfo -> {
-                    val bundle = retrieveSystemUpdateInfo()
-                    reply.writeNoException()
-                    _Parcel.writeTypedObject(reply, bundle, 1)
+                TRANSACTION_onUserActionRequired -> {
+                    onUserActionRequired(_Parcel.readTypedObject(data, Intent.CREATOR))
                     true
                 }
-                TRANSACTION_updateSystemUpdateInfo -> {
-                    updateSystemUpdateInfo(
-                        _Parcel.readTypedObject(data, PersistableBundle.CREATOR)
+                TRANSACTION_onPackageInstalled -> {
+                    onPackageInstalled(
+                        data.readString(),
+                        data.readInt(),
+                        data.readString(),
+                        _Parcel.readTypedObject(data, Bundle.CREATOR),
                     )
-                    reply.writeNoException()
                     true
                 }
                 else -> super.onTransact(code, data, reply, flags)
@@ -106,16 +114,16 @@ interface ISystemUpdateManager : IInterface {
         }
 
         companion object {
-            const val DESCRIPTOR = "android.os.ISystemUpdateManager"
+            const val DESCRIPTOR = "android.content.pm.IPackageInstallObserver2"
 
-            private const val TRANSACTION_retrieveSystemUpdateInfo = 1
-            private const val TRANSACTION_updateSystemUpdateInfo = 2
+            private const val TRANSACTION_onUserActionRequired = 1
+            private const val TRANSACTION_onPackageInstalled = 2
 
             @JvmStatic
-            fun asInterface(iBinder: IBinder?): ISystemUpdateManager? {
+            fun asInterface(iBinder: IBinder?): IPackageInstallObserver2? {
                 if (iBinder == null) return null
                 val local = iBinder.queryLocalInterface(DESCRIPTOR)
-                return if (local == null || local !is ISystemUpdateManager) {
+                return if (local == null || local !is IPackageInstallObserver2) {
                     Proxy(iBinder)
                 } else {
                     local
@@ -124,14 +132,19 @@ interface ISystemUpdateManager : IInterface {
         }
     }
 
-    class Default : ISystemUpdateManager {
+    class Default : IPackageInstallObserver2 {
 
         override fun asBinder(): IBinder? = null
 
         @Throws(RemoteException::class)
-        override fun retrieveSystemUpdateInfo(): Bundle? = null
+        override fun onUserActionRequired(intent: Intent?) {}
 
         @Throws(RemoteException::class)
-        override fun updateSystemUpdateInfo(info: PersistableBundle?) {}
+        override fun onPackageInstalled(
+            packageName: String?,
+            returnCode: Int,
+            msg: String?,
+            extras: Bundle?,
+        ) {}
     }
 }

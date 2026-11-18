@@ -41,8 +41,8 @@ import com.ims134.doclone.clone.BuildCompat
 import com.ims134.doclone.clone.CloneSupportAgent
 import com.ims134.doclone.clone.GmsSupport
 import com.ims134.doclone.clone.IActivityManager
-import com.ims134.doclone.clone.IServiceConnection
-import com.ims134.doclone.clone.IStopUserCallback
+import android.app.IServiceConnection
+import android.app.IStopUserCallback
 import com.ims134.doclone.clone.PendingIntentData
 import com.ims134.doclone.clone.PendingResultData
 import com.ims134.doclone.clone.ProcessMap

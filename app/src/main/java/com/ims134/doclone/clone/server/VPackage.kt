@@ -19,6 +19,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Parcel
 import android.os.Parcelable
+import android.content.pm.PackageParser
 
 
 /** Framework classes are loaded by the boot loader, so this is null; kept to mirror the original reads. */

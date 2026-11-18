@@ -73,31 +73,31 @@ interface IServiceFetcher : IInterface {
             }
             if (code == 1598968902)
             {
-                data.writeString(DESCRIPTOR)
+                reply?.writeString(DESCRIPTOR)
                 return true
             }
             return when (code)
             {
                 1 -> {
                     val service = getService(data.readString())
-                    data.writeNoException()
-                    data.writeStrongBinder(service)
+                    reply?.writeNoException()
+                    reply?.writeStrongBinder(service)
                     true
                 }
 
                 2 -> {
                     addService(data.readString(), data.readStrongBinder())
-                    data.writeNoException()
+                    reply?.writeNoException()
                     true
                 }
 
                 3 -> {
                     removeService(data.readString())
-                    data.writeNoException()
+                    reply?.writeNoException()
                     true
                 }
 
-                else -> super.onTransact(code, data, data, flags)
+                else -> super.onTransact(code, data, reply, flags)
 
             }
         }

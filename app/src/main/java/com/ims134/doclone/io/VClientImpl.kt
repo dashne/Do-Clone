@@ -12,7 +12,6 @@ import android.content.pm.PackageManager
 import android.content.pm.ProviderInfo
 import android.content.pm.ServiceInfo
 import android.net.Uri
-import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.ConditionVariable
@@ -26,7 +25,6 @@ import android.os.Process
 import android.os.RemoteException
 import android.os.storage.StorageManager
 import android.util.Log
-import androidx.compose.ui.autofill.AutofillManager
 import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.BuildCompat
 import com.ims134.doclone.clone.GmsSupport
@@ -39,7 +37,7 @@ import com.ims134.doclone.clone.VPackageManager
 import com.ims134.doclone.clone.VUserHandle
 import com.ims134.doclone.clone.VirtualCore
 import com.ims134.doclone.clone.VirtualRuntime
-import com.ims134.doclone.clone.server.PackageParser
+import android.content.pm.PackageParser
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
@@ -50,6 +48,7 @@ import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.system.exitProcess
 import androidx.core.content.edit
+import com.ims134.doclone.clone.DaemonService
 
 
 /**
@@ -1407,6 +1406,25 @@ class VClientImpl private constructor(): IVClient.Stub() {
     override fun updateActivityManager(binder: IBinder?) {
         if (!VActivityManager.instance.setService(binder)) {
             throw RemoteException("Unable to install virtual ActivityManager")
+        }
+    }
+
+    fun initProcess(binder: IBinder?, vuid: Int, vpid: Int): Boolean {
+        synchronized(bindLock) {
+            if (this.token == null) {
+                this.token = binder
+                this.vuid = vuid
+                this.vpid = vpid
+                DaemonService.ensureStarted(appContext)
+                return true
+            }
+            if (this.vuid == vuid && this.vpid == vpid) {
+                this.token = binder
+                DaemonService.ensureStarted(appContext)
+                return true
+            }
+            Log.e("hu8", "initProcess: reject occupied process, current vuid/vpid=${this.vuid}/${this.vpid}, requested=$vuid/$vpid")
+            return false
         }
     }
 

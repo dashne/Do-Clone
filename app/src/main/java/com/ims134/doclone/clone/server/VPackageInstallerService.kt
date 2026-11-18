@@ -21,8 +21,8 @@ import com.ims134.doclone.clone.VEnvironment
 import com.ims134.doclone.clone.VParceledListSlice
 import com.ims134.doclone.clone.VUserHandle
 import com.ims134.doclone.io.IPackageInstaller
-import com.ims134.doclone.io.IPackageInstallerCallback
-import com.ims134.doclone.io.IPackageInstallerSession
+import android.content.pm.IPackageInstallerCallback
+import android.content.pm.IPackageInstallerSession
 import com.ims134.doclone.io.PackageInstallObserver
 import com.ims134.doclone.io.Singleton
 import java.io.File

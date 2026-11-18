@@ -1,6 +1,7 @@
 package com.ims134.doclone.io
 
 import android.content.Intent
+import android.content.pm.IPackageInstallObserver2
 import android.os.Bundle
 import com.ims134.doclone.clone.server.PackageInstallerSession
 
@@ -14,7 +15,7 @@ import com.ims134.doclone.clone.server.PackageInstallerSession
  * calls `onPackageInstalled(...)` on this observer, it tears down the session
  * and delivers the result to the caller's `IntentSender`.
  *
- * Note: this is ContentProviderHolder *direct* subclass of [IPackageInstallObserver2.Stub] — NOT
+ * Note: this is ContentProviderHolder *direct* subclass of [android.content.pm.IPackageInstallObserver2.Stub] — NOT
  * of [PackageInstallObserver] (`bg5`). The two observers have different
  * purposes:
  *   - `PackageInstallObserver` (bg5) → used by the *caller* to receive

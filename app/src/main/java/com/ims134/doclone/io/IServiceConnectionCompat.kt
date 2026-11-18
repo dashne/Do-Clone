@@ -1,6 +1,6 @@
 package com.ims134.doclone.io
 
-import com.ims134.doclone.clone.IServiceConnection
+import android.app.IServiceConnection
 
 
 import android.content.ComponentName

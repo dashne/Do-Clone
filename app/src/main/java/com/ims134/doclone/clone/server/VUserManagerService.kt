@@ -21,7 +21,7 @@ import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlSerializer
 import androidx.core.util.size
 import com.ims134.doclone.clone.ComponentStatusMgr
-import com.ims134.doclone.clone.IStopUserCallback
+import android.app.IStopUserCallback
 import com.ims134.doclone.clone.IUserManager
 import com.ims134.doclone.clone.VBinder
 import com.ims134.doclone.clone.VEnvironment

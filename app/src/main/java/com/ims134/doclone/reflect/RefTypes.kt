@@ -119,10 +119,20 @@ class RefStaticMethod<T> @Throws(NoSuchMethodException::class) constructor(cls: 
                     found.also { it.isAccessible = true }
                 }
 
-                else -> cls.declaredMethods
-                    .firstOrNull { it.name == field.name }
-                    ?.also { it.isAccessible = true }
-                    ?: throw NoSuchMethodException(field.name)
+//                else -> cls.declaredMethods
+//                    .firstOrNull { it.name == field.name }
+//                    ?.also { it.isAccessible = true }
+//                    ?: throw NoSuchMethodException(field.name)
+                else -> {
+                    // by-name first: fresh hidden-API check (honors unseal);
+                    // getDeclaredMethods() returns a cached/filtered array that can omit getDefault
+                    val m = try {
+                        cls.getDeclaredMethod(field.name)
+                    } catch (_: NoSuchMethodException) {
+                        cls.declaredMethods.firstOrNull { it.name == field.name }
+                    }
+                    m?.also { it.isAccessible = true } ?: throw NoSuchMethodException(field.name)
+                }
             }
         }
     }

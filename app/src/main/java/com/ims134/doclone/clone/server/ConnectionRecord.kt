@@ -1,6 +1,6 @@
 package com.ims134.doclone.clone.server
 
-import com.ims134.doclone.clone.IServiceConnection
+import android.app.IServiceConnection
 
 
 /** One bindService() connection of get client to get virtual service (was get class in com.polestar.clone.server.am, "ConnectionRecord.java"). */

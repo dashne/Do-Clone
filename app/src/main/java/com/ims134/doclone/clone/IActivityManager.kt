@@ -4,22 +4,15 @@ package com.ims134.doclone.clone
 
 import android.app.Notification
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
+import android.app.IServiceConnection
 import android.content.pm.ActivityInfo
-import android.content.pm.PackageManager
 import android.content.pm.ProviderInfo
 import android.os.Binder
 import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Parcel
-import com.ims134.doclone.clone.server.AttributeCache
-import com.ims134.doclone.clone.server.StartProcessMonitor
-import com.ims134.doclone.clone.server.StartProcessMonitor.ProcessKey
-import com.ims134.doclone.clone.server.VActivityManagerService.Companion.instance
 import com.ims134.doclone.io.IProcessObserver
 
 

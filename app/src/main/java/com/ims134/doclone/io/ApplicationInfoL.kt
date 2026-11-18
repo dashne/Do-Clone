@@ -16,15 +16,13 @@ import android.content.pm.ProviderInfo
 import android.content.pm.ServiceInfo
 import android.content.pm.SharedLibraryInfo
 import android.content.pm.VersionedPackage
-import android.os.Binder
 import android.os.Bundle
 import android.os.Handler
 import android.os.Parcel
 import android.os.Parcelable
-import android.util.ArrayMap
 import com.ims134.doclone.clone.IActivityManager
-import com.ims134.doclone.clone.IServiceConnection
-import com.ims134.doclone.clone.server.PackageParser
+import android.app.IServiceConnection
+//import android.content.pm.PackageParser
 import com.ims134.doclone.reflect.MethodParams
 import com.ims134.doclone.reflect.MethodReflectParams
 import com.ims134.doclone.reflect.RefBoolean
@@ -48,6 +46,9 @@ import android.app.job.JobParameters
 import android.content.ClipboardManager
 import android.content.ContentProviderClient
 import android.content.ContentResolver
+import android.content.IIntentReceiver
+import android.net.IConnectivityManager
+import android.net.wifi.IWifiScanner
 import android.location.Location
 import android.location.LocationListener
 import android.net.wifi.SupplicantState
@@ -67,6 +68,9 @@ import android.widget.Toast
 import com.ims134.doclone.reflect.RefInt
 import com.ims134.doclone.reflect.RefLong
 import java.net.InetAddress
+
+
+import android.content.pm.PackageParser
 
 
 object ApplicationInfoL {
@@ -505,6 +509,10 @@ object IActivityManagerMirror {
     }
 }
 object ActivityManagerNative {
+
+    val k = RefClass.logMirrorFields( ActivityManagerNative::class.java as Class<*>,
+        "android.app.ActivityManagerNative")
+
     var TYPE: Class<*>? = load(
         ActivityManagerNative::class.java as Class<*>,
         "android.app.ActivityManagerNative"
@@ -730,7 +738,7 @@ object HandlerMirror {
     lateinit var mCallback: RefObject<Handler.Callback>
 }
 object SingletonMirror {
-    val TYPE = RefClass.load(SingletonMirror::class.java as Class<*>, "android.util.SingletonMirror");
+    val TYPE = RefClass.load(SingletonMirror::class.java as Class<*>, "android.util.Singleton");
     lateinit var  get: RefMethod<Any>
     lateinit var  mInstance:RefObject<Any>
 }
@@ -1247,6 +1255,8 @@ object AmTaskMgrMirror {
     lateinit var IActivityTaskManagerSingleton: RefStaticObject<Any>
 
     lateinit var getService: RefStaticMethod<IInterface>
+
+    //val k = RefClass.logMirrorFields( AmTaskMgrMirror::class.java,  "android.app.ActivityTaskManager" )
 
     // declared after the fields on purpose, so load() runs last
     @JvmField
@@ -2844,3 +2854,152 @@ object IApplicationThreadUMirror {
     @MethodParams([IBinder::class, Intent::class, Boolean::class, Int::class, Long::class])
     var scheduleBindService: RefMethod<Void?>? = null
 }
+
+//--------------
+//object ActivityThreadMirror {
+//    var TYPE: Class<*>? =
+//        RefClass.load(ActivityThreadMirror::class.java as Class<*>, "android.app.ActivityThread")
+//    var currentActivityThread: RefStaticMethod<*>? = null
+//    var deliverNewIntents: RefMethod<Void?>? = null
+//
+//    @MethodParams([IBinder::class])
+//    var getActivityClient: RefMethod<*>? = null
+//    var getApplicationThread: RefMethod<Binder?>? = null
+//    var getHandler: RefMethod<Handler?>? = null
+//
+//    @MethodParams([IBinder::class])
+//    var getLaunchingActivity: RefMethod<*>? = null
+//    var getPackageInfoNoCheck: RefMethod<Any?>? = null
+//    var getProcessName: RefMethod<String?>? = null
+//    var installProvider: RefMethod<Any?>? = null
+//    @JvmField
+//    var mActivities: RefObject<ArrayMap<IBinder, Any>>? = null
+//    var mBoundApplication: RefObject<Any?>? = null
+//    var mH: RefObject<Handler?>? = null
+//    var mInitialApplication: RefObject<Application?>? = null
+//    var mInstrumentation: RefObject<Instrumentation?>? = null
+//    var mPackages: RefObject<MutableMap<String?, WeakReference<*>?>?>? = null
+//    var mProviderMap: RefObject<MutableMap<*, *>?>? = null
+//
+//    @MethodParams([IBinder::class, MutableList::class])
+//    var performNewIntents: RefMethod<Void?>? = null
+//    var sPackageManager: RefStaticObject<IInterface?>? = null
+//    var sPermissionManager: RefStaticObject<Any?>? = null
+//
+//    @MethodParams([IBinder::class, String::class, Int::class, Int::class, Intent::class])
+//    var sendActivityResult: RefMethod<Void?>? = null
+//
+//    /* JADX DEBUG: Don't trust debug lines info. Lines numbers was adjusted: min line is 1 */
+//    fun handleNewIntent(obj: Any, list: MutableList<*>?) {
+//        var declaredMethod: Method?=null
+//        try {
+//            val objCall: Any? = currentActivityThread!!.call(*arrayOfNulls<Any>(0))
+//            if (objCall != null && (objCall.javaClass.getDeclaredMethod(
+//                    "handleNewIntent",
+//                    obj.javaClass,
+//                    MutableList::class.java
+//                ).also { declaredMethod = it }) != null
+//            ) {
+//                declaredMethod!!.setAccessible(true)
+//                declaredMethod.invoke(objCall, obj, list)
+//            }
+//        } catch (unused: java.lang.Exception) {
+//        }
+//    }
+//
+//    /* JADX DEBUG: Don't trust debug lines info. Lines numbers was adjusted: min line is 1 */
+//    fun installProvider(
+//        obj: Any?,
+//        context: Context?,
+//        providerInfo: ProviderInfo?,
+//        obj2: Any?
+//    ): Any? {
+//        val refMethod: RefMethod<Any?> = installProvider!!
+//        val bool = java.lang.Boolean.FALSE
+//        val bool2 = java.lang.Boolean.TRUE
+//        return refMethod.call(obj, context, obj2, providerInfo, bool, bool2, bool2)
+//    }
+//
+//    /* JADX INFO: renamed from: io.g4$a */ /* JADX INFO: compiled from: ActivityThread.java */
+//    object ActivityClientRecord {
+//        var TYPE: Class<*>? = RefClass.load(
+//            ActivityClientRecord::class.java as Class<*>,
+//            "android.app.ActivityThread\$ActivityClientRecord"
+//        )
+//        var activity: RefObject<Activity?>? = null
+//        var activityInfo: RefObject<ActivityInfo?>? = null
+//        var intent: RefObject<Intent?>? = null
+//        var packageInfo: RefObject<Any?>? = null
+//        var token: RefObject<IBinder?>? = null
+//    }
+//
+//    /* JADX INFO: renamed from: io.g4$b */ /* JADX INFO: compiled from: ActivityThread.java */
+//    object AppBindData {
+//        var TYPE: Class<*>? = RefClass.load(
+//            AppBindData::class.java as Class<*>,
+//            "android.app.ActivityThread\$AppBindData"
+//        )
+//        var appInfo: RefObject<ApplicationInfo?>? = null
+//        var disabledCompatChanges: RefObject<LongArray?>? = null
+//        var info: RefObject<Any?>? = null
+//        var instrumentationName: RefObject<ComponentName?>? = null
+//        var processName: RefObject<String?>? = null
+//        var providers: RefObject<MutableList<ProviderInfo?>?>? = null
+//    }
+//
+//    /* JADX INFO: renamed from: io.g4$c */ /* JADX INFO: compiled from: ActivityThread.java */
+//    object CreateServiceData {
+//        var TYPE: Class<*>? = RefClass.load(
+//            CreateServiceData::class.java as Class<*>,
+//            "android.app.ActivityThread\$CreateServiceData"
+//        )
+//        var compatInfo: RefObject<Any?>? = null
+//        var info: RefObject<ServiceInfo?>? = null
+//        var intent: RefObject<Intent?>? = null
+//        var token: RefObject<IBinder?>? = null
+//    }
+//
+//    /* JADX INFO: renamed from: io.g4$d */ /* JADX INFO: compiled from: ActivityThread.java */
+//    object H {
+//        var CREATE_SERVICE: RefStaticInt? = null
+//        var EXECUTE_TRANSACTION: RefStaticInt? = null
+//        var LAUNCH_ACTIVITY: RefStaticInt? = null
+//        var SCHEDULE_CRASH: RefStaticInt? = null
+//        var TYPE: Class<*>? =
+//            RefClass.load(H::class.java as Class<*>, "android.app.ActivityThread\$H")
+//    }
+//
+//    /* JADX INFO: renamed from: io.g4$e */ /* JADX INFO: compiled from: ActivityThread.java */
+//    object ProviderClientRecord {
+//        var TYPE: Class<*>? = RefClass.load(
+//            ProviderClientRecord::class.java as Class<*>,
+//            "android.app.ActivityThread\$ProviderClientRecord"
+//        )
+//
+//        @MethodReflectParams(["android.app.ActivityThread", "java.lang.String", "android.content.IContentProvider", "android.content.ContentProvider"])
+//        var ctor: RefConstructor<*>? = null
+//        var mName: RefObject<String?>? = null
+//        var mProvider: RefObject<IInterface?>? = null
+//    }
+//
+//    /* JADX INFO: renamed from: io.g4$f */ /* JADX INFO: compiled from: ActivityThread.java */
+//    object f {
+//        var TYPE: Class<*>? = RefClass.load(
+//            f::class.java as Class<*>,
+//            "android.app.ActivityThread\$ProviderClientRecord"
+//        )
+//        var mHolder: RefObject<Any?>? = null
+//        var mProvider: RefObject<IInterface?>? = null
+//    }
+//
+//    /* JADX INFO: renamed from: io.g4$g */ /* JADX INFO: compiled from: ActivityThread.java */
+//    object ProviderKey {
+//        var TYPE: Class<*>? = RefClass.load(
+//            ProviderKey::class.java as Class<*>,
+//            "android.app.ActivityThread\$ProviderKey"
+//        )
+//
+//        @MethodParams([String::class, Int::class])
+//        var ctor: RefConstructor<*>? = null
+//    }
+//}

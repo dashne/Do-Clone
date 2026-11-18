@@ -15,8 +15,8 @@ import android.util.Log
 import android.util.SparseArray
 import com.ims134.doclone.clone.server.VJobSchedulerService
 import com.ims134.doclone.io.ActivityManagerStub
-import com.ims134.doclone.io.IJobCallback
-import com.ims134.doclone.io.IJobService
+import android.app.job.IJobCallback
+import android.app.job.IJobService
 import com.ims134.doclone.io.InvocationStubManager
 import com.ims134.doclone.io.JobParametersMirror
 

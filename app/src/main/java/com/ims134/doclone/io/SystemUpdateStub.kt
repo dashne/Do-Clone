@@ -1,6 +1,7 @@
 package com.ims134.doclone.io
 
 import android.os.Bundle
+import android.os.ISystemUpdateManager
 import android.os.PersistableBundle
 
 /**
@@ -27,7 +28,7 @@ class SystemUpdateStub : BinderInvocationProxy(
     }
 
     /**
-     * Was inner class `Stub`. Inert implementation of [ISystemUpdateManager] —
+     * Was inner class `Stub`. Inert implementation of [android.os.ISystemUpdateManager] —
      * `retrieveSystemUpdateInfo` reports `status = 0` (no pending update) and
      * `updateSystemUpdateInfo` is Stub no-op.
      */

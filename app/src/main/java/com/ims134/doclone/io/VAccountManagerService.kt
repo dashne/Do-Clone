@@ -8,6 +8,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.accounts.IAccountAuthenticator
+import android.accounts.IAccountAuthenticatorResponse
+import android.accounts.IAccountManagerResponse
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.content.res.Resources
@@ -26,7 +29,6 @@ import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.VBinder
 import com.ims134.doclone.clone.VEnvironment
 import com.ims134.doclone.clone.VUserHandle
-import com.ims134.doclone.clone.VirtualCore
 import com.ims134.doclone.clone.server.VAccount
 import com.ims134.doclone.clone.server.VAccountVisibility
 import com.ims134.doclone.clone.server.VActivityManagerService
@@ -34,7 +36,6 @@ import com.ims134.doclone.clone.server.VPackageManagerService
 import org.xmlpull.v1.XmlPullParser
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
 import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs

@@ -16,8 +16,8 @@ import android.text.TextUtils
 import android.util.Log
 import com.ims134.doclone.io.FileBridge
 import com.ims134.doclone.io.FileUtils
-import com.ims134.doclone.io.IPackageInstallObserver2
-import com.ims134.doclone.io.IPackageInstallerSession
+import android.content.pm.IPackageInstallObserver2
+import android.content.pm.IPackageInstallerSession
 import com.ims134.doclone.io.SessionInstallObserver
 import java.io.File
 import java.io.IOException

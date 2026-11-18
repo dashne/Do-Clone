@@ -840,11 +840,14 @@ class VAppManagerService : IAppManager.CloneAppManager() {
     }
     @Synchronized
     fun installPackage(packageName: String?, path: String?, flags: Int, notify: Boolean): InstallResult {
+        Log.d("Install","Step1")
         val startTime = System.currentTimeMillis()
         if (path == null) return InstallResult.makeFailure("path = NULL")
 
         var apkFile = File(path)
         if (!apkFile.exists() || !apkFile.isFile) return InstallResult.makeFailure("Package File is not exist.")
+
+        Log.d("Install","Step2")
 
         // ---- parse ----
         // If the app is also installed on the host with split apks and the file sits in setPosition directory, parse that
@@ -859,9 +862,12 @@ class VAppManagerService : IAppManager.CloneAppManager() {
             } catch (ignored: Exception) {
             }
         }
-        val vPackage: VPackage? = try {
+        Log.d("Install","Step3")
+        val vPackage: VPackage? = try
+        {
             PackageParserEx.parsePackage(parseTarget)
         } catch (t: Throwable) {
+            Log.e("fu8", "parsePackage failed for $path", t)
             null
         }
         val pkgName = vPackage?.packageName ?: return InstallResult.makeFailure("Unable to parse the package.")
@@ -887,7 +893,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
             if (!update) return InstallResult.makeFailure("Not allowed to update the package.")
             result.isUpdate = true
         }
-
+        Log.d("Install","Step4")
         // ---- directories ----
         val appDir = VEnvironment.getOrCreateAppSubFile(pkgName)      // was ou8.skipInt32
         val libDir = File(appDir, "lib")
@@ -897,7 +903,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
             VActivityManagerService.get().killAppByPkg(pkgName, -1)    // stop it in every user
         }
         if (!libDir.exists() && !libDir.mkdirs()) return InstallResult.makeFailure("Unable to create lib dir.")
-
+        Log.d("Install","Step5")
         // ---- use the host's apk instead of setPosition copy? ----
         var dependSystem = false
         if ((flags and INSTALL_USE_HOST_APK) != 0) {
@@ -912,7 +918,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
         if (oldSetting != null && !oldSetting.gmsEnabled) dependSystem = false
 
         NativeLibraryHelperCompat.copyNativeBinaries(File(path), libDir)      // was a05.setPosition: copies the native libs out of the apk into lib/
-
+        Log.d("Install","Step6")
         if (!dependSystem) {
             val target = File(appDir, "base.apk")
             val targetDir = target.parentFile
@@ -929,7 +935,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
 
         if (oldPackage != null) PackageCacheManager.removePackage(pkgName)
         getDirPermission(apkFile)     // was fu8.appendFirstIfNotNull(File): not seen; probably makes the apk read-only (needed for dex loading on API 34+)
-
+        Log.d("Install","Step7")
         // ---- package setting ----
         val setting = oldSetting ?: PackageSetting().also { it.flags = 4 }
         setting.gmsEnabled = dependSystem
@@ -937,7 +943,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
         setting.libPath = libDir.path
         setting.packageName = pkgName
         setting.appId = uidSystem.getUid(vPackage) % VUserHandle.PER_USER_RANGE
-
+        Log.d("Install","Step8")
         if (result.isUpdate) {
             setting.lastUpdateTime = startTime
         } else {
@@ -954,7 +960,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
         PackageParserEx.saveVPackage(vPackage)
         PackageCacheManager.addPackage(setting, vPackage)
         packagePersistenceLayer.save()
-
+        Log.d("Install","Step9")
         // ---- optimize the copied apk ----
         if (!dependSystem)
         {
@@ -982,7 +988,7 @@ class VAppManagerService : IAppManager.CloneAppManager() {
             BroadcastSystem.broadcastSystem?.registerReceivers(vPackage)
         }
         if (notify) notifyAppInstalled(setting, -1)           // was U(setting, -1): send PACKAGE_ADDED etc. to all users
-
+        Log.d("Install","Step10")
         result.installed = true
         return result
     }

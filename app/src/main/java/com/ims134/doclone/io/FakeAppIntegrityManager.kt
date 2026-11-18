@@ -1,11 +1,12 @@
 package com.ims134.doclone.io
 
 import android.content.IntentSender
+import android.content.integrity.IAppIntegrityManager
 import android.os.Bundle
 import android.os.RemoteException
 
 /**
- * Was `r82`. Inert implementation of [IAppIntegrityManager] — all methods return
+ * Was `r82`. Inert implementation of [android.content.integrity.IAppIntegrityManager] — all methods return
  * null / do nothing. Used as the base IInterface for [AppIntegrityManagerStub];
  * the wrapper's method proxies intercept every call before it reaches this class,
  * so these bodies are only exercised if ContentProviderHolder method is not proxied.

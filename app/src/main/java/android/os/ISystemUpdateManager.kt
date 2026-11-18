@@ -1,20 +1,12 @@
-package com.ims134.doclone.io
+package android.os
 
-import android.content.Intent
-import android.os.Binder
-import android.os.IBinder
-import android.os.IInterface
-import android.os.Parcel
-import android.os.Parcelable
-import android.os.RemoteException
-
-interface IPackageDeleteObserver2 : IInterface {
+interface ISystemUpdateManager : IInterface {
 
     @Throws(RemoteException::class)
-    fun onPackageDeleted(packageName: String?, returnCode: Int, msg: String?)
+    fun retrieveSystemUpdateInfo(): Bundle?
 
     @Throws(RemoteException::class)
-    fun onUserActionRequired(intent: Intent?)
+    fun updateSystemUpdateInfo(info: PersistableBundle?)
 
     object _Parcel {
 
@@ -31,7 +23,7 @@ interface IPackageDeleteObserver2 : IInterface {
         }
     }
 
-    abstract class Stub : Binder(), IPackageDeleteObserver2 {
+    abstract class Stub : Binder(), ISystemUpdateManager {
 
         init {
             attachInterface(this, DESCRIPTOR)
@@ -39,39 +31,38 @@ interface IPackageDeleteObserver2 : IInterface {
 
         override fun asBinder(): IBinder = this
 
-        class Proxy(private val mRemote: IBinder) : IPackageDeleteObserver2 {
+        class Proxy(private val mRemote: IBinder) : ISystemUpdateManager {
 
             override fun asBinder(): IBinder = mRemote
 
             fun getInterfaceDescriptor(): String = DESCRIPTOR
 
             @Throws(RemoteException::class)
-            override fun onPackageDeleted(
-                packageName: String?,
-                returnCode: Int,
-                msg: String?,
-            ) {
+            override fun retrieveSystemUpdateInfo(): Bundle? {
                 val data = Parcel.obtain()
+                val reply = Parcel.obtain()
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
-                    data.writeString(packageName)
-                    data.writeInt(returnCode)
-                    data.writeString(msg)
-                    // One-way call: no reply parcel, FLAG_ONEWAY (1).
-                    mRemote.transact(TRANSACTION_onPackageDeleted, data, null, 1)
+                    mRemote.transact(TRANSACTION_retrieveSystemUpdateInfo, data, reply, 0)
+                    reply.readException()
+                    return _Parcel.readTypedObject(reply, Bundle.CREATOR)
                 } finally {
+                    reply.recycle()
                     data.recycle()
                 }
             }
 
             @Throws(RemoteException::class)
-            override fun onUserActionRequired(intent: Intent?) {
+            override fun updateSystemUpdateInfo(info: PersistableBundle?) {
                 val data = Parcel.obtain()
+                val reply = Parcel.obtain()
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
-                    _Parcel.writeTypedObject(data, intent, 0)
-                    mRemote.transact(TRANSACTION_onUserActionRequired, data, null, 1)
+                    _Parcel.writeTypedObject(data, info, 0)
+                    mRemote.transact(TRANSACTION_updateSystemUpdateInfo, data, reply, 0)
+                    reply.readException()
                 } finally {
+                    reply.recycle()
                     data.recycle()
                 }
             }
@@ -88,16 +79,17 @@ interface IPackageDeleteObserver2 : IInterface {
                 return true
             }
             return when (code) {
-                TRANSACTION_onUserActionRequired -> {
-                    onUserActionRequired(_Parcel.readTypedObject(data, Intent.CREATOR))
+                TRANSACTION_retrieveSystemUpdateInfo -> {
+                    val bundle = retrieveSystemUpdateInfo()
+                    reply.writeNoException()
+                    _Parcel.writeTypedObject(reply, bundle, 1)
                     true
                 }
-                TRANSACTION_onPackageDeleted -> {
-                    onPackageDeleted(
-                        data.readString(),
-                        data.readInt(),
-                        data.readString(),
+                TRANSACTION_updateSystemUpdateInfo -> {
+                    updateSystemUpdateInfo(
+                        _Parcel.readTypedObject(data, PersistableBundle.CREATOR)
                     )
+                    reply.writeNoException()
                     true
                 }
                 else -> super.onTransact(code, data, reply, flags)
@@ -105,16 +97,16 @@ interface IPackageDeleteObserver2 : IInterface {
         }
 
         companion object {
-            const val DESCRIPTOR = "android.content.pm.IPackageDeleteObserver2"
+            const val DESCRIPTOR = "android.os.ISystemUpdateManager"
 
-            private const val TRANSACTION_onUserActionRequired = 1
-            private const val TRANSACTION_onPackageDeleted = 2
+            private const val TRANSACTION_retrieveSystemUpdateInfo = 1
+            private const val TRANSACTION_updateSystemUpdateInfo = 2
 
             @JvmStatic
-            fun asInterface(iBinder: IBinder?): IPackageDeleteObserver2? {
+            fun asInterface(iBinder: IBinder?): ISystemUpdateManager? {
                 if (iBinder == null) return null
                 val local = iBinder.queryLocalInterface(DESCRIPTOR)
-                return if (local == null || local !is IPackageDeleteObserver2) {
+                return if (local == null || local !is ISystemUpdateManager) {
                     Proxy(iBinder)
                 } else {
                     local
@@ -123,18 +115,14 @@ interface IPackageDeleteObserver2 : IInterface {
         }
     }
 
-    class Default : IPackageDeleteObserver2 {
+    class Default : ISystemUpdateManager {
 
         override fun asBinder(): IBinder? = null
 
         @Throws(RemoteException::class)
-        override fun onUserActionRequired(intent: Intent?) {}
+        override fun retrieveSystemUpdateInfo(): Bundle? = null
 
         @Throws(RemoteException::class)
-        override fun onPackageDeleted(
-            packageName: String?,
-            returnCode: Int,
-            msg: String?,
-        ) {}
+        override fun updateSystemUpdateInfo(info: PersistableBundle?) {}
     }
 }

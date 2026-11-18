@@ -13,10 +13,35 @@ class DoApplication: Application()
         private set
     }
 
+    override fun attachBaseContext(base: Context?) {
+        super.attachBaseContext(base)
+        appContext = this
+        try
+        {
+            VirtualCore.gCore.startup()        // runs BEFORE BinderProvider.onCreate()
+        }
+        catch (t: Throwable)
+        {
+            Log.e("DoApplication", "startup failed", t)
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
-        appContext = applicationContext
-        VirtualCore.gCore.startup()
+
+        // fallback, same as original PolestarApp.onCreate
+        if (!VirtualCore.gCore.isStarted)
+        {
+            try
+            {
+                VirtualCore.gCore.startup()
+            }
+            catch (_: Throwable) {}
+        }
+        if (VirtualCore.gCore.processType == null)
+        {
+            VirtualCore.gCore.detectProcessType()
+        }
         //Log.i("HookTest", NativeEngine.nativeTestHook())
     }
 }

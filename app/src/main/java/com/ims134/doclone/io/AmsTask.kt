@@ -5,6 +5,7 @@ import android.accounts.AccountManagerFuture
 import android.accounts.AuthenticatorException
 import android.accounts.OperationCanceledException
 import android.content.Intent
+import android.accounts.IAccountManagerResponse
 import android.os.Bundle
 import android.os.RemoteException
 import android.util.Log

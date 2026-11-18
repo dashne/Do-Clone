@@ -1,13 +1,14 @@
 package com.ims134.doclone.io
 
 import android.content.Intent
+import android.content.pm.IPackageInstallObserver2
 import android.os.Bundle
 import android.os.RemoteException
 
 /**
  * Was `io.bg5`. Base class for install-result callbacks. Subclasses implement
  * [onPackageInstalled] / [onUserActionRequired] to receive results, and pass
- * [observerStub] (an [IPackageInstallObserver2]) to the framework's installer
+ * [observerStub] (an [android.content.pm.IPackageInstallObserver2]) to the framework's installer
  * session.
  *
  * The stub is allocated eagerly in the field initializer, matching the original
@@ -18,7 +19,7 @@ import android.os.RemoteException
 open class PackageInstallObserver {
 
     /**
-     * Was `a`. The [IPackageInstallObserver2.Stub] passed to the framework's
+     * Was `a`. The [android.content.pm.IPackageInstallObserver2.Stub] passed to the framework's
      * `IPackageInstallerSession.commit(...)` call. Subclasses hand this to the
      * service; results arrive on the overridden methods below.
      */

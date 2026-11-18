@@ -1,12 +1,19 @@
 package com.ims134.doclone.io
 
 
+import android.app.Application
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.pm.ApplicationInfo
+import android.content.pm.ProviderInfo
 import android.content.pm.ServiceInfo
+import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
+import android.os.IInterface
 import android.os.Message
 import android.os.RemoteException
 import android.util.Log
@@ -17,13 +24,25 @@ import com.ims134.doclone.clone.VActivityManager
 import com.ims134.doclone.clone.VPackageManager
 import com.ims134.doclone.clone.VUserHandle
 import com.ims134.doclone.clone.VirtualCore
-import kotlin.jvm.java
+import com.ims134.doclone.reflect.MethodParams
+import com.ims134.doclone.reflect.MethodReflectParams
+import com.ims134.doclone.reflect.RefClass
+import com.ims134.doclone.reflect.RefConstructor
+import com.ims134.doclone.reflect.RefMethod
+import com.ims134.doclone.reflect.RefObject
+import com.ims134.doclone.reflect.RefStaticInt
+import com.ims134.doclone.reflect.RefStaticMethod
+import com.ims134.doclone.reflect.RefStaticObject
+import java.lang.ref.WeakReference
+import java.lang.reflect.Method
+
 
 /**
  * Hook on the main thread Handler's callback (was io.rt2). It intercepts the system's messages that launch
  * activities and create services, and rewrites the stub intents back into the real virtual components.
  */
-class HCallbackStub : Handler.Callback, IInjector {
+class HCallbackStub : Handler.Callback, IInjector
+{
 
     /** was get: re-entrancy guard */
     private var isHandling = false
@@ -120,7 +139,7 @@ class HCallbackStub : Handler.Callback, IInjector {
     @Throws(Throwable::class)
     override fun inject() {
         original = try {
-            HandlerMirror.mCallback!!.get(getMainHandler())
+            HandlerMirror.mCallback.get(getMainHandler())
         } catch (_: Throwable) {
             null
         }
@@ -142,27 +161,60 @@ class HCallbackStub : Handler.Callback, IInjector {
 
     companion object {
         /** was c: LAUNCH_ACTIVITY message code, -1 from API 28 (replaced by EXECUTE_TRANSACTION) */
-        @JvmField
-        val LAUNCH_ACTIVITY: Int = if (BuildCompat.sdk28OrLater()) -1 else ActivityThread.H.LAUNCH_ACTIVITY!!.get()
+
+        var LAUNCH_ACTIVITY: Int=-1
+
+        //@JvmField
+        //val LAUNCH_ACTIVITY: Int = if (BuildCompat.sdk28OrLater()) -1 else ActivityThread.H.LAUNCH_ACTIVITY!!.get()
 
         /** was d */
-        @JvmField
-        val CREATE_SERVICE: Int = ActivityThread.H.CREATE_SERVICE!!.get()
+
+        var CREATE_SERVICE: Int = -1
+        //@JvmField
+        //val CREATE_SERVICE: Int = ActivityThread.H.CREATE_SERVICE!!.get()
 
         /** was e: -1 if the Android version has no such message */
-        @JvmField
-        val SCHEDULE_CRASH: Int = ActivityThread.H.SCHEDULE_CRASH?.get() ?: -1
+
+        var SCHEDULE_CRASH: Int =  -1
+        //@JvmField
+        //val SCHEDULE_CRASH: Int = ActivityThread.H.SCHEDULE_CRASH?.get() ?: -1
 
         /** was f: EXECUTE_TRANSACTION message code, -1 before API 28 */
-        @JvmField
-        val EXECUTE_TRANSACTION: Int = if (BuildCompat.sdk28OrLater()) ActivityThread.H.EXECUTE_TRANSACTION!!.get() else -1
+
+        var EXECUTE_TRANSACTION: Int = -1
+        //@JvmField
+        //val EXECUTE_TRANSACTION: Int = if (BuildCompat.sdk28OrLater()) ActivityThread.H.EXECUTE_TRANSACTION!!.get() else -1
 
         /** was g */
-        private val TAG: String = HCallbackStub::class.java.simpleName
+        lateinit var  TAG: String
+        //@JvmField
+        //private val TAG: String = HCallbackStub::class.java.simpleName
 
         /** was h */
-        @JvmField
-        val instance = HCallbackStub()
+
+        lateinit var instance:HCallbackStub
+        //@JvmField
+        //val instance = HCallbackStub()
+
+
+        init {
+            LAUNCH_ACTIVITY =
+                if (BuildCompat.sdk28OrLater()) -1 else ActivityThread.H.LAUNCH_ACTIVITY!!.get()
+
+            val cs = ActivityThread.H.CREATE_SERVICE
+            if(cs == null)
+            {
+                Log.d("SMN","ActivityThread.H.CREATE_SERVICE is null")
+            }
+            CREATE_SERVICE = ActivityThread.H.CREATE_SERVICE!!.get()
+            val refStaticInt = ActivityThread.H.SCHEDULE_CRASH
+            SCHEDULE_CRASH = if (refStaticInt != null) refStaticInt.get() else -1
+            EXECUTE_TRANSACTION = if (BuildCompat.sdk28OrLater()) ActivityThread.H.EXECUTE_TRANSACTION!!.get() else -1
+            TAG = HCallbackStub::class.java.getSimpleName()
+            instance = HCallbackStub()
+        }
+
+
 
         /** was get(): the main thread's Handler (ActivityThread.mH) */
         @JvmStatic
@@ -303,3 +355,4 @@ class HCallbackStub : Handler.Callback, IInjector {
         }
     }
 }
+

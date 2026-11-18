@@ -124,6 +124,8 @@ class BinderProvider : ContentProvider() {
         ServiceCache.addService("content", VContentService.get())
 
         DaemonService.ensureStarted(context)
+
+        Log.d("BinderProvider", "onCreate COMPLETE – services registered")
         return true
     }
 

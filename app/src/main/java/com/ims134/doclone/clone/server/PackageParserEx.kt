@@ -16,6 +16,7 @@ import android.content.pm.ServiceInfo
 import android.content.pm.SharedLibraryInfo
 import android.content.pm.Signature
 import android.content.pm.SigningInfo
+import android.content.pm.PackageParser
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcel
@@ -46,6 +47,8 @@ import com.ims134.doclone.io.VMRuntime
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.Arrays
+import java.util.Collections
 
 /**
  * Parses APKs into [VPackage]s and builds the framework Info objects (PackageInfo, ApplicationInfo, ...)
@@ -492,165 +495,433 @@ object PackageParserEx {
      * Was m16495k. jadx marked this method "Code duplicated / type inference failed"; the control flow below
      * is rebuilt by hand, so test it with real APKs.
      */
+//    @JvmStatic
+//    @Throws(Throwable::class)
+//    fun parsePackage(file: File): VPackage
+//    {
+//        runCatching {
+//            val fw = Class.forName("android.content.pm.PackageParser")
+//            Log.d("ParsePackage", "fw methods: " + fw.declaredMethods.joinToString { m ->
+//                m.name + m.parameterTypes.joinToString("(", ",", ")") { it.simpleName } })
+//        }
+//        for (n in listOf("android.content.pm.parsing.ParsingPackageUtils",
+//            "com.android.internal.pm.pkg.parsing.ParsingPackageUtils")) {
+//            val c = runCatching { Class.forName(n) }.getOrNull()
+//            Log.d("ParsePackage", "$n -> " + (c?.declaredMethods?.joinToString { it.name } ?: "ABSENT"))
+//        }
+//        //--------------
+//        var parser: PackageParser? = PackageParserMarshmallow.ctor?.newInstance()
+//        if (parser == null) {
+//            parser = try {
+//                PackageParser::class.java.getDeclaredConstructor().also { it.isAccessible = true }.newInstance()
+//            } catch (t: Throwable) {
+//                Log.e("ParsePackage", "createParser reflection fallback failed: $t")
+//                null
+//            }
+//        }
+//        if (BuildCompat.sdk29OrLater() && PackageParserPie.setCallback != null && PackageParserPie.CallbackImpl.ctor != null) {
+//            PackageParserPie.setCallback?.call(parser, PackageParserPie.CallbackImpl.ctor?.newInstance(VirtualCore.getPackageManager()))
+//        }
+//
+//        val parsed: PackageParser.Package
+//        val parseRef = PackageParserMarshmallow.parsePackage
+//        if (parseRef != null) {
+//            parsed = parseRef.callWithException(parser, file, 0)!!
+//        } else {
+//            // Fallback: find any parsePackage(File, int, ...) and fill the other parameters with defaults.
+//            val method = parser!!.javaClass.declaredMethods.firstOrNull {
+//                it.name == "parsePackage" && it.parameterTypes.size >= 2 &&
+//                        it.parameterTypes[0] == File::class.java && it.parameterTypes[1] == Int::class.javaPrimitiveType
+//            } ?: throw NoSuchMethodException("No compatible parsePackage(File, int, ...) on API ${Build.VERSION.SDK_INT}")
+//            method.isAccessible = true
+//            val args = arrayOfNulls<Any>(method.parameterTypes.size)
+//            for ((i, type) in method.parameterTypes.withIndex()) {
+//                args[i] = when {
+//                    i == 0 && type == File::class.java -> file
+//                    i == 1 && type == Int::class.javaPrimitiveType -> 0
+//                    type == java.lang.Boolean.TYPE -> false
+//                    type == Int::class.javaPrimitiveType -> 0
+//                    else -> null
+//                }
+//            }
+//            parsed = method.invoke(parser, *args) as PackageParser.Package
+//        }
+//
+//        // ---- signatures ----
+//        val meta = parsed.mAppMetaData
+//        if (parsed.requestedPermissions.contains("android.permission.FAKE_PACKAGE_SIGNATURE") &&
+//            meta != null && meta.containsKey("fake-signature")
+//        ) {
+//            parsed.mSignatures = arrayOf(Signature(meta.getString("fake-signature")))
+//            Log.d("setPosition", "Using fake-signature feature on : ${parsed.packageName}")
+//        } else {
+//            try {
+//                val sdk = Build.VERSION.SDK_INT      // was hg5.f42777b (assumed SDK_INT)
+//                when {
+//                    sdk >= 28 -> PackageParserPie.collectCertificates?.callWithException(parsed, true)
+//                    sdk >= 24 -> PackageParserNougat.collectCertificates?.callWithException(parsed, 65)
+//                    else -> PackageParserMarshmallow.collectCertificates?.callWithException(parser, parsed, 1)
+//                }
+//            } catch (t: Throwable) {
+//                Log.e("setPosition", "collectCertificates failed", t)
+//                parsed.mSignatures = arrayOf(Signature(FALLBACK_SIGNATURE))
+//            }
+//        }
+//
+//        // ---- components ----
+//        val pkg = VPackage()
+//        for (activity in parsed.activities) pkg.activities.add(VPackage.ActivityComponent(activity))
+//
+//        for (service in parsed.services) {
+//            // Google's phenotype sync service crashes inside the clone, so it is dropped.
+//            if (service.getComponentName()?.className == "com.google.android.gms.phenotype.service.sync.PackageUpdateTaskService") continue
+//            val component = VPackage.ServiceComponent(service)
+//            service.intents?.let { source ->
+//                component.intents = ArrayList<VPackage.ServiceIntentInfo>(source.size).also { list ->
+//                    for (item in source) list.add(VPackage.ServiceIntentInfo(item as PackageParser.IntentInfo))
+//                }
+//            }
+//            component.info = service.info
+//            pkg.services.add(component)
+//        }
+//
+//        for (receiver in parsed.receivers) pkg.receivers.add(VPackage.ActivityComponent(receiver))
+//
+//        for (provider in parsed.providers) {
+//            val component = VPackage.ProviderComponent(provider)
+//            provider.intents?.let { source ->
+//                component.intents = ArrayList<VPackage.ProviderIntentInfo>(source.size).also { list ->
+//                    for (item in source) list.add(VPackage.ProviderIntentInfo(item as PackageParser.IntentInfo))
+//                }
+//            }
+//            component.info = provider.info
+//            pkg.providers.add(component)
+//        }
+//
+//        for (instrumentation in parsed.instrumentation) {
+//            val component = VPackage.InstrumentationComponent(instrumentation)
+//            component.info = instrumentation.info
+//            pkg.instrumentation.add(component)
+//        }
+//
+//        pkg.requestedPermissions = ArrayList(parsed.requestedPermissions)
+//
+//        val protectedRef = PackageParserMirror.Package.protectedBroadcasts
+//        if (protectedRef != null) {
+//            val broadcasts = protectedRef.get(parsed)
+//            if (broadcasts != null) {
+//                val clean = broadcasts.filterNotNull()
+//                // Original copies the list and then adds the same entries again (duplicates). Kept as is.
+//                pkg.protectedBroadcasts = ArrayList(clean).also { it.addAll(clean) }
+//            }
+//        }
+//
+//        pkg.applicationInfo = parsed.applicationInfo
+//
+//        // ---- signing ----
+//        var signatures: Array<Signature>? = parsed.mSignatures
+//        if (BuildCompat.sdk28OrLater()) {
+//            try {
+//                signatures = parsed.mSigningDetails?.signatures ?: parsed.mSignatures
+//            } catch (ignored: Throwable) {
+//            }
+//        }
+//        pkg.signatures = signatures
+//
+//        var signingInfo: SigningInfo? = null
+//        if (BuildCompat.sdk28OrLater()) {
+//            try {
+//                if (PackageParserMirror.Package.mSigningDetails != null && PackageParserMirror.SigningDetails.ctor != null) {
+//                    signingInfo = (PackageParserMirror.SigningDetails.ctor?.newInstance(PackageParserMirror.Package.mSigningDetails?.get(parsed))) as SigningInfo
+//                } else if (Build.VERSION.SDK_INT >= 28 || signatures == null || signatures.isEmpty()) {
+//                    signingInfo = null
+//                } else {
+//                    // Dead on real API 28+ devices; kept from the original.
+//                    try {
+//                        val ctor = SigningInfo::class.java.getDeclaredConstructor(
+//                            Int::class.javaPrimitiveType, Collection::class.java, Collection::class.java, Collection::class.java
+//                        )
+//                        ctor.isAccessible = true
+//                        val none = emptyList<Any>()
+//                        signingInfo = (ctor.newInstance(0, signatures.asList(), none, none)) as SigningInfo
+//                    } catch (ignored: Throwable) {
+//                        signingInfo = null
+//                    }
+//                }
+//            } catch (ignored: Throwable) {
+//            }
+//        }
+//        pkg.signatureInfo = signingInfo
+//
+//        pkg.bundle = parsed.mAppMetaData
+//        pkg.packageName = parsed.packageName
+//        pkg.preferredOrder = parsed.mPreferredOrder
+//        pkg.versionName = parsed.mVersionName
+//        pkg.sharedUserId = parsed.mSharedUserId
+//        pkg.sharedUserLabel = parsed.mSharedUserLabel
+//        pkg.usesLibraries = parsed.usesLibraries
+//        pkg.versionCode = parsed.mVersionCode
+//        pkg.configInfoArray = parsed.configPreferences
+//        pkg.featureInfoArray = parsed.reqFeatures
+//
+//        linkPackage(pkg)
+//        return pkg
+//    }
+
     @JvmStatic
     @Throws(Throwable::class)
     fun parsePackage(file: File): VPackage {
-        var parser: PackageParser? = PackageParserMarshmallow.ctor?.newInstance()
-        if (parser == null) {
-            parser = try {
-                PackageParser::class.java.getDeclaredConstructor().also { it.isAccessible = true }.newInstance()
-            } catch (t: Throwable) {
-                Log.e("ParsePackage", "createParser reflection fallback failed: $t")
-                null
-            }
-        }
-        if (BuildCompat.sdk29OrLater() && PackageParserPie.setCallback != null && PackageParserPie.CallbackImpl.ctor != null) {
-            PackageParserPie.setCallback?.call(parser, PackageParserPie.CallbackImpl.ctor?.newInstance(VirtualCore.getPackageManager()))
+        // 1. Create PackageParser instance
+        var packageParserNewInstance: PackageParser? = try {
+            PackageParserMarshmallow.ctor?.newInstance()
+        } catch (t: Throwable) {
+            null
         }
 
-        val parsed: PackageParser.Package
-        val parseRef = PackageParserMarshmallow.parsePackage
-        if (parseRef != null) {
-            parsed = parseRef.callWithException(parser, file, 0)!!
-        } else {
-            // Fallback: find any parsePackage(File, int, ...) and fill the other parameters with defaults.
-            val method = parser!!.javaClass.declaredMethods.firstOrNull {
-                it.name == "parsePackage" && it.parameterTypes.size >= 2 &&
-                        it.parameterTypes[0] == File::class.java && it.parameterTypes[1] == Int::class.javaPrimitiveType
-            } ?: throw NoSuchMethodException("No compatible parsePackage(File, int, ...) on API ${Build.VERSION.SDK_INT}")
-            method.isAccessible = true
-            val args = arrayOfNulls<Any>(method.parameterTypes.size)
-            for ((i, type) in method.parameterTypes.withIndex()) {
+        if (packageParserNewInstance == null) {
+            try {
+                val clazz = Class.forName("android.content.pm.PackageParser")
+                val ctor = clazz.getDeclaredConstructor()
+                ctor.isAccessible = true
+                packageParserNewInstance = ctor.newInstance() as PackageParser
+            } catch (th: Throwable) {
+                Log.e("ParsePackage", "createParser reflection fallback failed: $th")
+            }
+        }
+
+        if (packageParserNewInstance == null) {
+            throw IllegalStateException("Failed to create PackageParser instance")
+        }
+
+        // 2. Set Callback (API 28+)
+        if (BuildCompat.sdk28OrLater() && PackageParserPie.setCallback != null && PackageParserPie.CallbackImpl.ctor != null) {
+            try {
+                val callback = PackageParserPie.CallbackImpl.ctor?.newInstance(VirtualCore.getPackageManager())
+                PackageParserPie.setCallback?.call(packageParserNewInstance, callback)
+            } catch (t: Throwable) {
+                Log.e("ParsePackage", "setCallback failed: $t")
+            }
+        }
+
+        // 3. Parse Package
+        val refMethod = PackageParserMarshmallow.parsePackage
+        var packageCallWithException: PackageParser.Package? = null
+
+        if (refMethod != null) {
+            try {
+                packageCallWithException = refMethod.callWithException(packageParserNewInstance, file, 0)
+            } catch (t: Throwable) {
+                Log.e("ParsePackage", "mirror parsePackage failed, falling back to reflection: $t")
+                packageCallWithException = null
+            }
+        }
+
+        if (packageCallWithException == null) {
+            val methods = packageParserNewInstance.javaClass.declaredMethods
+            var target: java.lang.reflect.Method? = null
+
+            // Try exact match (File, int) for older APIs
+            for (m in methods) {
+                if (m.name == "parsePackage") {
+                    val params = m.parameterTypes
+                    if (params.size >= 2 && params[0] == File::class.java && params[1] == Int::class.javaPrimitiveType) {
+                        target = m
+                        break
+                    }
+                }
+            }
+
+            // Fallback for API 31+ : find any parsePackage starting with File
+            if (target == null) {
+                for (m in methods) {
+                    if (m.name == "parsePackage") {
+                        val params = m.parameterTypes
+                        if (params.isNotEmpty() && params[0] == File::class.java) {
+                            target = m
+                            break
+                        }
+                    }
+                }
+            }
+
+            if (target == null) {
+                throw NoSuchMethodException("No compatible parsePackage(File, ...) on API ${Build.VERSION.SDK_INT}")
+            }
+
+            target.isAccessible = true
+            val params = target.parameterTypes
+            val args = arrayOfNulls<Any>(params.size)
+            for (i in params.indices) {
+                val cls = params[i]
                 args[i] = when {
-                    i == 0 && type == File::class.java -> file
-                    i == 1 && type == Int::class.javaPrimitiveType -> 0
-                    type == java.lang.Boolean.TYPE -> false
-                    type == Int::class.javaPrimitiveType -> 0
+                    i == 0 && cls == File::class.java -> file
+                    cls == Int::class.javaPrimitiveType -> 0
+                    cls == Boolean::class.javaPrimitiveType -> false
+                    cls == Long::class.javaPrimitiveType -> 0L
                     else -> null
                 }
             }
-            parsed = method.invoke(parser, *args) as PackageParser.Package
+            packageCallWithException = target.invoke(packageParserNewInstance, *args) as PackageParser.Package
         }
 
-        // ---- signatures ----
-        val meta = parsed.mAppMetaData
-        if (parsed.requestedPermissions.contains("android.permission.FAKE_PACKAGE_SIGNATURE") &&
-            meta != null && meta.containsKey("fake-signature")
+        if (packageCallWithException == null) {
+            throw IllegalStateException("parsePackage returned null for ${file.path}")
+        }
+
+        // 4. Fake Signature & Collect Certificates
+        if (packageCallWithException.requestedPermissions.contains("android.permission.FAKE_PACKAGE_SIGNATURE") &&
+            packageCallWithException.mAppMetaData != null &&
+            packageCallWithException.mAppMetaData!!.containsKey("fake-signature")
         ) {
-            parsed.mSignatures = arrayOf(Signature(meta.getString("fake-signature")))
-            Log.d("setPosition", "Using fake-signature feature on : ${parsed.packageName}")
+            packageCallWithException.mSignatures = arrayOf(Signature(packageCallWithException.mAppMetaData?.getString("fake-signature")))
+            Log.d("a", "Using fake-signature feature on : " + packageCallWithException.packageName)
         } else {
             try {
-                val sdk = Build.VERSION.SDK_INT      // was hg5.f42777b (assumed SDK_INT)
-                when {
-                    sdk >= 28 -> PackageParserPie.collectCertificates?.callWithException(parsed, true)
-                    sdk >= 24 -> PackageParserNougat.collectCertificates?.callWithException(parsed, 65)
-                    else -> PackageParserMarshmallow.collectCertificates?.callWithException(parser, parsed, 1)
+                val sdkInt = Build.VERSION.SDK_INT
+                if (sdkInt >= 28) {
+                    PackageParserPie.collectCertificates?.callWithException(packageCallWithException, true)
+                } else if (sdkInt >= 24) {
+                    PackageParserNougat.collectCertificates?.callWithException(packageCallWithException, 65)
+                } else {
+                    PackageParserMarshmallow.collectCertificates?.callWithException(packageParserNewInstance, packageCallWithException, 1)
                 }
-            } catch (t: Throwable) {
-                Log.e("setPosition", "collectCertificates failed", t)
-                parsed.mSignatures = arrayOf(Signature(FALLBACK_SIGNATURE))
+            } catch (th2: Throwable) {
+                Log.d("a", "collectCertificates failed", th2)
+                packageCallWithException.mSignatures = arrayOf(
+                    Signature(
+                        "308203553082023da0030201020204378edaaa300d06092a864886f70d01010b0500305a310d300b0603550406130466616b65310d300b0603550408130466616b65310d300b0603550407130466616b65310d300b060355040a130466616b65310d300b060355040b130466616b65310d300b0603550403130466616b653020170d3138303533303034343434385a180f32313237313230353034343434385a305a310d300b0603550406130466616b65310d300b0603550408130466616b65310d300b0603550407130466616b65310d300b060355040a130466616b65310d300b060355040b130466616b65310d300b0603550403130466616b6530820122300d06092a864886f70d01010105000382010f003082010a0282010100b766ff6afd8a53edd4cee4985bc90e0c515157b5e9f731818961f7250d0d1ac7c7fb80eb5aeb8c28478732e8ff38cff574bfa0eba8039f73af1532f939c4ef9684719efbaba2dd3c583a20907c1c55248a63098c6da23dcfc877763d5fe6061dddd399cf2f49e3250e23f9e687a4d182bcd0662179ba4c9983448e34b4c83e5abbf4f87e87add9157c75fd40de3416744507a3517915f35b6fcad78766e8e1879df8ab823a6ffa335e4790f6e29c87393732025b63ce3a38e42cb0d48cdceb902f191d7d45823db9a0678895e8bfc59b2af7526ca4c2dc3dbe7e70c7c840e666b9629d36e5ddf1d9a80c37f1ab1bc1fb30432914008fbde95d5d3db7853565510203010001a321301f301d0603551d0e04160414d8513e1ae21c64e9ebeee3507e24ea375eef958e300d06092a864886f70d01010b0500038201010088bf20b36428558359536dddcfff16fe233656a92364cb544d8acc43b0859f880a8da339dd430616085edf035e4e6e6dd2281ceb14adde2f05e9ac58d547a09083eece0c6d405289cb7918f85754ee545eefe35e30c103cad617905e94eb4fb68e6920a60d30577855f9feb6e3a664856f74aa9f824aa7d4a3adf85e162c67b9a4261e3185f038ead96112ae3e574d280425e90567352fb82bc9173302122025eaecfabd94d0f9be69a85c415f7cf7759c9651734300952027b316c37aaa1b2418865a3fc7b6bd1072c92ccaacdaa1cf9586d9b8310ceee066ce68859107dfc45ccce729ad9e75b53b584fa37dcd64da8673b1279c6c5861ed3792deac156c8a"
+                    )
+                )
             }
         }
 
-        // ---- components ----
-        val pkg = VPackage()
-        for (activity in parsed.activities) pkg.activities.add(VPackage.ActivityComponent(activity))
+        // 5. Convert to VPackage
+        val vPackage = VPackage()
+        vPackage.activities = ArrayList(packageCallWithException.activities.size)
+        vPackage.services = ArrayList(packageCallWithException.services.size)
+        vPackage.receivers = ArrayList(packageCallWithException.receivers.size)
+        vPackage.providers = ArrayList(packageCallWithException.providers.size)
+        vPackage.instrumentation = ArrayList(packageCallWithException.instrumentation.size)
+        vPackage.permissions = ArrayList(packageCallWithException.permissions.size)
+        vPackage.permissionGroups = ArrayList(packageCallWithException.permissionGroups.size)
 
-        for (service in parsed.services) {
-            // Google's phenotype sync service crashes inside the clone, so it is dropped.
-            if (service.getComponentName()?.className == "com.google.android.gms.phenotype.service.sync.PackageUpdateTaskService") continue
-            val component = VPackage.ServiceComponent(service)
-            service.intents?.let { source ->
-                component.intents = ArrayList<VPackage.ServiceIntentInfo>(source.size).also { list ->
-                    for (item in source) list.add(VPackage.ServiceIntentInfo(item as PackageParser.IntentInfo))
+        for (activity in packageCallWithException.activities) {
+            vPackage.activities.add(VPackage.ActivityComponent(activity))
+        }
+
+        for (service in packageCallWithException.services) {
+            // Drop phenotype sync service to prevent crashes
+            if (service.className == "com.google.android.gms.phenotype.service.sync.PackageUpdateTaskService") {
+                continue
+            }
+            val serviceComponent = VPackage.ServiceComponent(service)
+            if (service.intents != null) {
+                serviceComponent.intents = ArrayList(service.intents!!.size)
+                for (intent in service.intents) {
+                    serviceComponent.intents!!.add(VPackage.ServiceIntentInfo(intent as PackageParser.IntentInfo))
                 }
             }
-            component.info = service.info
-            pkg.services.add(component)
+            serviceComponent.info = service.info
+            vPackage.services.add(serviceComponent)
         }
 
-        for (receiver in parsed.receivers) pkg.receivers.add(VPackage.ActivityComponent(receiver))
+        for (receiver in packageCallWithException.receivers) {
+            vPackage.receivers.add(VPackage.ActivityComponent(receiver))
+        }
 
-        for (provider in parsed.providers) {
-            val component = VPackage.ProviderComponent(provider)
-            provider.intents?.let { source ->
-                component.intents = ArrayList<VPackage.ProviderIntentInfo>(source.size).also { list ->
-                    for (item in source) list.add(VPackage.ProviderIntentInfo(item as PackageParser.IntentInfo))
+        for (provider in packageCallWithException.providers) {
+            val providerComponent = VPackage.ProviderComponent(provider)
+            if (provider.intents != null) {
+                providerComponent.intents = ArrayList(provider.intents!!.size)
+                for (intent in provider.intents) {
+                    providerComponent.intents!!.add(VPackage.ProviderIntentInfo(intent as PackageParser.IntentInfo))
                 }
             }
-            component.info = provider.info
-            pkg.providers.add(component)
+            providerComponent.info = provider.info
+            vPackage.providers.add(providerComponent)
         }
 
-        for (instrumentation in parsed.instrumentation) {
-            val component = VPackage.InstrumentationComponent(instrumentation)
-            component.info = instrumentation.info
-            pkg.instrumentation.add(component)
+        for (instrumentation in packageCallWithException.instrumentation) {
+            val instrumentationComponent = VPackage.InstrumentationComponent(instrumentation)
+            instrumentationComponent.info = instrumentation.info
+            vPackage.instrumentation.add(instrumentationComponent)
         }
 
-        pkg.requestedPermissions = ArrayList(parsed.requestedPermissions)
+        vPackage.requestedPermissions = ArrayList(packageCallWithException.requestedPermissions.size)
+        vPackage.requestedPermissions?.addAll(packageCallWithException.requestedPermissions)
 
-        val protectedRef = PackageParserMirror.Package.protectedBroadcasts
-        if (protectedRef != null) {
-            val broadcasts = protectedRef.get(parsed)
-            if (broadcasts != null) {
-                val clean = broadcasts.filterNotNull()
-                // Original copies the list and then adds the same entries again (duplicates). Kept as is.
-                pkg.protectedBroadcasts = ArrayList(clean).also { it.addAll(clean) }
+        val protectedBroadcastsRef = PackageParserMirror.Package.protectedBroadcasts
+        if (protectedBroadcastsRef != null) {
+            val list = protectedBroadcastsRef.get(packageCallWithException)
+            if (list != null) {
+                val arrayList11 = ArrayList(list.filterNotNull())
+                vPackage.protectedBroadcasts = arrayList11
+                arrayList11.addAll(list)
             }
         }
 
-        pkg.applicationInfo = parsed.applicationInfo
+        vPackage.applicationInfo = packageCallWithException.applicationInfo
 
-        // ---- signing ----
-        var signatures: Array<Signature>? = parsed.mSignatures
+        var signatures: Array<Signature>? = null
         if (BuildCompat.sdk28OrLater()) {
             try {
-                signatures = parsed.mSigningDetails?.signatures ?: parsed.mSignatures
-            } catch (ignored: Throwable) {
+                val signingDetails = packageCallWithException.mSigningDetails
+                if (signingDetails != null && signingDetails.signatures != null) {
+                    signatures = signingDetails.signatures
+                }
+            } catch (unused: Throwable) {
             }
         }
-        pkg.signatures = signatures
+        else signatures = packageCallWithException.mSignatures
+        vPackage.signatures = signatures
+
+        if(signatures == null)
+        {
+            Log.e("a", "Signatures is null!!")
+        }
 
         var signingInfo: SigningInfo? = null
         if (BuildCompat.sdk28OrLater()) {
             try {
                 if (PackageParserMirror.Package.mSigningDetails != null && PackageParserMirror.SigningDetails.ctor != null) {
-                    signingInfo = (PackageParserMirror.SigningDetails.ctor?.newInstance(PackageParserMirror.Package.mSigningDetails?.get(parsed))) as SigningInfo
-                } else if (Build.VERSION.SDK_INT >= 28 || signatures == null || signatures.isEmpty()) {
-                    signingInfo = null
-                } else {
-                    // Dead on real API 28+ devices; kept from the original.
-                    try {
-                        val ctor = SigningInfo::class.java.getDeclaredConstructor(
-                            Int::class.javaPrimitiveType, Collection::class.java, Collection::class.java, Collection::class.java
-                        )
-                        ctor.isAccessible = true
-                        val none = emptyList<Any>()
-                        signingInfo = (ctor.newInstance(0, signatures.asList(), none, none)) as SigningInfo
-                    } catch (ignored: Throwable) {
-                        signingInfo = null
-                    }
+                    val sd = PackageParserMirror.Package.mSigningDetails!!.get(packageCallWithException)
+                    val newInstance = PackageParserMirror.SigningDetails.ctor!!.newInstance(sd)
+                    signingInfo = newInstance as SigningInfo
+                } else if (Build.VERSION.SDK_INT >= 28 && signatures != null && signatures.isNotEmpty()) {
+                    val clazz = SigningInfo::class.java
+                    val declaredConstructor2 = clazz.getDeclaredConstructor(
+                        Integer.TYPE,
+                        Collection::class.java,
+                        Collection::class.java,
+                        Collection::class.java
+                    )
+                    declaredConstructor2.isAccessible = true
+                    signingInfo = declaredConstructor2.newInstance(
+                            0,
+                            Arrays.asList(*signatures),
+                            Collections.EMPTY_LIST,
+                            Collections.EMPTY_LIST
+                        ) as SigningInfo
+
                 }
-            } catch (ignored: Throwable) {
+            } catch (unused3: Throwable) {
             }
         }
-        pkg.signatureInfo = signingInfo
+        vPackage.signatureInfo = signingInfo
 
-        pkg.bundle = parsed.mAppMetaData
-        pkg.packageName = parsed.packageName
-        pkg.preferredOrder = parsed.mPreferredOrder
-        pkg.versionName = parsed.mVersionName
-        pkg.sharedUserId = parsed.mSharedUserId
-        pkg.sharedUserLabel = parsed.mSharedUserLabel
-        pkg.usesLibraries = parsed.usesLibraries
-        pkg.versionCode = parsed.mVersionCode
-        pkg.configInfoArray = parsed.configPreferences
-        pkg.featureInfoArray = parsed.reqFeatures
+        vPackage.bundle = packageCallWithException.mAppMetaData
+        vPackage.packageName = packageCallWithException.packageName
+        vPackage.preferredOrder = packageCallWithException.mPreferredOrder
+        vPackage.versionName = packageCallWithException.mVersionName
+        vPackage.sharedUserId = packageCallWithException.mSharedUserId
+        vPackage.sharedUserLabel = packageCallWithException.mSharedUserLabel
+        vPackage.usesLibraries = packageCallWithException.usesLibraries
+        vPackage.versionCode = packageCallWithException.mVersionCode
+        vPackage.configInfoArray = packageCallWithException.configPreferences
+        vPackage.featureInfoArray = packageCallWithException.reqFeatures
 
-        linkPackage(pkg)
-        return pkg
+        linkPackage(vPackage)
+        return vPackage
     }
 
     // ------------------------------------------------------------------

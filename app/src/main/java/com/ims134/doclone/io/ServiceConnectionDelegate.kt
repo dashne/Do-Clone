@@ -2,7 +2,7 @@ package com.ims134.doclone.io
 
 import androidx.collection.ArrayMap
 import com.ims134.doclone.DoApplication.Companion.appContext
-import com.ims134.doclone.clone.IServiceConnection
+import android.app.IServiceConnection
 
 
 import android.content.ComponentName

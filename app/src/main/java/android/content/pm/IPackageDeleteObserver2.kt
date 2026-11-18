@@ -1,32 +1,20 @@
-package com.ims134.doclone.io
+package android.content.pm
 
+import android.content.Intent
 import android.os.Binder
-import android.os.Bundle
 import android.os.IBinder
 import android.os.IInterface
-import android.os.Messenger
 import android.os.Parcel
 import android.os.Parcelable
 import android.os.RemoteException
 
-interface IWifiScanner : IInterface {
+interface IPackageDeleteObserver2 : IInterface {
 
     @Throws(RemoteException::class)
-    fun getAvailableChannels(band: Int): Bundle?
+    fun onPackageDeleted(packageName: String?, returnCode: Int, msg: String?)
 
     @Throws(RemoteException::class)
-    fun getMessenger(): Messenger?
-
-    class Default : IWifiScanner {
-
-        override fun asBinder(): IBinder? = null
-
-        @Throws(RemoteException::class)
-        override fun getAvailableChannels(band: Int): Bundle? = null
-
-        @Throws(RemoteException::class)
-        override fun getMessenger(): Messenger? = null
-    }
+    fun onUserActionRequired(intent: Intent?)
 
     object _Parcel {
 
@@ -43,7 +31,7 @@ interface IWifiScanner : IInterface {
         }
     }
 
-    abstract class Stub : Binder(), IWifiScanner {
+    abstract class Stub : Binder(), IPackageDeleteObserver2 {
 
         init {
             attachInterface(this, DESCRIPTOR)
@@ -51,39 +39,39 @@ interface IWifiScanner : IInterface {
 
         override fun asBinder(): IBinder = this
 
-        class Proxy(private val mRemote: IBinder) : IWifiScanner {
+        class Proxy(private val mRemote: IBinder) : IPackageDeleteObserver2 {
 
             override fun asBinder(): IBinder = mRemote
 
             fun getInterfaceDescriptor(): String = DESCRIPTOR
 
             @Throws(RemoteException::class)
-            override fun getAvailableChannels(band: Int): Bundle? {
+            override fun onPackageDeleted(
+                packageName: String?,
+                returnCode: Int,
+                msg: String?,
+            ) {
                 val data = Parcel.obtain()
-                val reply = Parcel.obtain()
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
-                    data.writeInt(band)
-                    mRemote.transact(TRANSACTION_getAvailableChannels, data, reply, 0)
-                    reply.readException()
-                    return _Parcel.readTypedObject(reply, Bundle.CREATOR)
+                    data.writeString(packageName)
+                    data.writeInt(returnCode)
+                    data.writeString(msg)
+                    // One-way call: no reply parcel, FLAG_ONEWAY (1).
+                    mRemote.transact(TRANSACTION_onPackageDeleted, data, null, 1)
                 } finally {
-                    reply.recycle()
                     data.recycle()
                 }
             }
 
             @Throws(RemoteException::class)
-            override fun getMessenger(): Messenger? {
+            override fun onUserActionRequired(intent: Intent?) {
                 val data = Parcel.obtain()
-                val reply = Parcel.obtain()
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
-                    mRemote.transact(TRANSACTION_getMessenger, data, reply, 0)
-                    reply.readException()
-                    return _Parcel.readTypedObject(reply, Messenger.CREATOR)
+                    _Parcel.writeTypedObject(data, intent, 0)
+                    mRemote.transact(TRANSACTION_onUserActionRequired, data, null, 1)
                 } finally {
-                    reply.recycle()
                     data.recycle()
                 }
             }
@@ -100,16 +88,16 @@ interface IWifiScanner : IInterface {
                 return true
             }
             return when (code) {
-                TRANSACTION_getMessenger -> {
-                    val messenger = getMessenger()
-                    reply.writeNoException()
-                    _Parcel.writeTypedObject(reply, messenger, 1)
+                TRANSACTION_onUserActionRequired -> {
+                    onUserActionRequired(_Parcel.readTypedObject(data, Intent.CREATOR))
                     true
                 }
-                TRANSACTION_getAvailableChannels -> {
-                    val bundle = getAvailableChannels(data.readInt())
-                    reply.writeNoException()
-                    _Parcel.writeTypedObject(reply, bundle, 1)
+                TRANSACTION_onPackageDeleted -> {
+                    onPackageDeleted(
+                        data.readString(),
+                        data.readInt(),
+                        data.readString(),
+                    )
                     true
                 }
                 else -> super.onTransact(code, data, reply, flags)
@@ -117,21 +105,36 @@ interface IWifiScanner : IInterface {
         }
 
         companion object {
-            const val DESCRIPTOR = "android.net.wifi.IWifiScanner"
+            const val DESCRIPTOR = "android.content.pm.IPackageDeleteObserver2"
 
-            private const val TRANSACTION_getMessenger = 1
-            private const val TRANSACTION_getAvailableChannels = 2
+            private const val TRANSACTION_onUserActionRequired = 1
+            private const val TRANSACTION_onPackageDeleted = 2
 
             @JvmStatic
-            fun asInterface(iBinder: IBinder?): IWifiScanner? {
+            fun asInterface(iBinder: IBinder?): IPackageDeleteObserver2? {
                 if (iBinder == null) return null
                 val local = iBinder.queryLocalInterface(DESCRIPTOR)
-                return if (local == null || local !is IWifiScanner) {
+                return if (local == null || local !is IPackageDeleteObserver2) {
                     Proxy(iBinder)
                 } else {
                     local
                 }
             }
         }
+    }
+
+    class Default : IPackageDeleteObserver2 {
+
+        override fun asBinder(): IBinder? = null
+
+        @Throws(RemoteException::class)
+        override fun onUserActionRequired(intent: Intent?) {}
+
+        @Throws(RemoteException::class)
+        override fun onPackageDeleted(
+            packageName: String?,
+            returnCode: Int,
+            msg: String?,
+        ) {}
     }
 }

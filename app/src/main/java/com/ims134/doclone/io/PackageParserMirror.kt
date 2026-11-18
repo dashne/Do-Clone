@@ -13,7 +13,7 @@ import android.content.pm.Signature
 import android.content.pm.SigningInfo
 import android.os.Bundle
 import android.util.DisplayMetrics
-import com.ims134.doclone.clone.server.PackageParser
+import android.content.pm.PackageParser
 import com.ims134.doclone.reflect.MethodParams
 import com.ims134.doclone.reflect.MethodReflectParams
 import com.ims134.doclone.reflect.RefClass

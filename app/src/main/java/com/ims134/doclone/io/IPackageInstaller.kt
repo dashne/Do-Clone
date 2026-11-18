@@ -2,6 +2,8 @@ package com.ims134.doclone.io
 
 
 import android.content.IntentSender
+import android.content.pm.IPackageInstallerCallback
+import android.content.pm.IPackageInstallerSession
 
 import android.graphics.Bitmap
 import android.os.Binder

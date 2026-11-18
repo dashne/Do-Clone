@@ -1,5 +1,6 @@
 package com.ims134.doclone.clone
 
+import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -11,6 +12,7 @@ import android.os.Build
 import android.os.ConditionVariable
 import android.os.IBinder
 import android.os.IBinder.DeathRecipient
+import android.os.IInterface
 import android.os.Process
 import android.os.RemoteException
 import android.util.Log
@@ -134,6 +136,7 @@ import com.ims134.doclone.io.UpdateEngineStub
 import com.ims134.doclone.io.UsageStatsManagerStub
 import com.ims134.doclone.io.UserManagerStub
 import com.ims134.doclone.io.UwbManagerStubMirror
+import com.ims134.doclone.io.VASettings
 import com.ims134.doclone.io.VibratorManagerStub
 import com.ims134.doclone.io.VibratorStub
 import com.ims134.doclone.io.WifiManagerStub
@@ -177,6 +180,22 @@ class VirtualCore
         fun isRestrictedPackage(str: String?): Boolean {
             return str != null && (isGmsPackage(str) || SpecialComponentList.VENDOR_PACKAGES.contains(str))
         }
+
+        @JvmStatic
+        fun realActivityManager(): IInterface? {
+            // getDefault() only returns ActivityManager.getService(); call it directly.
+            try {
+                val m = ActivityManager::class.java.getDeclaredMethod("getService")
+                m.isAccessible = true
+                return m.invoke(null) as? IInterface
+            } catch (_: Throwable) {}
+            return try {
+                val f = ActivityManager::class.java.getDeclaredField("IActivityManagerSingleton")
+                f.isAccessible = true
+                val s = f.get(null)
+                s!!.javaClass.getMethod("get").invoke(s) as? IInterface
+            } catch (_: Throwable) { null }
+        }
     }
     var processType: ProcessType? = null
     @Volatile
@@ -212,8 +231,10 @@ class VirtualCore
     fun startup()
     {
         if(isStarted) return
+        NativeEngine.unseal()
         val packageManager = appContext.packageManager
         val flags =PackageManager.GET_PERMISSIONS or PackageManager.GET_PROVIDERS
+        VASettings.VIRTUAL_STUB = appContext.packageName + ".virtual_stub_"
         ServiceManagerNative.providerAuthority = appContext.packageName + ".virtual.service.BinderProvider"
         this.mainThread = ActivityThread.currentActivityThread?.call()
         this.unhookPackageManager = packageManager
@@ -225,8 +246,8 @@ class VirtualCore
         check(!InvocationStubManager.initialized) { "InvocationStubManager Has been initialized." }
         if (!isMainProcess()) {
             if (isServerProcess()) {
-                invocationStubManager.mInjectors[ActivityManagerStub::class.java] =
-                    ActivityManagerStub(ActivityManagerNative.getDefault!!.call(*arrayOfNulls<Any>(0)))
+                //invocationStubManager.mInjectors[ActivityManagerStub::class.java] =ActivityManagerStub(ActivityManagerNative.getDefault!!.call(*arrayOfNulls<Any>(0)))
+                invocationStubManager.mInjectors[ActivityManagerStub::class.java] =ActivityManagerStub(realActivityManager())
                 if (sdk29OrLater()) {
                     invocationStubManager.mInjectors[AmTaskMgrStub::class.java] = AmTaskMgrStub(AmTaskMgrMirror.getService.call(*arrayOfNulls<Any>(0)))
                 }
@@ -236,8 +257,8 @@ class VirtualCore
                 }
             } else if (isClientProcess()) {
                 invocationStubManager.mInjectors[LibCoreStub::class.java] = LibCoreStub()
-                invocationStubManager.mInjectors[ActivityManagerStub::class.java] =
-                    ActivityManagerStub(ActivityManagerNative.getDefault!!.call(*arrayOfNulls<Any>(0)))
+                //invocationStubManager.mInjectors[ActivityManagerStub::class.java] =ActivityManagerStub(ActivityManagerNative.getDefault!!.call(*arrayOfNulls<Any>(0)))
+                invocationStubManager.mInjectors[ActivityManagerStub::class.java] =ActivityManagerStub(realActivityManager())
                 if (sdk29OrLater()) {
                     invocationStubManager.mInjectors[AmTaskMgrStub::class.java] = AmTaskMgrStub(AmTaskMgrMirror.getService.call(*arrayOfNulls<Any>(0)))
                 }
@@ -274,7 +295,7 @@ class VirtualCore
                 invocationStubManager.mInjectors[ClipboardStub::class.java] = ClipboardStub()
                 invocationStubManager.mInjectors[MountServiceStub::class.java] = MountServiceStub()
                 invocationStubManager.mInjectors[BackupManagerStub::class.java] = BackupManagerStub()
-                invocationStubManager.mInjectors.put(TelephonyStub::class.java, TelephonyStub())
+                invocationStubManager.mInjectors[TelephonyStub::class.java] = TelephonyStub()
                 if (IHwTelephony.Stub.TYPE != null && HwTelephonyStub.fetchBinder() != null) {
                     invocationStubManager.mInjectors[HwTelephonyStub::class.java] = HwTelephonyStub()
                 }
@@ -735,12 +756,14 @@ class VirtualCore
 
     fun installPackage(pkgName: String?, path: String?, flags: Int): InstallResult {
         var result: InstallResult? = null
-        repeat(5) {
+        repeat(5)
+        {
             try {
                 val manager = getAppManager()
                 if (manager != null) {
                     result = manager.installPackage(pkgName, path, flags)
                 }
+                else {Log.e("InstallPackage", "getAppManager()returns null baby")}
             } catch (ignored: RemoteException) {
                 singleton = null
             }
@@ -750,7 +773,8 @@ class VirtualCore
             } catch (ignored: Exception) {
             }
         }
-        return InstallResult.makeFailure("Service not available")
+        //return InstallResult.makeFailure("Service not available")
+        return result?:  InstallResult.makeFailure("Service not available")
     }
 
     fun installPackageAsUser(uid: Int, pkg: String?): Boolean {

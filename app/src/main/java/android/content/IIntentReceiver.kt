@@ -1,7 +1,6 @@
-package com.ims134.doclone.io
+package android.content
 
 
-import android.content.Intent
 import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
@@ -73,7 +72,7 @@ interface IIntentReceiver : IInterface {
                     parcel.writeInt(if (ordered) 1 else 0)
                     parcel.writeInt(if (sticky) 1 else 0)
                     parcel.writeInt(sendingUser)
-                    remote.transact(TRANSACTION_performReceive, parcel, null, IBinder.FLAG_ONEWAY)
+                    remote.transact(TRANSACTION_performReceive, parcel, null, FLAG_ONEWAY)
                 } finally {
                     parcel.recycle()
                 }

@@ -7,7 +7,7 @@ import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.IBinder
 import android.os.RemoteException
-import com.ims134.doclone.clone.IServiceConnection
+import android.app.IServiceConnection
 
 /** A running (or bound) virtual service (was com.polestar.clone.server.am.i, "ServiceRecord.java"). */
 class ServiceRecord : Binder() {

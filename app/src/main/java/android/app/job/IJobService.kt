@@ -1,6 +1,5 @@
-package com.ims134.doclone.io
+package android.app.job
 
-import android.app.job.JobParameters
 import android.os.Binder
 import android.os.IBinder
 import android.os.IInterface
@@ -52,7 +51,7 @@ interface IJobService : IInterface {
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
                     writeTypedObject(data, jobParameters, 0)
-                    mRemote.transact(TRANSACTION_startJob, data, null, IBinder.FLAG_ONEWAY)
+                    mRemote.transact(TRANSACTION_startJob, data, null, FLAG_ONEWAY)
                 } finally {
                     data.recycle()
                 }
@@ -64,7 +63,7 @@ interface IJobService : IInterface {
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
                     writeTypedObject(data, jobParameters, 0)
-                    mRemote.transact(TRANSACTION_stopJob, data, null, IBinder.FLAG_ONEWAY)
+                    mRemote.transact(TRANSACTION_stopJob, data, null, FLAG_ONEWAY)
                 } finally {
                     data.recycle()
                 }

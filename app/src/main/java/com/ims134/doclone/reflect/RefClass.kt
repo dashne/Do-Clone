@@ -1,5 +1,6 @@
 package com.ims134.doclone.reflect
 
+import android.util.Log
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
@@ -88,17 +89,88 @@ class RefClass {
 
         fun load(cls: Class<*>, cls2: Class<*>?): Class<*>? {
             var constructor: Constructor<*>? = null
+            Log.e("MirrorCheck", "Loading mirror=${cls.name}, target=${cls2?.name}")
+
             for (field in cls.declaredFields) {
-                try {
-                    if (Modifier.isStatic(field.modifiers) && (byConstructor[field.type]
-                            .also { constructor = it }) != null
-                    ) {
-                        field.set(null, constructor!!.newInstance(cls2, field))
+                Log.e(
+                    "MirrorCheck",
+                    "Processing ${field.name}: " +
+                            "static=${Modifier.isStatic(field.modifiers)}, " +
+                            "type=${field.type.name}, " +
+                            "registered=${byConstructor.containsKey(field.type)}"
+                )
+                try
+                {
+                    if (Modifier.isStatic(field.modifiers)) {
+                        val constructor = byConstructor[field.type]
+
+                        if (constructor != null) {
+                            Log.e("MirrorCheck", "Constructing wrapper for ${field.name}")
+
+                            val wrapper = constructor.newInstance(cls2, field)
+                            field.set(null, wrapper)
+
+                            Log.e(
+                                "MirrorCheck",
+                                "SUCCESS ${field.name}: value=${field.get(null)}"
+                            )
+                        }
                     }
-                } catch (unused: Exception) {
+//                    if (Modifier.isStatic(field.modifiers) && (byConstructor[field.type].also { constructor = it }) != null )
+//                    {
+//                        field.set(null, constructor!!.newInstance(cls2, field))
+//                    }
+                }
+                catch (unused: Exception)
+                {
                 }
             }
             return cls2
         }
+
+        @JvmStatic
+        fun logMirrorFields(mirrorClass: Class<*>, targetClassName: String) {
+            val tag = "MirrorCheck"
+
+            Log.e(tag, "========== ${mirrorClass.name} ==========")
+
+            val targetClass = try {
+                Class.forName(targetClassName)
+            } catch (e: Throwable) {
+                Log.e(tag, "Target class NOT FOUND: $targetClassName", e)
+                null
+            }
+
+            for (field in mirrorClass.declaredFields) {
+                val modifiers = field.modifiers
+
+                Log.e(
+                    tag,
+                    "Mirror field=${field.name}, " +
+                            "type=${field.type.name}, " +
+                            "static=${Modifier.isStatic(modifiers)}, " +
+                            "final=${Modifier.isFinal(modifiers)}, " +
+                            "synthetic=${field.isSynthetic}"
+                )
+
+                if (targetClass != null &&
+                    byConstructor.containsKey(field.type)
+                ) {
+                    try {
+                        val targetField = targetClass.getDeclaredField(field.name)
+
+                        Log.e(
+                            tag,
+                            "  Target field=${targetField.name}, " +
+                                    "type=${targetField.type.name}, " +
+                                    "static=${Modifier.isStatic(targetField.modifiers)}"
+                        )
+                    } catch (e: Throwable) {
+                        Log.e(tag, "  Target field NOT FOUND: ${field.name}", e)
+                    }
+                }
+            }
+        }
     }
+
 }

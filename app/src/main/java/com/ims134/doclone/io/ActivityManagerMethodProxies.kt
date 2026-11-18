@@ -27,7 +27,8 @@ import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.BuildCompat
 import com.ims134.doclone.clone.ChooserActivity
 import com.ims134.doclone.clone.GmsSupport
-import com.ims134.doclone.clone.IServiceConnection
+import android.app.IServiceConnection
+import android.content.IIntentReceiver
 import com.ims134.doclone.clone.MethodProxy
 import com.ims134.doclone.clone.VActivityManager
 import com.ims134.doclone.clone.VUserHandle

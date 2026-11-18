@@ -179,6 +179,6 @@ open class ActivityManagerStub(iInterface: IInterface?) :
         ServiceManager.sCache!!.get()!!.put("activity", binderStub)
     }
 
-    override fun isEnvBad(): Boolean =
-        ActivityManagerNative.getDefault!!.call() !== invocationStub.proxyInterface
+    //override fun isEnvBad(): Boolean = ActivityManagerNative.getDefault!!.call() !== invocationStub.proxyInterface
+    override fun isEnvBad(): Boolean =VirtualCore.realActivityManager() !== invocationStub.proxyInterface
 }
