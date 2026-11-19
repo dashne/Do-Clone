@@ -31,7 +31,6 @@ import com.ims134.doclone.io.AccountManagerStub
 import com.ims134.doclone.io.ActivityClient.getActivityClientController
 import com.ims134.doclone.io.ActivityClient.isAvailable
 import com.ims134.doclone.io.ActivityClientControllerStub
-import com.ims134.doclone.io.ActivityManagerNative
 import com.ims134.doclone.io.ActivityManagerStub
 import com.ims134.doclone.io.ActivityThread
 import com.ims134.doclone.io.AdvancedProtectionManagerStub
@@ -91,7 +90,6 @@ import com.ims134.doclone.io.JobServiceStub
 import com.ims134.doclone.io.LibCoreStub
 import com.ims134.doclone.io.LocaleManagerStub
 import com.ims134.doclone.io.LocationManagerStub
-import com.ims134.doclone.io.LockSettingsStub
 import com.ims134.doclone.io.MediaRouterServiceStub
 import com.ims134.doclone.io.MmsStub
 import com.ims134.doclone.io.MountServiceStub

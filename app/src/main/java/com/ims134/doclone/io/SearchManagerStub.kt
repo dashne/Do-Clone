@@ -31,7 +31,7 @@ class SearchManagerStub : BinderInvocationProxy(
             if (componentName == null ||
                 VirtualCore.getPackageManager().getActivityInfo(componentName, 0) == null
             ) {
-                return method.invoke(who, args)
+                return method.invoke(who, *(args ?: emptyArray()))
             }
             return null
         }

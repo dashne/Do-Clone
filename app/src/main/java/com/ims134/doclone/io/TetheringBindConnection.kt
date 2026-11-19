@@ -1,12 +1,12 @@
 package com.ims134.doclone.io
 
 
+import android.app.IServiceConnection
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.os.RemoteException
-import android.app.IServiceConnection
 
 /** Wraps the app's service connection for the tethering service, so it gets the real connector binder. */
 class TetheringBindConnection(@JvmField val base: IServiceConnection) : IServiceConnection.Stub() {

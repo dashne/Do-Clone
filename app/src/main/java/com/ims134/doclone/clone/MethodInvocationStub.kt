@@ -1,14 +1,11 @@
-package com.ims134.doclone.io
+package com.ims134.doclone.clone
 
 
 import android.os.IBinder
 import android.os.RemoteException
 import android.text.TextUtils
 import android.util.Log
-import com.ims134.doclone.clone.MethodProxy
-import com.ims134.doclone.reflect.MethodParams
-import com.ims134.doclone.reflect.RefClass
-import com.ims134.doclone.reflect.RefStaticMethod
+import com.ims134.doclone.io.MethodParameterUtils
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method

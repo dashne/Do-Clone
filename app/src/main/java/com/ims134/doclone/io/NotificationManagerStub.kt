@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.IInterface
 import com.ims134.doclone.clone.BuildCompat
 import com.ims134.doclone.clone.MethodInvocationProxy
+import com.ims134.doclone.clone.MethodInvocationStub
 import com.ims134.doclone.clone.MethodProxy
 import com.ims134.doclone.clone.VirtualCore
 import java.lang.reflect.Method
@@ -13,7 +14,7 @@ import java.lang.reflect.Method
 /* JADX INFO: loaded from: classes2.dex */
 @Inject(NotificationManagerMethodProxies::class)
 class NotificationManagerStub : MethodInvocationProxy<MethodInvocationStub<IInterface>>(
-    MethodInvocationStub(NotificationManagerMirror.getService?.call(emptyArray<Any?>())),
+    MethodInvocationStub(NotificationManagerMirror.getService?.call(*emptyArray<Any?>())),
 ) {
 
     /**
@@ -178,7 +179,7 @@ class NotificationManagerStub : MethodInvocationProxy<MethodInvocationStub<IInte
     }
 
     override fun isEnvBad(): Boolean {
-        return NotificationManagerMirror.getService?.call(emptyArray<Any?>()) !=
+        return NotificationManagerMirror.getService?.call(*emptyArray<Any?>()) !=
                 invocationStub.proxyInterface
     }
 

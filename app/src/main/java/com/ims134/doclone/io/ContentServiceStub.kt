@@ -163,7 +163,7 @@ class ContentServiceStub : BinderInvocationProxy(
                     VContentManager.b.getService().unregisterContentObserver(observer)
                 } catch (_: Exception) {
                 }
-                return method.invoke(who, args)
+                return method.invoke(who, *(args ?: emptyArray()))
             } catch (_: Exception) {
                 return null
             }

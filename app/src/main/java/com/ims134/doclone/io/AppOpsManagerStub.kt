@@ -5,12 +5,9 @@ import android.app.AppOpsManager
 import android.os.IInterface
 import com.ims134.doclone.DoApplication.Companion.appContext
 import com.ims134.doclone.clone.BuildCompat
+import com.ims134.doclone.clone.LogInvocation
 import com.ims134.doclone.clone.MethodProxy
-import com.ims134.doclone.clone.VirtualCore
-import com.ims134.doclone.reflect.RefClass
-import com.ims134.doclone.reflect.RefObject
 import com.ims134.doclone.reflect.RefStaticMethod
-import com.ims134.doclone.reflect.RefStaticObject
 import java.lang.reflect.Method
 
 

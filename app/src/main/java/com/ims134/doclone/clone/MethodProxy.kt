@@ -1,7 +1,6 @@
 package com.ims134.doclone.clone
 
 import com.ims134.doclone.DoApplication.Companion.appContext
-import com.ims134.doclone.io.LogInvocation
 import com.ims134.doclone.io.SpecialComponentList
 import com.ims134.doclone.io.VClientImpl
 import android.content.Context

@@ -1,6 +1,7 @@
 package com.ims134.doclone.io
 
 import com.ims134.doclone.clone.MethodInvocationProxy
+import com.ims134.doclone.clone.MethodInvocationStub
 
 // jadx: io.q94. Hooks libcore's Libcore.os (the Java-level libc wrapper: chown, setuid, getpwuid ...).
 //

@@ -2,8 +2,8 @@ package com.ims134.doclone.io
 
 
 import android.accounts.Account
-import android.annotation.TargetApi
 import android.accounts.IAccountManagerResponse
+import android.annotation.TargetApi
 import android.os.Build
 import android.os.Bundle
 import android.os.IInterface

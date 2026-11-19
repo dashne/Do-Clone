@@ -294,13 +294,19 @@ class HCallbackStub : Handler.Callback, IInjector
                 return false
             }
             if (!VClientImpl.get().isBound()) {
-                VClientImpl.get().bindApplication(activityInfo?.packageName, activityInfo?.processName)
+                 VClientImpl.get().bindApplication(activityInfo?.packageName, activityInfo?.processName)
                 getMainHandler().sendMessageAtFrontOfQueue(Message.obtain(message))
                 return false
             }
 
-            val taskId = IActivityManagerMirror.getTaskForActivity!!
-                .call(ActivityManagerNative.getDefault!!.call(), token, false)!!
+//            val taskId = IActivityManagerMirror.getTaskForActivity!!
+//                .call(ActivityManagerNative.getDefault!!.call(), token, false)!!
+
+            val m = IActivityManagerMirror.getTaskForActivity
+            val am = ActivityManagerNative.getDefault?.call()
+            Log.e(TAG, "taskId: mirror=$m am=$am token=$token")
+            val taskId = m!!.call(am, token, false)!!
+
             if (activityInfo?.screenOrientation != -1) {
                 try {
                     IActivityManagerMirror.setRequestedOrientation!!

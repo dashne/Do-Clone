@@ -145,7 +145,7 @@ object ContextFixer {
 
             // --- Attribution source rewrite (SDK 31+) ---
             if (!BuildCompat.sdk31OrLater()) return
-            val source = ContextImpl.getAttributionSource?.call(ctx, emptyArray<Any?>()) ?: return
+            val source = ContextImpl.getAttributionSource?.call(ctx, *emptyArray<Any?>()) ?: return
             try {
                 val sourceType = AttributionSourceMirror.TYPE
                 if (sourceType != null && sourceType.isInstance(source)) {

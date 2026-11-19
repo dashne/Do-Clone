@@ -379,7 +379,12 @@ class BroadcastSystem(
                     return
                 }
             }
-            pendingResult.finish()
+            //pendingResult.finish()
+            try {
+                pendingResult.finish()
+            } catch (e: IllegalStateException) {
+                Log.e("BroadcastSystem","pendingResult.finish() failed ${e.message}")
+            }
         }
     }
 }

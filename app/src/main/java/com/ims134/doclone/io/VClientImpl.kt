@@ -571,7 +571,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
     override fun getAppThread(): IBinder? {
         return ActivityThread.getApplicationThread?.call(
             VirtualCore.gCore.mainThread,
-            emptyArray<Any?>(),
+            *emptyArray<Any?>(),
         )
     }
 
@@ -677,6 +677,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
         }
 
         val appInfo = loadedApk.appInfo!!
+        Log.e("SPLITCHK", "pkg=${appInfo.packageName} src=${appInfo.sourceDir} splits=${appInfo.splitSourceDirs?.toList()}")
         this.boundAppData = loadedApk
 
         if (VirtualRuntime.currentProcessName == null) {
@@ -1098,9 +1099,8 @@ class VClientImpl private constructor(): IVClient.Stub() {
                     for (provider in providerList) {
                         if (provider.enabled) {
                             try {
-                                ActivityThread.installProvider?.call(
-                                    mainThread, app, provider, null,
-                                )
+                                //ActivityThread.installProvider?.call(mainThread, app, provider, null,)
+                                ActivityThread.installProvider(mainThread, app!!, provider, null)
                             } catch (th: Throwable) {
                                 Log.d("JJJJ", th.toString())
                                 if (provider != null &&

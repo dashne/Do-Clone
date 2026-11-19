@@ -180,7 +180,7 @@ open class ContentProviderHook(
         var onSecurityFailure: Int? = null
         try {
             val name = method.name
-            val argv = args!!
+            val argv = args ?: emptyArray<Any?>()
             if ("call" == name) {
                 // the (method, arg, extras) arguments start at 1 on Android 10 and below, after the extra leading
                 // arguments on newer versions

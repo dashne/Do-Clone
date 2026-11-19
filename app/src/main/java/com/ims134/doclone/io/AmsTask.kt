@@ -3,9 +3,9 @@ package com.ims134.doclone.io
 
 import android.accounts.AccountManagerFuture
 import android.accounts.AuthenticatorException
+import android.accounts.IAccountManagerResponse
 import android.accounts.OperationCanceledException
 import android.content.Intent
-import android.accounts.IAccountManagerResponse
 import android.os.Bundle
 import android.os.RemoteException
 import android.util.Log
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException
 
 /**
  * Was `rd`. Abstract base for account-manager operations that return their result
- * via an [IAccountManagerResponse] callback. Modeled on AOSP's
+ * via an [android.accounts.IAccountManagerResponse] callback. Modeled on AOSP's
  * `android.accounts.AccountManagerFuture` task implementation.
  */
 abstract class AmsTask(

@@ -2,6 +2,8 @@ package com.ims134.doclone.clone.server
 
 
 import android.app.ActivityManager
+import android.app.IServiceConnection
+import android.app.IStopUserCallback
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -41,8 +43,6 @@ import com.ims134.doclone.clone.BuildCompat
 import com.ims134.doclone.clone.CloneSupportAgent
 import com.ims134.doclone.clone.GmsSupport
 import com.ims134.doclone.clone.IActivityManager
-import android.app.IServiceConnection
-import android.app.IStopUserCallback
 import com.ims134.doclone.clone.PendingIntentData
 import com.ims134.doclone.clone.PendingResultData
 import com.ims134.doclone.clone.ProcessMap
@@ -373,27 +373,36 @@ open class VActivityManagerService(): IActivityManager.Stub()
                 return@attach
             }
 
+
+            val appThread: IBinder? = try { client.getAppThread() } catch (e: RemoteException) { Log.e(TAG, "getAppThread failed", e); null }
+            Log.d(TAG, "attach: appThread=$appThread asInterfaceRef=${IApplicationThreadOreo.Stub.asInterface}")
+
             val iInterfaceCall: IInterface? = try {
-                val appThread = client.getAppThread()
                 (if (BuildCompat.isAtLeastOreo()) {
                     IApplicationThreadOreo.Stub.asInterface?.call(appThread)
                 } else {
                     ApplicationThreadNative.asInterface?.call(appThread)
                 }) as IInterface?
             } catch (e: RemoteException) {
+                Log.e(TAG, "asInterface(appThread) failed", e)
                 null
             }
             if (iInterfaceCall == null) {
+                Log.e(TAG, "attach: iInterfaceCall null -> kill")
                 Process.killProcess(pid)
                 return@attach
             }
 
             val token: ProcessRecord? = try {
-                client.getToken() as? ProcessRecord
+                val t = client.getToken()
+                Log.d(TAG, "attach: token=$t (${t?.javaClass})")
+                t as? ProcessRecord
             } catch (e: RemoteException) {
+                Log.e(TAG, "client.getToken() failed", e)
                 null
             }
             if (token == null) {
+                Log.e(TAG, "attach: token null -> kill")
                 Process.killProcess(pid)
                 return@attach
             }
@@ -2367,13 +2376,14 @@ open class VActivityManagerService(): IActivityManager.Stub()
 
         // All activities already marked (or empty) => behave as "no reusable task".
         val reuseTask = targetTask?.takeIf { task -> task.activities.any { !it.marked } }
-        if (reuseTask == null) {
+        if (reuseTask == null)
+        {
             val stubIntent =
                 activityStack.createStubIntent(userId, null, realIntent, activityInfo) ?: return -1
             stubIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             stubIntent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
             stubIntent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-            stubIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+            //stubIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             return try {
                 appContext.startActivity(stubIntent, options)
                 0

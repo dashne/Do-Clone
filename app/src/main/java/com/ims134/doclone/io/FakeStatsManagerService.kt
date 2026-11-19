@@ -2,10 +2,11 @@ package com.ims134.doclone.io
 
 import android.app.PendingIntent
 import android.os.IBinder
+import android.os.IStatsManagerService
 import android.os.RemoteException
 
 /**
- * Was `v82`. Inert implementation of [IStatsManagerService] — returns empty
+ * Was `v82`. Inert implementation of [android.os.IStatsManagerService] — returns empty
  * arrays / no-ops for every method. Used as the base `IInterface` for
  * [StatsManagerStub]. Renamed to `FakeStatsManagerService` following the
  * `FakeUpdateEngine` / `FakeSystemUpdateManager` / `FakeAppIntegrityManager`

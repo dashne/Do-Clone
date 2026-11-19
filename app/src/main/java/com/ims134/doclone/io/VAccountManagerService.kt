@@ -4,13 +4,13 @@ package com.ims134.doclone.io
 import android.accounts.Account
 import android.accounts.AccountManager
 import android.accounts.AuthenticatorDescription
+import android.accounts.IAccountAuthenticator
+import android.accounts.IAccountAuthenticatorResponse
+import android.accounts.IAccountManagerResponse
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.accounts.IAccountAuthenticator
-import android.accounts.IAccountAuthenticatorResponse
-import android.accounts.IAccountManagerResponse
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.content.res.Resources

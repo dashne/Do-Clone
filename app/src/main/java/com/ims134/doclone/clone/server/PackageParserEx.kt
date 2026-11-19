@@ -865,14 +865,14 @@ object PackageParserEx {
         var signatures: Array<Signature>? = null
         if (BuildCompat.sdk28OrLater()) {
             try {
-                val signingDetails = packageCallWithException.mSigningDetails
-                if (signingDetails != null && signingDetails.signatures != null) {
-                    signatures = signingDetails.signatures
-                }
+                signatures = packageCallWithException.mSigningDetails?.signatures
+                    ?: packageCallWithException.mSignatures
             } catch (unused: Throwable) {
             }
+        } else
+        {
+            signatures = packageCallWithException.mSignatures
         }
-        else signatures = packageCallWithException.mSignatures
         vPackage.signatures = signatures
 
         if(signatures == null)

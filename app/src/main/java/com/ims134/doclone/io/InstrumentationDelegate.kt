@@ -208,12 +208,12 @@ open class InstrumentationDelegate : Instrumentation() {
 
     override fun getComponentName(): ComponentName? = instrument.componentName
 
-    override fun getContext(): Context = instrument.context
+    override fun getContext(): Context? = instrument.context
 
     override fun getTargetContext(): Context? = instrument.targetContext
 
     @TargetApi(18)
-    override fun getUiAutomation(): UiAutomation = instrument.uiAutomation
+    override fun getUiAutomation(): UiAutomation? = instrument.uiAutomation
 
     // ---- Menu / context-menu actions ----
 

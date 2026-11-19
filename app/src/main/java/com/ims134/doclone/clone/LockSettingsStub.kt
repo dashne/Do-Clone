@@ -1,13 +1,18 @@
-package com.ims134.doclone.io
+package com.ims134.doclone.clone
 
 import android.app.PendingIntent
 import android.os.IBinder
 import android.os.IInterface
 import android.os.RemoteException
 import android.util.Log
+import com.ims134.doclone.io.BinderInvocationProxy
+import com.ims134.doclone.io.BinderInvocationStub
+import com.ims134.doclone.io.ILockSettings
+import com.ims134.doclone.io.ResultStaticMethodProxy
+import com.ims134.doclone.io.ServiceManager
+import com.ims134.doclone.io.StaticMethodProxy
 import java.lang.reflect.Method
 import java.util.Collections
-import java.util.Map
 
 /* JADX INFO: loaded from: classes2.dex */
 class LockSettingsStub : BinderInvocationProxy(

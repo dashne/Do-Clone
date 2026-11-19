@@ -412,35 +412,20 @@ class RefConstructor<T> @Throws(NoSuchMethodException::class) constructor(cls: C
         }
 }
 
-class RefStaticInt
-{
-    var field: Field? = null
+class RefStaticInt @Throws(NoSuchFieldException::class) constructor(cls: Class<*>, mirrorField: Field) {
 
+    val field: Field = cls.getDeclaredField(mirrorField.name).also { it.isAccessible = true }
 
-    @Throws(NoSuchFieldException::class)
-    fun ini(cls: Class<*>, f: Field)
-    {
-        this.field = cls.getDeclaredField(f.name)
-        field?.isAccessible = true
+    fun get(): Int = try {
+        field.getInt(null)
+    } catch (unused: Exception) {
+        0
     }
 
-
-    fun get(): Int
-    {
-        return try {
-            this.field?.getInt(null)?:0
-        } catch (unused: Exception) {
-            0
-        }
-    }
-
-
-    fun set(i: Int)
-    {
+    fun set(i: Int) {
         try {
-            this.field?.setInt(null, i)
+            field.setInt(null, i)
         } catch (unused: Exception) {
         }
     }
-
 }
