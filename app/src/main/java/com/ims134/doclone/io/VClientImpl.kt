@@ -69,7 +69,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
     @Volatile
     private var bindCondition: ConditionVariable? = null
 
-    val instrumentation: AppInstrumentation? = AppInstrumentation.instance
+    val instrumentation: AppInstrumentation? get() = AppInstrumentation.instance
     //TODO:: it should be linked to main app application contex, implement it later
     val crashHandler: CrashHandler? = null
 
@@ -581,7 +581,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
         return "process : " + VirtualRuntime.currentProcessName + "\ninitialPkg : " + VirtualRuntime.initialPkg + "\nvuid : " + this.vuid
    }
 
-
+    private fun step(n: String) = android.util.Log.e("BINDSTEP", n)
     @Suppress("UNCHECKED_CAST", "UNUSED_EXPRESSION")
     @Throws(Throwable::class)
     @SuppressLint("SoonBlockedPrivateApi")
@@ -625,7 +625,611 @@ class VClientImpl private constructor(): IVClient.Stub() {
         bindCondition?.block()
     }
 
+
+
     @SuppressLint("SoonBlockedPrivateApi")
+    fun bindApplicationLocked(packageName: String?, processName: String?) {
+        val instrumentationBefore = this.instrumentation
+        val deviceInfo = getDeviceInfo()
+
+        // ===== Watchdog: arm 75 s timeout before any heavy work =====
+        Log.d("WatchDog", "watch 0")
+        watchdog.handler.sendMessageDelayed(watchdog.handler.obtainMessage(0), 75_000L)
+
+        try {
+            installRootThreadGroupHandler()
+        } catch (_: Throwable) {
+        }
+        try {
+            wrapInstalledProviders()
+        } catch (_: Throwable) {
+        }
+
+        BuildMirror.SERIAL?.set(deviceInfo?.serial)
+        BuildMirror.DEVICE?.set(Build.DEVICE.replace(" ", "_"))
+        ActivityThread.mInitialApplication?.set(VirtualCore.gCore.mainThread, null)
+
+        val loadedApk = LoadedApk()
+        val installedAppInfo = VirtualCore.gCore.getInstalledAppInfo(packageName)
+        if (installedAppInfo == null) {
+            Process.killProcess(0)
+            exitProcess(0)
+        }
+
+        // From here on, packageName was resolvable — treat as non-null.
+        val pkg = packageName!!
+        val effectiveProcessName = processName ?: pkg
+
+        // ===== Load appInfo + providers through the virtual PM =====
+        val userId = this.vuid / 100000
+        val vpms = VPackageManager.instance!!
+        try {
+            loadedApk.appInfo = vpms.getPackageManager()?.getApplicationInfo(pkg, 0, userId)
+        } catch (e: RemoteException) {
+            VirtualRuntime.crash(e); throw e
+        }
+        loadedApk.processName = effectiveProcessName
+
+        val vuid = getVUid()
+        try {
+            loadedApk.providerInfoList = vpms.getPackageManager()!!
+                .queryContentProviders(effectiveProcessName, vuid, 128)?.list
+        } catch (e: RemoteException) {
+            VirtualRuntime.crash(e); throw e
+        }
+
+        val appInfo = loadedApk.appInfo!!
+        this.boundAppData = loadedApk
+
+        if (VirtualRuntime.currentProcessName == null) {
+            VirtualRuntime.initialPkg = appInfo.packageName
+            VirtualRuntime.currentProcessName = effectiveProcessName
+            ProcessMirror.setArgV0?.call(effectiveProcessName)
+            DdmHandleAppNameJBMR1Mirror.setAppName?.call(effectiveProcessName, 0)
+        }
+
+        // ===== Target SDK + VM policy + early-patch flags =====
+        val targetSdk = appInfo.targetSdkVersion
+        StrictModeCompat.disableDeathOnFileUriExposure()
+        val alarmService = appContext.getSystemService("alarm")
+        AlarmManagerMirror.mTargetSdkVersion?.let {
+            try {
+                it.set(alarmService, targetSdk)
+            } catch (_: Exception) {
+            }
+        }
+        StrictModeMirror.sVmPolicyMask?.set(0)
+        if (targetSdk < 21) MessageMirror.updateCheckRecycle?.call(targetSdk)
+
+        // ===== Native hook + IO redirect — entire block is in the `else` =====
+        if (packageName in SpecialComponentList.SKIP_IO_REDIRECT) {
+            // skipIORedirect.contains(packageName): nothing to do (same as original :cond_472 jump)
+        } else {
+            // original: vUid = VUserHandle.getVUid() (user id), NOT the client's full vuid
+            @Suppress("NAME_SHADOWING")
+            val vuid = VUserHandle.getVUid()
+            val useUserDe = installedAppInfo.flags >= 4 ||
+                    File(File(VEnvironment.userDeDir, vuid.toString()), pkg).exists()
+
+            // computeNativeFlags — dead `= 0` branch preserved (always overwritten)
+            var nativeFlags = 0
+            if (Build.VERSION.SDK_INT == 29 &&
+                (appInfo.category == 0 || (appInfo.flags and 33554432) == 33554432)
+            ) {
+                var hasPerf = try {
+                    Class.forName("android.util.BoostFramework"); true
+                } catch (_: Exception) {
+                    false
+                }
+                if (!hasPerf) {
+                    hasPerf = try {
+                        Class.forName("com.qualcomm.qti.Performance"); true
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
+                if (!hasPerf) {
+                    val hw = Build.HARDWARE
+                    if (!hw.contains("qcom") && !hw.contains("qualcom")) nativeFlags = 0
+                }
+                nativeFlags = 1
+            }
+            if ("org.telegram.messenger" == appInfo.packageName) nativeFlags = nativeFlags or 2
+            NativeEngine.hook(nativeFlags)
+
+            // ----- Wi-Fi MAC redirect (one file per user) -----
+            val macFile = File((VEnvironment.createUserSubFile(vuid)), "wifiMacAddress")
+            if (!macFile.exists()) {
+                try {
+                    val raf = RandomAccessFile(macFile, "rws")
+                    raf.write((deviceInfo?.macAddress + "\n").toByteArray())
+                    raf.close()
+                } catch (_: IOException) {
+                }
+            }
+            val macPath = macFile.path
+            NativeEngine.redirectDirectory("/sys/class/net/wlan0/address", macPath)
+            NativeEngine.redirectDirectory("/sys/class/net/eth0/address", macPath)
+            NativeEngine.redirectDirectory("/sys/class/net/wifi/address", macPath)
+
+            // ----- /tmp → per-user cache, /data/data + /data/user/0 → dataDir -----
+            NativeEngine.redirectDirectory(
+                "/tmp/",
+                File(VEnvironment.getOrCreateUserSubFile(vuid, appInfo?.packageName!!), "cache")
+                    .absolutePath,
+            )
+            NativeEngine.redirectDirectory("/data/data/${appInfo?.packageName}", appInfo?.dataDir!!)
+            NativeEngine.redirectDirectory(
+                "/data/user/0/${appInfo?.packageName}",
+                appInfo?.dataDir!!
+            )
+
+            // ----- /data/user_de/0 → per-user DE dir (or dataDir fallback) -----
+            val sdkInt = Build.VERSION.SDK_INT
+            if (useUserDe) {
+                val targetDeDir = File(
+                    File(VEnvironment.userDeDir, vuid.toString()),
+                    appInfo.packageName,
+                )
+                VEnvironment.getOrCreatePath(targetDeDir)
+                NativeEngine.redirectDirectory(
+                    "/data/user_de/0/${appInfo.packageName}", targetDeDir.path,
+                )
+            } else {
+                NativeEngine.redirectDirectory(
+                    "/data/user_de/0/${appInfo.packageName}", appInfo.dataDir,
+                )
+            }
+
+            // ----- GMS checkin redirect -----
+            if ("com.google.android.gms" == appInfo.packageName) {
+                val checkinDir = File(appInfo.dataDir, "files/.platform_checkin")
+                if (checkinDir.exists() || checkinDir.mkdirs()) {
+                    NativeEngine.redirectDirectory(
+                        "/data/misc_ce/0/checkin", checkinDir.absolutePath,
+                    )
+                    if (vuid != 0) {
+                        NativeEngine.redirectDirectory(
+                            "/data/misc_ce/$vuid/checkin",
+                            checkinDir.absolutePath
+                        )
+                    }
+                }
+            }
+
+            // ----- lib/ whitelist + app dir read-only -----
+            NativeEngine.whiteList("/data/data/${appInfo.packageName}/lib/")
+            NativeEngine.whiteList("/data/user/0/${appInfo.packageName}/lib/")
+            NativeEngine.whiteList("/data/app/${appInfo.packageName}/lib/")
+            NativeEngine.readOnly(VEnvironment.getOrCreateAppDir().path)
+
+            // ----- SDK 30+: external files / media / obb redirects -----
+            if (sdkInt >= 30) {
+                val ctx = appContext
+                val selfPkg = ctx.packageName
+                if (selfPkg != null && appInfo.packageName != selfPkg) {
+                    ctx.getExternalFilesDirs(null)?.forEachIndexed { idx, dir ->
+                        val parent = dir?.parentFile
+                        val root = parent?.parentFile
+                        if (root != null) {
+                            redirectExternalDir(
+                                File(root, appInfo.packageName),
+                                virtualDirFor(dir, appInfo.packageName, vuid),
+                                "data", appInfo.packageName, idx == 0,
+                            )
+                        }
+                    }
+                    val externalFiles = ctx.getExternalFilesDirs(null)
+                    ctx.getExternalMediaDirs()?.forEachIndexed { idx, dir ->
+                        val parent = dir?.parentFile
+                        if (parent != null) {
+                            val target = File(parent, appInfo.packageName)
+                            val primary = virtualDirFor(dir, appInfo.packageName, vuid)
+                            val redirected = redirectExternalDir(
+                                target, primary, "media", appInfo.packageName, idx == 0,
+                            )
+                            if (!redirected) {
+                                val filesDir = externalFiles?.getOrNull(idx)
+                                if (filesDir != null) {
+                                    redirectExternalDir(
+                                        target,
+                                        File(
+                                            filesDir,
+                                            "virtual-media/$vuid/${appInfo.packageName}"
+                                        ),
+                                        "media", appInfo.packageName, idx == 0,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    ctx.obbDirs?.forEachIndexed { idx, dir ->
+                        val parent = dir?.parentFile
+                        if (parent != null) {
+                            redirectExternalDir(
+                                File(parent, appInfo.packageName),
+                                virtualDirFor(dir, appInfo.packageName, vuid),
+                                "obb", appInfo.packageName, idx == 0,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ----- Virtual storage (y09.b) redirect -----
+            VirtualStorageManager.virtualStorageManager.let { storage ->
+                try {
+                    val virtualStorage = storage.getService()
+                        .getVirtualStorage(appInfo.packageName, vuid)
+                    try {
+                        if (storage.getService()
+                                .isVirtualStorageEnable(appInfo.packageName, vuid) &&
+                            virtualStorage != null
+                        ) {
+                            val dir = File(virtualStorage)
+                            if (dir.exists() || dir.mkdirs()) {
+                                val paths = HashSet<String>(3)
+                                paths.add("/mnt/sdcard/")
+                                paths.add("/sdcard/")
+                                val sm = appContext
+                                    .getSystemService("storage") as? StorageManager
+                                val volumePaths = try {
+                                    sm?.javaClass?.getMethod("getVolumePaths")
+                                        ?.invoke(sm) as? Array<String>
+                                } catch (_: Exception) {
+                                    null
+                                }
+                                if (volumePaths != null) paths.addAll(volumePaths)
+                                for (p in paths) {
+                                    NativeEngine.redirectDirectory(p, virtualStorage)
+                                }
+                            }
+                        }
+                    } catch (e: RemoteException) {
+                        VirtualRuntime.crash(e); throw e
+                    }
+                } catch (e: RemoteException) {
+                    VirtualRuntime.crash(e); throw e
+                }
+            }
+
+            System.currentTimeMillis()  // stripped debug marker
+        }
+
+        // ===== From here on: UNCONDITIONAL — runs for both skip and non-skip =====
+        NativeEngine.hookNative()
+        val mainThread = VirtualCore.gCore.mainThread
+        NativeEngine.startDexOverride()
+
+        // ----- Host context, with NullPointerException fallback for split-APK cases -----
+        val hostContext: Context? = try {
+            createHostPackageContext(appInfo.packageName)
+        } catch (e: NullPointerException) {
+            Log.d("hu8", e.message.toString())
+            var debugMsg = "createPackageContext "
+            try {
+                if (Build.VERSION.SDK_INT >= 26) {
+                    val privateFlags = ApplicationInfoO.privateFlags?.get(appInfo)!!
+                    if (!ArrayUtils.isEmpty(appInfo.splitNames) &&
+                        ApplicationInfoO.splitDependencies?.get(appInfo) == null &&
+                        (32768 and privateFlags) != 0
+                    ) {
+                        ApplicationInfoO.privateFlags?.set(appInfo, privateFlags and (-32769))
+                        debugMsg = "createPackageContext split dependencies not correct"
+                    }
+                    if (mainThread != null) {
+                        val mirrorApk = ActivityThread.getPackageInfoNoCheck?.call(
+                            mainThread,
+                            appInfo,
+                            CompatibilityInfoMirror.DEFAULT_COMPATIBILITY_INFO?.get(),
+                        )
+                        if (mirrorApk != null) {
+                            LoadedApkMirror.setApplicationInfo?.call(mirrorApk, appInfo)
+                        } else {
+                            debugMsg += "loadedApk null"
+                        }
+                    }
+                    Log.e("hu8", debugMsg)
+                    createHostPackageContext(appInfo.packageName)
+                } else {
+                    null
+                }
+            } catch (th: Throwable) {
+                throw RuntimeException(debugMsg, th)
+            }
+        }
+
+        // ----- Force java.io.tmpdir to per-user cache -----
+        try {
+            System::class.java
+                .getDeclaredMethod("setProperty", String::class.java, String::class.java)
+                .invoke(
+                    null, "java.io.tmpdir",
+                    File(VEnvironment.getOrCreateUserSubFile(userId, pkg), "cache").absolutePath,
+                )
+        } catch (th: Throwable) {
+            Log.d("hu8", "set tmp dir error:", th)
+        }
+
+        // ----- Disk cache setup -----
+        val sdk = Build.VERSION.SDK_INT
+        val codeCacheDir = hostContext!!.codeCacheDir
+        ThreadedRendererMirror.setupDiskCache?.call(codeCacheDir)
+        RenderScriptCacheDirMirror.setupDiskCache?.call(codeCacheDir)
+
+        // ----- Populate ActivityThread.AppBindData -----
+        val boundApk = this.boundAppData
+        val appBindData = ActivityThread.mBoundApplication?.get(mainThread)
+        ActivityThread.AppBindData.appInfo?.set(appBindData, boundApk?.appInfo)
+        ActivityThread.AppBindData.processName?.set(appBindData, boundApk?.processName)
+        ActivityThread.AppBindData.instrumentationName?.set(
+            appBindData,
+            ComponentName(
+                boundApk?.appInfo?.packageName!!,
+                PackageParser.Instrumentation::class.java.name
+            ),
+        )
+        ActivityThread.AppBindData.providers?.set(
+            appBindData,
+            boundApk?.providerInfoList
+        )
+
+        if (BuildCompat.sdk31OrLater()) {
+            ActivityThread.AppBindData.disabledCompatChanges?.let { compatField ->
+                val existing = compatField.get(appBindData)
+                val updated = if (existing == null) longArrayOf(160794467L)
+                else existing + 160794467L
+                CompatibilityMirror.clearBehaviorChangeDelegate?.call()
+                compatField[appBindData] = updated
+                if (sdk >= 35) {
+                    AppCompatCallbacksMirror.install?.call(updated, longArrayOf())
+                } else {
+                    AppCompatCallbacksMirror.install?.call(updated)
+                }
+            }
+        }
+
+        if (mainThread != null) {
+            boundApk?.loadedApk = when {
+                BuildCompat.sdk34OrLater() ->
+                    ActivityThread.getPackageInfoNoCheck?.call(mainThread, appInfo)
+
+                BuildCompat.sdk33OrLater() ->
+                    ActivityThread.getPackageInfoNoCheck?.call(
+                        mainThread, appInfo,
+                        CompatibilityInfoMirror.DEFAULT_COMPATIBILITY_INFO?.get(), false,
+                    )
+
+                else ->
+                    ActivityThread.getPackageInfoNoCheck?.call(
+                        mainThread,
+                        appInfo,
+                        CompatibilityInfoMirror.DEFAULT_COMPATIBILITY_INFO?.get(),
+                    )
+            }
+        }
+        if (boundApk?.loadedApk == null) {
+            Log.d(
+                "hu8",
+                "getPackageInfoNoCheck mainThread: ${if (mainThread == null) "null" else "not null error"}",
+            )
+            boundApk?.loadedApk = ContextImpl.mPackageInfo?.get(hostContext)
+        }
+        ActivityThread.AppBindData.info?.set(appBindData, boundApk?.loadedApk)
+        VMRuntime.setTargetSdkVersion?.call(
+            VMRuntime.getRuntime?.call(), appInfo.targetSdkVersion,
+        )
+        LoadedApkMirror.mSecurityViolation?.set(boundApk?.loadedApk, false)
+
+        // ----- Compatibility info from host config -----
+        val config = hostContext.resources.configuration
+        val compatInfo = CompatibilityInfoMirror.ctor?.newInstance(
+            appInfo, config.screenLayout, config.smallestScreenWidthDp, false,
+        ) ?: CompatibilityInfoMirror.ctorLG?.newInstance(
+            appInfo, config.screenLayout, config.smallestScreenWidthDp, false, 0,
+        )
+        if (compatInfo != null) {
+            DisplayAdjustmentsMirror.setCompatibilityInfo?.call(
+                LoadedApkMirror.mDisplayAdjustments?.get(boundApk?.loadedApk), compatInfo,
+            )
+        }
+
+        // ----- checkEnv: first if NOT special, later if IS special (both preserved) -----
+        val isSpecialPkg = pkg in SpecialComponentList.INSTRUMENTATION_CONFLICTING
+        if (!isSpecialPkg) {
+            InvocationStubManager.instance.checkEnv(AppInstrumentation::class.java)
+        }
+        if (boundApk?.loadedApk == null) {
+            Log.d(
+                "VClientImpl",
+                "bindApplicationNoCheck:$pkg:$effectiveProcessName:data.info null"
+            )
+        }
+
+        // ----- SDK 30+: reset network-security-config so clone uses defaults -----
+        if (sdk >= 30) {
+            try {
+                Security.getProviders().contentToString()
+                val appNetSec = ApplicationInfoN.networkSecurityConfigRes(appInfo)
+                val hostAppInfo = appContext.applicationInfo
+                val hostNetSec = if (hostAppInfo != null)
+                    ApplicationInfoN.networkSecurityConfigRes(hostAppInfo) else 0
+                if (appNetSec != 0) {
+                    ApplicationInfoN.networkSecurityConfigRes(appInfo, 0)
+                    appInfo.packageName
+                }
+                if (appNetSec != 0 || hostNetSec != 0) {
+                    ApplicationConfigMirror.sInstance?.set(null)
+                    ApplicationConfigMirror.setDefaultInstance?.call(null)
+                }
+                ApplicationInfoN.networkSecurityConfigRes(appInfo)
+                Security.getProviders().contentToString()
+            } catch (e: Exception) {
+                Log.e("hu8", "failed to install security config")
+                Log.e("hu8", e.toString())
+            }
+        }
+
+        // ===== Create the Application =====
+        try {
+            LoadedApkMirror.getClassLoader?.call(boundApk?.loadedApk)
+            this.mInitialApplication =
+                LoadedApkMirror.makeApplication?.callWithException(boundApk?.loadedApk, false, null)
+            if (this.mInitialApplication == null) {
+                Log.d("hu8", "mInitialApplication is null")
+                boundApk?.loadedApk?.let {
+                    this.mInitialApplication =
+                        LoadedApkMirror.makeApplication?.call(it, false, null)
+                }
+            }
+            ActivityThread.mInitialApplication?.set(mainThread, this.mInitialApplication)
+            ContextFixer.fixContext(this.mInitialApplication!!)
+            try {
+                wrapInstalledProviders()
+            } catch (th: Throwable) {
+                th.toString()
+            }
+
+            tweakGoogleAppPrefs(hostContext, pkg)
+
+            // ----- Install providers with per-provider error tracking -----
+            val providerList = boundApk?.providerInfoList
+            var firebaseInitFailed = false
+            if (providerList != null) {
+                val app = this.mInitialApplication
+                val identity = clearCallingIdentity()
+                try {
+                    for (provider in providerList) {
+                        if (provider.enabled) {
+                            try {
+                                ActivityThread.installProvider(mainThread, app!!, provider, null )
+                            } catch (th: Throwable) {
+                                Log.d("JJJJ", th.toString())
+                                if (provider != null &&
+                                    "com.google.firebase.provider.FirebaseInitProvider" ==
+                                    provider.name
+                                ) {
+                                    firebaseInitFailed = true
+                                }
+                            }
+                        } else {
+                            provider.toString()
+                        }
+                    }
+                } finally {
+                    restoreCallingIdentity(identity)
+                }
+
+                // ----- Firebase retry if FirebaseInitProvider failed above -----
+                if (firebaseInitFailed) {
+                    val app2 = this.mInitialApplication
+                    val list2 = boundApk.providerInfoList
+                    if (app2 != null && list2 != null) {
+                        for (provider in list2) {
+                            if (provider != null && provider.enabled &&
+                                "com.google.firebase.provider.FirebaseInitProvider" == provider.name
+                            ) {
+                                try {
+                                    val clazz = Class.forName(
+                                        "com.google.firebase.FirebaseApp", true,
+                                        app2.classLoader,
+                                    )
+                                    if (clazz.getMethod("initializeApp", Context::class.java)
+                                            .invoke(null, app2) != null
+                                    ) {
+                                        break
+                                    }
+                                    app2.packageName
+                                    break
+                                } catch (th: Throwable) {
+                                    th.toString()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            VirtualCore.gCore.getListener()
+
+            try {
+                if (sdk >= 28 && pkg in SpecialComponentList.specialPackages) {
+                    WebViewFactory.sDataDirectorySuffix?.set("_multi_${VUserHandle.getVUid()}")
+                    WebViewFactory.sDataDirectorySuffix?.get()
+                }
+
+                Log.e("hu8", "instrumentationBefore=$instrumentationBefore app=${mInitialApplication?.javaClass}")
+                instrumentationBefore?.callApplicationOnCreate(this.mInitialApplication!!)
+                Log.e("hu8", "Application.onCreate returned")
+
+                // GMS persistent process: delayed follow-up
+                if (!this.j &&
+                    "com.google.android.gms" == pkg &&
+                    "com.google.android.gms.persistent" == effectiveProcessName
+                ) {
+                    this.j = true
+                    if (q.isNotEmpty()) {
+                        this.mainHandler.postDelayed(
+                            GmsCheckinRetryTask(this, this.mInitialApplication!!, 0), q[0],
+                        )
+                    }
+                }
+
+                InvocationStubManager.instance.checkEnv(HCallbackStub::class.java)
+                if (isSpecialPkg) {
+                    InvocationStubManager.instance.checkEnv(AppInstrumentation::class.java)
+                }
+
+                // Framework may have replaced mInitialApplication during provider installs — re-read.
+                ActivityThread.mInitialApplication?.get(mainThread)?.let { finalApp ->
+                    this.mInitialApplication = finalApp
+                    if (sdk in 26..28) {
+                        val autofillManager =
+                            finalApp.getSystemService(android.view.autofill.AutofillManager::class.java) as android.view.autofill.AutofillManager?
+                        autofillManager?.let { autofill ->
+                            try {
+                                autofill.disableAutofillServices()
+                                autofill.cancel()
+                            } catch (th: Throwable) {
+                                th.toString()
+                            }
+                            try {
+                                val field = autofill.javaClass?.getDeclaredField("mService")
+                                field?.isAccessible = true
+                                field?.set(autofill, null)
+                            } catch (th: Throwable) {
+                                th.toString()
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                if (!instrumentationBefore!!.instrument.onException(this.mInitialApplication, e)) {
+                    val appName = boundApk?.appInfo?.name
+                    Log.d("hu8", e.message.toString())
+                    throw RuntimeException("Unable to create application $appName: $e", e)
+                }
+            }
+        } catch (th: Throwable) {
+            throw RuntimeException(
+                "Unable to makeApplication ${boundApk?.appInfo?.packageName}", th,
+            )
+        }
+
+        // ===== Disarm watchdog, notify AMS that app setup is done =====
+        Log.d("WatchDog", "feed 0")
+        watchdog.handler.removeMessages(0)
+        try {
+            VActivityManager.instance.getService().appDoneExecuting()
+        } catch (_: RemoteException) {
+        }
+        Process.myPid()
+        Process.myUid()
+        VirtualCore.gCore.getListener()
+    }
+
+
+    /*
     fun bindApplicationLocked(packageName: String?, processName: String?) {
         val instrumentationBefore = this.instrumentation
         val deviceInfo = getDeviceInfo()
@@ -1223,7 +1827,7 @@ class VClientImpl private constructor(): IVClient.Stub() {
         Process.myUid()
         VirtualCore.gCore.getListener()
     }
-
+*/
     /**
      * Was `tweakGoogleAppPrefs`. Forces conservative defaults on Play Store and GMS
      * SharedPreferences so clone apps don't:

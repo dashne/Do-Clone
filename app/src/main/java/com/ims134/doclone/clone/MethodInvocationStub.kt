@@ -69,6 +69,9 @@ open class MethodInvocationStub<T>(
     @Suppress("UNCHECKED_CAST")
     open fun <H : MethodProxy> getMethodProxy(name: String): H? = methodProxies[name] as H?
 
+    private fun safeToString(a: Any?): String =
+        try { a.toString() } catch (_: Throwable) { "<${a?.javaClass?.simpleName}>" }
+
     /** was b$b */
     private inner class MethodInvocationHandler : InvocationHandler {
 
@@ -78,13 +81,15 @@ open class MethodInvocationStub<T>(
             val hooked = hook != null && hook.isEnable()
             val never = LogInvocation.Condition.NEVER
             val logging = !(invocationLoggingCondition == never && (hook == null || hook.getInvocationLoggingCondition() == never))
+            //val logging = true
             val signature = method.declaringClass.simpleName + "." + method.name
             if (logging) {
                 Log.println(Log.WARN, TAG, signature + "CALLLL")
             }
             val argsText = if (logging) {
-                val text = Arrays.toString(args)
-                text.substring(1, text.length - 1)
+                args?.joinToString(", ") { safeToString(it) } ?: ""
+//                val text = args.contentToString()
+//                text.substring(1, text.length - 1)
             } else {
                 null
             }
@@ -124,13 +129,17 @@ open class MethodInvocationStub<T>(
         }
 
         /** the log level: the larger of the stub's and the hook's condition */
-        private fun logLevel(hook: MethodProxy?, hooked: Boolean, isError: Boolean): Int {
-            var level = invocationLoggingCondition.getLogLevel(hooked, isError)
-            if (hook != null) {
-                level = Math.max(level, hook.getInvocationLoggingCondition().getLogLevel(hooked, isError))
-            }
-            return level
+        private fun logLevel(hook: MethodProxy?, hooked: Boolean, isError: Boolean): Int
+        {
+            return if (isError) Log.ERROR else Log.WARN
         }
+//        {
+//            var level = invocationLoggingCondition.getLogLevel(hooked, isError)
+//            if (hook != null) {
+//                level = Math.max(level, hook.getInvocationLoggingCondition().getLogLevel(hooked, isError))
+//            }
+//            return level
+//        }
     }
 
     companion object {

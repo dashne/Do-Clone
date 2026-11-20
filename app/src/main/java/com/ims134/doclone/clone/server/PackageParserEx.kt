@@ -255,6 +255,10 @@ object PackageParserEx {
             if (sigs != null && sigs.isNotEmpty()) packageInfo.signatures = sigs.copyOf()
         }
         if (wantSigningInfo) packageInfo.signingInfo = pkg.signatureInfo
+        packageInfo.signatures?.firstOrNull()?.let {
+            val sha = java.security.MessageDigest.getInstance("SHA-1").digest(it.toByteArray())
+            android.util.Log.e("SIGCHK", "pkg=${pkg.packageName} sha1=" + sha.joinToString("") { b -> "%02x".format(b) }.take(12))
+        }
         return packageInfo
     }
 
